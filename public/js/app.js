@@ -81,7 +81,20 @@ function cancelPolling() {
 }
 function devicePath(suffix = '') { return `/devices/${encodeURIComponent(state.serial)}${suffix}`; }
 
-async function loadDevice() {
+async function recoverLauncher() {
+  const { jobId } = await api(devicePath('/launcher/recover'), {});
+  const summary = await new Promise((resolve, reject) => {
+    source?.close();
+    source = jobEvents(jobId, { progress() {}, complete: resolve, error: reject });
+  });
+  try { await loadDevice(false); }
+  catch { /* Keep the initial snapshot so completed recovery guidance is still shown. */ }
+  state.recovered ||= Boolean(summary.recovered);
+  state.manualHomePackage = summary.manualHomePackage ?? null;
+  state.journalWarning ||= Boolean(summary.journalWarning);
+}
+
+async function loadDevice(repair = true) {
   const [info, data] = await Promise.all([api(devicePath()), api(devicePath('/packages'))]);
   state.info = info;
   state.recovered = Boolean(info.recovered || data.recovered);
@@ -89,15 +102,17 @@ async function loadDevice() {
   state.journalWarning = Boolean(info.journalWarning || data.journalWarning);
   state.packages = data.packages;
   state.selected = new Set(state.packages.filter(entry => entry.risk === 'green' && entry.canDisable && entry.enabled).map(entry => entry.package));
-  await loadLauncher();
+  await loadLauncher(false);
+  if (repair && (info.needsRecovery || data.needsRecovery || state.launcher?.needsRecovery)) await recoverLauncher();
 }
 
-async function loadLauncher() {
+async function loadLauncher(repair = true) {
   try {
     state.launcher = await api(devicePath('/launcher')); state.launcherError = null;
     state.recovered ||= Boolean(state.launcher.recovered);
     state.manualHomePackage ||= state.launcher.manualHomePackage ?? null;
     state.journalWarning ||= Boolean(state.launcher.journalWarning);
+    if (repair && state.launcher.needsRecovery) await recoverLauncher();
   }
   catch (error) { state.launcher = null; state.launcherError = error.code ?? 'INTERNAL'; }
 }

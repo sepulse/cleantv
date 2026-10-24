@@ -18,14 +18,21 @@ export function checkHost(request) {
 }
 
 /** @param {import('node:http').IncomingMessage} request @param {string} token */
-export function checkMutation(request, token) {
-  const port = request.socket.localPort;
-  const origin = request.headers.origin;
+export function checkToken(request, token) {
   const candidate = request.headers['x-cleantv-token'];
   const actual = typeof candidate === 'string' ? Buffer.from(candidate) : Buffer.alloc(0);
   const expected = Buffer.from(token);
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+    throw new CleanTvError(ErrorCode.FORBIDDEN);
+  }
+}
+
+/** @param {import('node:http').IncomingMessage} request @param {string} token */
+export function checkMutation(request, token) {
+  checkToken(request, token);
+  const port = request.socket.localPort;
+  const origin = request.headers.origin;
   if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json'
-    || actual.length !== expected.length || !timingSafeEqual(actual, expected)
     || (origin !== undefined && ![`http://127.0.0.1:${port}`, `http://localhost:${port}`].includes(origin))) {
     throw new CleanTvError(ErrorCode.FORBIDDEN);
   }

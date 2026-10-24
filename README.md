@@ -29,8 +29,13 @@ mematikannya untuk anda.
   ini menandakannya sebagai "belum diuji". Cuba pada satu TV dahulu, dan ingat
   bahawa anda boleh memulihkannya.
 - Anda boleh menukar skrin utama (launcher) kepada Projectivy secara pilihan.
-  Jika penukaran gagal, CleanTV memulihkan skrin utama asal secara automatik.
-  Launcher asal tidak akan dimatikan selagi pengganti belum disahkan berfungsi.
+  CleanTV menyemak Projectivy sudah dipasang, dihidupkan dan tersedia sebagai
+  home app sebelum menukar launcher. Kemudian CleanTV mematikan home app asal,
+  menyemak butang Home dan cuba kembali ke skrin utama asal secara automatik
+  jika semakan gagal. Jika sambungan terputus semasa penukaran, CleanTV
+  memulihkannya apabila anda bersambung semula, atau anda boleh pilih
+  "Pulihkan skrin utama asal" / "Pulihkan semua". Factory reset sentiasa
+  memulihkan semuanya.
 - Ada **mod demo** untuk mencuba aplikasi tanpa TV.
 
 ### Mula pantas (pengguna)
@@ -94,9 +99,13 @@ choose the apps you do not need, and CleanTV turns them off for you.
 - The app lists for Google TV, Xiaomi, TCL, Sony and Hisense are **not yet tested on
   a real TV** (`verified: false`). They were compiled from public sources, and the
   app labels them "not tested yet". Try one TV first, and remember you can restore.
-- You can optionally switch the home screen (launcher) to Projectivy. If the switch
-  fails, CleanTV automatically puts the original home screen back. The original
-  launcher is not disabled until the replacement is confirmed to work.
+- You can optionally switch the home screen (launcher) to Projectivy.
+  CleanTV checks Projectivy is installed, enabled and offered as a home app
+  before switching. It then turns off the original home apps, checks the Home
+  button, and tries to switch back automatically if the check fails. If the
+  connection drops mid-switch, CleanTV repairs it the next time it connects,
+  or you can choose "Restore the original home screen" / "Restore all".
+  A factory reset always restores everything.
 - There is a **demo mode** so you can try the app without a TV.
 
 ### Quick start (users)

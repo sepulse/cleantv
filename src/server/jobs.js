@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { CleanTvError, ErrorCode } from '../core/errors.js';
 import { publicError } from './http-errors.js';
 
@@ -27,13 +27,14 @@ export function createJobs() {
     isBusy(serial) { return busy.has(serial); },
     start(serial, work) {
       if (busy.has(serial)) throw new CleanTvError(ErrorCode.DEVICE_BUSY);
-      const job = { id: randomUUID(), serial, events: [], listeners: new Set(), done: false };
+      const job = { id: randomBytes(16).toString('base64url'), serial, events: [], listeners: new Set(), done: false };
       busy.add(serial);
       jobs.set(job.id, job);
       queueMicrotask(async () => {
         try {
           const result = await work(progress => emit(job, 'progress', progress));
           emit(job, 'complete', { succeeded: result.succeeded, failed: result.failed, results: result.results,
+            ...(result.recovered ? { recovered: true } : {}),
             ...(result.journalWarning ? { journalWarning: true } : {}),
             ...(result.manualHomePackage ? { manualHomePackage: result.manualHomePackage } : {}) });
         } catch (error) {

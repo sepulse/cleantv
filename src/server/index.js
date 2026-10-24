@@ -14,7 +14,7 @@ import { loadPresets } from '../core/registry.js';
 import { createEngine } from '../core/engine.js';
 import { scanForAdb } from '../core/discovery.js';
 import { CleanTvError, ErrorCode } from '../core/errors.js';
-import { checkHost, checkMutation, readJson, securityHeaders } from './security.js';
+import { checkHost, checkToken, checkMutation, readJson, securityHeaders } from './security.js';
 import { sendError } from './http-errors.js';
 import { createJobs } from './jobs.js';
 import { createRoutes } from './routes.js';
@@ -33,6 +33,8 @@ export function createAppServer({ engine, client, journal, scan, publicDir, toke
     securityHeaders(response, pathname);
     try {
       checkHost(request);
+      const publicGet = request.method === 'GET' && (pathname === '/api/health' || /^\/api\/jobs\/[^/]+\/events$/.test(pathname));
+      if (request.method === 'GET' && pathname.startsWith('/api/') && !publicGet) checkToken(request, token);
       let body;
       if (request.method !== 'GET') {
         checkMutation(request, token);

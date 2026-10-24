@@ -3,7 +3,7 @@ import { getPackageStates } from './packages.js';
 import { buildEntryIndex, matchPresets } from './registry.js';
 import { canDisable, isValidPackageName, isValidSerial } from './safety.js';
 import { CleanTvError, ErrorCode } from './errors.js';
-import { createLauncherActions, STOCK_LAUNCHERS } from './launchers.js';
+import { createLauncherActions, STOCK_LAUNCHERS, REPLACEMENT_LAUNCHERS } from './launchers.js';
 import { appendRecovery, warnJournal } from './journal.js';
 
 /**
@@ -25,7 +25,8 @@ export function createEngine({ client, journal, presets }) {
 
   async function act(serial, pkgs, action, onProgress = () => {}) {
     if (pkgs !== 'all' && !Array.isArray(pkgs)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
-    const { info, index } = await context(serial);
+    const { info, index, installed } = await context(serial);
+    const restoreAll = pkgs === 'all';
     if (action === 'disable' && !info.homePackage) {
       throw new CleanTvError(ErrorCode.COMMAND_FAILED, 'Cannot resolve the current HOME package');
     }
@@ -72,6 +73,12 @@ export function createEngine({ client, journal, presets }) {
       results.push(result);
       onProgress({ done: results.length, total: pkgs.length, ...result });
     }
+    const stocks = STOCK_LAUNCHERS.filter(pkg => installed.includes(pkg));
+    if (restoreAll && (stocks.length || REPLACEMENT_LAUNCHERS.includes(info.homePackage)) && !await restoreHome(serial, stocks)) {
+      results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
+        reason: stocks.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
+      if (stocks.length) outcome.manualHomePackage = stocks[0];
+    }
     return {
       succeeded: results.filter(item => ['disabled', 'enabled'].includes(item.result)).length,
       failed: results.filter(item => item.result === 'failed').length,
@@ -81,7 +88,7 @@ export function createEngine({ client, journal, presets }) {
     };
   }
 
-  const { checkLauncherHealth, ...launcherActions } = createLauncherActions({ client, journal, context });
+  const { checkLauncherHealth, restoreHome, ...launcherActions } = createLauncherActions({ client, journal, context });
   return {
     ...launcherActions,
     /** @param {string} serial */

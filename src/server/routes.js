@@ -39,13 +39,15 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       requireAdb();
       const { info, presets, ...inspection } = await engine.inspect(match.serial);
       json(res, { ...info, presets, ...(inspection.recovered ? { recovered: true } : {}),
+        ...(inspection.needsRecovery ? { needsRecovery: true } : {}),
         ...(inspection.manualHomePackage ? { manualHomePackage: inspection.manualHomePackage } : {}),
         ...(inspection.journalWarning ? { journalWarning: true } : {}) });
     }],
     ['GET', /^\/api\/devices\/([^/]+)\/packages$/, async (_req, res, match) => {
       requireAdb();
-      const { packages, recovered, manualHomePackage, journalWarning } = await engine.inspect(match.serial);
+      const { packages, recovered, needsRecovery, manualHomePackage, journalWarning } = await engine.inspect(match.serial);
       json(res, { packages, ...(recovered ? { recovered: true } : {}),
+        ...(needsRecovery ? { needsRecovery: true } : {}),
         ...(manualHomePackage ? { manualHomePackage } : {}), ...(journalWarning ? { journalWarning: true } : {}) });
     }],
     ['POST', /^\/api\/devices\/([^/]+)\/disable$/, async (_req, res, match, body) => {
@@ -82,6 +84,12 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length) invalid();
       json(res, { jobId: jobs.start(match.serial,
         onProgress => engine.restoreLauncher(match.serial, onProgress)) }, 202);
+    }],
+    ['POST', /^\/api\/devices\/([^/]+)\/launcher\/recover$/, async (_req, res, match, body) => {
+      requireAdb();
+      if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length) invalid();
+      json(res, { jobId: jobs.start(match.serial,
+        () => engine.recoverLauncher(match.serial)) }, 202);
     }],
     ['GET', /^\/api\/devices\/([^/]+)\/history$/, async (_req, res, match) => {
       requireAdb();

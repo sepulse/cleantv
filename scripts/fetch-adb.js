@@ -17,6 +17,18 @@ export function platformToolsUrl(platform) {
   return `https://dl.google.com/android/repository/platform-tools-latest-${platform}.zip`;
 }
 
+/** Validate a redirect before any request is sent to its destination. */
+export function validateRedirect(location, currentUrl) {
+  let url;
+  try { url = new URL(location, currentUrl); }
+  catch { throw new Error('Download redirect has an invalid URL.'); }
+  if (url.protocol !== 'https:' || !(url.hostname === 'dl.google.com'
+    || ['.google.com', '.gvt1.com', '.googleusercontent.com'].some(suffix => url.hostname.endsWith(suffix)))) {
+    throw new Error(`Download redirect blocked: only approved Google HTTPS hosts are allowed (${url.href}).`);
+  }
+  return url.href;
+}
+
 /** @param {NodeJS.Platform} [nodePlatform] @returns {string} windows | darwin | linux */
 export function hostPlatform(nodePlatform = process.platform) {
   return nodePlatform === 'win32' ? 'windows' : nodePlatform === 'darwin' ? 'darwin' : 'linux';
@@ -63,14 +75,24 @@ export async function fetchAdb({ platform = hostPlatform(), dest = DEFAULT_DEST,
   if (!force && await exists(adbPath)) {
     log(`adb already present: ${adbPath} (use --force to download again)`);
   } else {
-    const url = platformToolsUrl(platform);
+    let url = platformToolsUrl(platform);
     const parent = dirname(resolve(dest));
     await mkdir(parent, { recursive: true });
     const work = await mkdtemp(join(parent, '.fetch-'));
     try {
       log(`Downloading ${url}`);
-      const response = await fetch(url, { signal: AbortSignal.timeout(300_000) })
-        .catch(error => { throw new Error(`Download failed (${error.message}). Check your internet connection and try again.`); });
+      let response;
+      const signal = AbortSignal.timeout(300_000);
+      for (let redirects = 0; ; redirects++) {
+        response = await fetch(url, { redirect: 'manual', signal })
+          .catch(error => { throw new Error(`Download failed (${error.message}). Check your internet connection and try again.`); });
+        if (![301, 302, 303, 307, 308].includes(response.status)) break;
+        await response.body?.cancel();
+        if (redirects === 5) throw new Error('Download failed: more than 5 redirects.');
+        const location = response.headers.get('location');
+        if (!location) throw new Error('Download redirect is missing its Location header.');
+        url = validateRedirect(location, url);
+      }
       if (!response.ok) throw new Error(`Download failed: HTTP ${response.status} from ${url}`);
       const zipPath = join(work, 'platform-tools.zip');
       await writeFile(zipPath, Buffer.from(await response.arrayBuffer()));

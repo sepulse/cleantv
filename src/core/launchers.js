@@ -86,7 +86,7 @@ export function createLauncherActions({ client, journal, context }) {
     } catch { return false; }
   }
 
-  async function healthCheck(serial, ctx) {
+  async function healthCheck(serial, ctx, repair = false) {
     const outcome = {};
     if (swapping.has(serial)) return outcome;
     let marker;
@@ -99,36 +99,39 @@ export function createLauncherActions({ client, journal, context }) {
     const unhealthy = stocks.some(pkg => disabled.includes(pkg))
       && (!ctx.installed.includes(ctx.info.homePackage) || disabled.includes(ctx.info.homePackage));
     if (marker?.status !== 'pending' && !unhealthy) return outcome;
+    if (!repair) return { ...outcome, needsRecovery: true,
+      ...(stocks.length ? { manualHomePackage: stocks[0] } : {}) };
     const results = await recover(serial, ctx.info.deviceId, stocks.filter(pkg => disabled.includes(pkg)), outcome);
     const verified = await restoreHome(serial, stocks);
     const recovered = verified && results.every(item => item.result === 'enabled');
+    if (!verified) results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
+      reason: stocks.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
     if (recovered) {
       await appendRecovery(journal, ctx.info.deviceId,
         swapRecord(marker?.replacement ?? REPLACEMENT_LAUNCHERS[0], marker?.disabled ?? [], 'rolled-back'), outcome);
     }
-    ctx.info.homePackage = await client.resolveHomeActivity(serial);
-    return { ...outcome, ...(recovered ? { recovered: true } : {}),
+    return { ...summary(results), ...outcome, ...(recovered ? { recovered: true } : {}),
       ...(!verified && stocks.length ? { manualHomePackage: stocks[0] } : {}) };
   }
 
-  async function checkLauncherHealth(serial, ctx) {
-    // Concurrent inspection endpoints share recovery and then refresh their HOME snapshot.
-    if (checks.has(serial)) {
-      const outcome = await checks.get(serial);
-      if (outcome.recovered) ctx.info.homePackage = await client.resolveHomeActivity(serial);
-      return outcome;
-    }
-    const pending = healthCheck(serial, ctx);
+  async function recoverLauncher(serial) {
+    if (checks.has(serial)) return checks.get(serial);
+    const pending = (async () => {
+      const ctx = await context(serial);
+      return { succeeded: 0, failed: 0, results: [], ...await healthCheck(serial, ctx, true) };
+    })();
     checks.set(serial, pending);
     try { return await pending; }
     finally { checks.delete(serial); }
   }
 
   return {
-    checkLauncherHealth,
+    checkLauncherHealth: healthCheck,
+    recoverLauncher,
+    restoreHome,
     async launcherStatus(serial) {
       const ctx = await context(serial);
-      const outcome = await checkLauncherHealth(serial, ctx);
+      const outcome = await healthCheck(serial, ctx);
       return { ...await status(serial, ctx), ...outcome };
     },
     async openLauncherStore(serial, pkg) {

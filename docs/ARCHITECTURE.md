@@ -12,7 +12,7 @@ Aplikasi web tempatan untuk *debloat* Android TV / Google TV melalui Wi-Fi ADB
 | D3 | Cari `adb` ikut tertib: env `CLEANTV_ADB` → `vendor/platform-tools/adb(.exe)` → `PATH`. Muat turun platform-tools rasmi dari `dl.google.com` ialah skrip berasingan (`scripts/fetch-adb.js`); binaan mudah alih Windows (`scripts/build-portable.js`) memasukkannya dalam `app/vendor/platform-tools/`. | Pengguna tidak perlu pasang Android SDK. |
 | D4 | **Hanya `pm disable-user --user 0` dan `pm enable --user 0`.** Tiada `uninstall`, `pm clear`, `rm`, `settings put` di mana-mana kod. Diuji secara automatik. | Setiap tindakan boleh diundur; factory reset sentiasa memulihkan semua. |
 | D5 | **Allowlist, bukan blocklist**: hanya pakej yang ada dalam registry dengan risiko `green`/`yellow` boleh dimatikan. Pakej tidak dikenali tidak boleh disentuh dalam v1. | Pengguna tidak boleh "tersilap" mematikan sesuatu yang kritikal. |
-| D6 | Pelayan bind **127.0.0.1 sahaja** + semakan header `Host` + token sesi untuk semua POST. | Laman web lain dalam pelayar tidak boleh menghantar arahan ke TV (CSRF / DNS rebinding). |
+| D6 | Pelayan bind **127.0.0.1 sahaja** + semakan header `Host` + token sesi untuk semua permintaan API kecuali GET health dan GET acara kerja (lihat §5). | Laman web lain dalam pelayar tidak boleh menghantar arahan ke TV (CSRF / DNS rebinding). |
 | D7 | Kemajuan kerja dihantar melalui **SSE** (Server-Sent Events), bukan WebSocket. | Aliran sehala sudah cukup; tiada pustaka tambahan. |
 | D8 | Jurnal tindakan disimpan per peranti (kunci = `ro.serialno`, bukan IP) dalam direktori data pengguna. | IP TV berubah dengan DHCP; Restore mesti tetap berfungsi. |
 
@@ -101,9 +101,20 @@ cleantv/
 
 ## 5. Kontrak API (Fasa 3)
 
-Asas: `http://127.0.0.1:<port>/api`. Semua respons JSON. Semua `POST` wajib:
-`Content-Type: application/json` dan header `X-CleanTV-Token: <token>` (token
-disuntik ke `index.html` sebagai `<meta name="cleantv-token">` semasa permulaan).
+Asas: `http://127.0.0.1:<port>/api`. Semua permintaan `/api/*`, termasuk `GET`,
+wajib menghantar header `X-CleanTV-Token: <token>` yang disemak dengan perbandingan
+timing-safe. Pengecualian hanya `GET /api/health` dan `GET /api/jobs/:jobId/events`
+kerana EventSource tidak boleh menghantar header. ID kerja dijana dengan
+`crypto.randomBytes(16)` (128 bit rawak), dikodkan sebagai base64url.
+Token disuntik ke `index.html` sebagai `<meta name="cleantv-token">` semasa
+permulaan. Semua `POST` juga wajib `Content-Type: application/json` dan Origin
+mesti sepadan dengan pelayan tempatan jika dihantar. Respons JSON kecuali SSE.
+
+Semua `GET` hanya membaca keadaan TV. Pemeriksaan peranti, pakej dan launcher
+memulangkan `needsRecovery: true` serta `manualHomePackage` jika ada launcher asal
+apabila pemulihan diperlukan. UI memulakan kerja `POST /devices/:serial/launcher/recover`
+secara automatik, menunggu pengesahan HOME dan memaparkan notis pemulihan atau
+panduan manual sedia ada.
 
 Bentuk ralat: `{ "error": { "code": "DEVICE_UNAUTHORIZED", "message": "..." } }`.
 
@@ -122,6 +133,7 @@ Bentuk ralat: `{ "error": { "code": "DEVICE_UNAUTHORIZED", "message": "..." } }`
 | POST | `/devices/:serial/launcher/open-store` | `{ package }` | `{ ok: true }` (Projectivy only) |
 | POST | `/devices/:serial/launcher/swap` | `{ package }` | `202 { jobId }` (Projectivy only; verified HOME, automatic rollback on failure) |
 | POST | `/devices/:serial/launcher/restore` | `{}` | `202 { jobId }` (enable installed stock launchers, verify stock HOME) |
+| POST | `/devices/:serial/launcher/recover` | `{}` | `202 { jobId }` (repair interrupted/unhealthy launcher switch, verify stock HOME; SSE includes `recovered?`, `manualHomePackage?`) |
 | POST | `/devices/:serial/disconnect` | `{}` | `{ ok: true }` |
 | GET | `/jobs/:jobId/events` | — | SSE (lihat bawah) |
 

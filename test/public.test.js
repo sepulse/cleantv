@@ -134,7 +134,7 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); }));
   const base = `http://127.0.0.1:${server.address().port}`;
   const request = async (path, body) => {
-    const response = await fetch(base + path, body === undefined ? {} : { method: 'POST',
+    const response = await fetch(base + path, body === undefined ? { headers: { 'X-CleanTV-Token': 'demo-test' } } : { method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'demo-test' }, body: JSON.stringify(body) });
     assert.ok(response.ok, path);
     return response;
@@ -183,7 +183,7 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
       { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'demo-test', Origin: 'http://evil.example' },
     ]) assert.equal((await fetch(base + `${launcher}/${route}`, { method: 'POST', headers, body: JSON.stringify(body) })).status, 403);
   }
-  assert.equal((await fetch(base + '/api/devices/bad/launcher')).status, 400);
+  assert.equal((await fetch(base + '/api/devices/bad/launcher', { headers: { 'X-CleanTV-Token': 'demo-test' } })).status, 400);
   const invalid = async (suffix, body) => fetch(base + launcher + suffix, { method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'demo-test' }, body: JSON.stringify(body) });
   for (const suffix of ['/swap', '/open-store']) {

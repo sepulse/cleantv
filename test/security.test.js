@@ -43,6 +43,23 @@ test('Host, token, content type, and Origin gate requests', async t => {
   assert.equal((await send(port, '/api/discover', { method: 'POST', headers: { ...valid, Origin: `http://localhost:${port}` }, body: '{}' })).status, 200);
 });
 
+test('every API request requires the token except GET health and job events', async t => {
+  const port = await setup(t);
+  for (const path of ['/api/devices', '/api/devices/192.168.1.5%3A5555',
+    '/api/devices/192.168.1.5%3A5555/packages', '/api/devices/192.168.1.5%3A5555/launcher',
+    '/api/devices/192.168.1.5%3A5555/history', '/api/unknown']) {
+    for (const token of [undefined, 'wrong', 'secrex']) {
+      assert.equal((await send(port, path, { headers: token ? { 'X-CleanTV-Token': token } : {} })).status, 403, path);
+    }
+  }
+  assert.equal((await send(port, '/api/devices', { headers: { 'X-CleanTV-Token': 'secret' } })).status, 200);
+  assert.equal((await send(port, '/api/health')).status, 200);
+  assert.equal((await send(port, '/api/jobs/unknown/events')).status, 404);
+  for (const path of ['/api/health', '/api/jobs/unknown/events']) {
+    assert.equal((await send(port, path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 403);
+  }
+});
+
 test('request size and JSON syntax are enforced', async t => {
   const port = await setup(t);
   const headers = { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'secret' };

@@ -42,7 +42,7 @@ async function setup(t, overrides = {}) {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => server.close(resolve)));
   const base = `http://127.0.0.1:${server.address().port}`;
-  const get = async path => fetch(base + path);
+  const get = async path => fetch(base + path, { headers: { 'X-CleanTV-Token': 'secret' } });
   const post = async (path, body) => fetch(base + path, { method: 'POST', headers: {
     'Content-Type': 'application/json', 'X-CleanTV-Token': 'secret',
   }, body: JSON.stringify(body) });
@@ -99,18 +99,25 @@ test('disconnect refuses a busy serial for every job type and permits it after c
   }
 });
 
-test('inspection recovery flags and recovery guidance survive HTTP and SSE', async t => {
+test('inspection detects recovery and the protected recovery job returns its verified result through SSE', async t => {
   const { engine, get, post } = await setup(t);
-  engine.inspect = async () => ({ info: { serial }, presets: [], packages: [], recovered: true, journalWarning: true });
+  engine.inspect = async () => ({ info: { serial }, presets: [], packages: [], needsRecovery: true, journalWarning: true });
   for (const suffix of ['', '/packages']) {
     const result = await (await get(`/api/devices/${encoded}${suffix}`)).json();
-    assert.equal(result.recovered, true);
+    assert.equal(result.needsRecovery, true);
     assert.equal(result.journalWarning, true);
   }
-  engine.restoreLauncher = async () => ({ succeeded: 1, failed: 1, results: [], journalWarning: true,
-    manualHomePackage: 'com.google.android.tvlauncher' });
-  const { jobId } = await (await post(`/api/devices/${encoded}/launcher/restore`, {})).json();
-  const events = await (await get(`/api/jobs/${jobId}/events`)).text();
+  engine.recoverLauncher = async value => {
+    assert.equal(value, serial);
+    return { succeeded: 1, failed: 0, results: [], recovered: true, journalWarning: true,
+      manualHomePackage: 'com.google.android.tvlauncher' };
+  };
+  const response = await post(`/api/devices/${encoded}/launcher/recover`, {});
+  assert.equal(response.status, 202);
+  const { jobId } = await response.json();
+  assert.equal(Buffer.from(jobId, 'base64url').length, 16);
+  const events = await (await fetch(`${response.url.split('/api/')[0]}/api/jobs/${jobId}/events`)).text();
+  assert.match(events, /"recovered":true/);
   assert.match(events, /"journalWarning":true/);
   assert.match(events, /"manualHomePackage":"com.google.android.tvlauncher"/);
 });

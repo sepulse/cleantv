@@ -9,7 +9,7 @@ const replacement = 'com.spocky.projengmenu';
 const stock = 'com.google.android.apps.tv.launcherx';
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 
-async function application(t, { missingCatalog = false, recovered = false, manualHomePackage } = {}) {
+async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false } = {}) {
   const previous = Object.fromEntries(['document', 'Node', 'window', 'localStorage', 'fetch', 'EventSource', 'setTimeout', 'clearTimeout', 'ResizeObserver']
     .map(key => [key, globalThis[key]]));
   const { document, Node } = createDocument();
@@ -20,6 +20,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
   const requests = [];
   let connects = 0;
   let ready = false;
+  let recoveryStarted = false;
   let jobPost;
   let pagehide;
   const response = data => ({ ok: true, json: async () => data });
@@ -35,7 +36,10 @@ async function application(t, { missingCatalog = false, recovered = false, manua
     setTimeout: callback => { polls.push(callback); return polls.length; }, clearTimeout() {},
     EventSource: class {
       handlers = {};
-      constructor() { sources.push(this); }
+      constructor() {
+        sources.push(this);
+        if (recoveryResult) queueMicrotask(() => this.handlers.complete({ data: JSON.stringify(recoveryResult) }));
+      }
       addEventListener(name, callback) { this.handlers[name] = callback; }
       close() { this.closed = true; }
     },
@@ -46,10 +50,13 @@ async function application(t, { missingCatalog = false, recovered = false, manua
       if (path === '/api/discover') return response({ candidates: [{ ip: '192.168.1.50' }] });
       if (path === '/api/devices/connect') return response({ serial, state: ++connects <= 2 ? 'unauthorized' : 'device' });
       if (path.endsWith('/open-store')) { ready = true; return response({ ok: true }); }
+      if (path.endsWith('/launcher/recover')) { recoveryStarted = true; needsRecovery = false; return response({ jobId: 'recovery' }); }
+      if (failRecoveryRefresh && recoveryStarted && options.method === 'GET') throw new Error('Connection dropped after recovery');
       if (path.endsWith('/launcher') && !options.body) return response({ home: stock,
+        needsRecovery,
         replacement: { package: replacement, installed: ready, enabled: ready, isHomeCandidate: ready },
         stock: [{ package: stock, installed: true, enabled: true }] });
-      if (path.endsWith('/packages')) return response({ recovered, ...(manualHomePackage ? { manualHomePackage } : {}), packages: [{ package: 'com.example.app', label: { en: 'Example app' },
+      if (path.endsWith('/packages')) return response({ recovered, needsRecovery, ...(manualHomePackage ? { manualHomePackage } : {}), packages: [{ package: 'com.example.app', label: { en: 'Example app' },
         risk: 'green', category: 'bloat', installed: true, enabled: true, canDisable: true }] });
       if (options.body) return jobPost ? jobPost(path, options) : response({ jobId: 'test' });
       return response({ serial, brand: 'google', model: 'Chromecast', androidVersion: '14' });
@@ -184,4 +191,23 @@ test('manual HOME guidance from a failed health recovery shows on the choose scr
   const app = await application(t, { manualHomePackage: stock });
   await connect(app);
   assert.match(app.byId('bottom-bar').parentElement.textContent, /Press Home on your remote, choose Original home screen, select Always/);
+});
+
+test('connection automatically posts recovery and shows its notice or manual HOME guidance; GETs carry the token', async t => {
+  for (const recovered of [true, false]) for (const failRecoveryRefresh of [false, true]) await t.test(`${recovered}, refresh fails: ${failRecoveryRefresh}`, async t => {
+    const app = await application(t, { needsRecovery: true, failRecoveryRefresh, recoveryResult: {
+      succeeded: recovered ? 1 : 0, failed: recovered ? 0 : 1, results: [],
+      ...(recovered ? { recovered: true } : { manualHomePackage: stock }),
+    } });
+    await connect(app);
+    const recovery = app.requests.filter(request => request.path.endsWith('/launcher/recover'));
+    assert.equal(recovery.length, 1);
+    assert.equal(recovery[0].options.method, 'POST');
+    assert.equal(recovery[0].options.body, '{}');
+    assert.ok(app.sources[0].closed);
+    for (const request of app.requests.filter(request => request.path.startsWith('/api/'))) {
+      assert.equal(request.options.headers['X-CleanTV-Token'], 'test');
+    }
+    assert.match(app.document.root.textContent, recovered ? /restored the original home apps/ : /Press Home on your remote, choose Original home screen, select Always/);
+  });
 });

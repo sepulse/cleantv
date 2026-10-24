@@ -207,15 +207,40 @@ test('restoreLauncher selects a stock candidate component when replacement remai
   }
 });
 
-test('a pending swap recovers on inspect and status even when replacement is healthy', async t => {
+test('restore all verifies stock HOME even when Projectivy remains preferred', async t => {
+  for (const options of [{}, { chooser: true }, { ignoreSetHome: true }, { setHomeFailure: true }, { noStock: true }]) {
+    const { engine, disabled, installed, calls, client } = await fixture(t, { alwaysReplacement: true, ...options });
+    for (const pkg of stock) options.noStock ? installed.delete(pkg) : disabled.add(pkg);
+    if (options.noStock) disabled.clear();
+    const result = await engine.restore(serial, 'all');
+    if (!options.noStock) assert.ok(calls.some(args => args.includes('set-home-activity')));
+    const home = await client.resolveHomeActivity(serial);
+    if (home === replacement) {
+      assert.equal(result.failed, 1);
+      assert.equal(result.results.at(-1).reason, options.noStock ? 'LAUNCHER_STOCK_MISSING' : 'LAUNCHER_RESTORE_FAILED');
+      assert.equal(result.manualHomePackage, options.noStock ? undefined : stock[0]);
+    } else {
+      assert.ok(stock.includes(home) || home === 'android');
+      assert.equal(result.failed, 0);
+    }
+  }
+});
+
+test('inspect and status only detect a pending swap; explicit recovery repairs and verifies HOME', async t => {
   for (const method of ['inspect', 'launcherStatus']) {
     const { client, journal, presets, disabled, changes } = await fixture(t);
     for (const pkg of stock) disabled.add(pkg);
     await journal.append('LAUNCHER_TEST', { action: 'swap', status: 'pending', replacement, disabled: [stock[0]] });
     const engine = createEngine({ client, journal, presets }); // Simulate a new process.
-    const result = await engine[method](serial);
+    const detected = await engine[method](serial);
+    assert.equal(detected.needsRecovery, true);
+    assert.equal(detected.manualHomePackage, stock[0]);
+    assert.equal(detected.recovered, undefined);
+    assert.deepEqual(changes('enable'), []);
+    assert.equal((await journal.read('LAUNCHER_TEST')).at(-1).status, 'pending');
+    const result = await engine.recoverLauncher(serial);
     assert.equal(result.recovered, true);
-    assert.equal(result.info?.homePackage ?? result.home, stock[0]);
+    assert.equal((await engine[method](serial)).info?.homePackage ?? (await engine.launcherStatus(serial)).home, stock[0]);
     assert.deepEqual(changes('enable'), stock);
     assert.equal((await journal.read('LAUNCHER_TEST')).filter(item => item.action === 'swap').at(-1).status, 'rolled-back');
     assert.equal((await engine[method](serial)).recovered, undefined);
@@ -230,7 +255,9 @@ test('unusable HOME recovers disabled stock with missing history, including jour
     if (home === null) disabled.add(replacement);
     const broken = async () => { throw new Error('disk full'); };
     const engine = createEngine({ client, presets, journal: { read: broken, append: broken } });
-    const result = await engine.inspect(serial);
+    assert.equal((await engine.inspect(serial)).needsRecovery, true);
+    assert.deepEqual(changes('enable'), []);
+    const result = await engine.recoverLauncher(serial);
     // An unverifiable HOME is guidance for the remote, not a successful recovery.
     if (home === 'com.example.missing') assert.deepEqual([result.recovered, result.manualHomePackage], [undefined, stock[0]]);
     else assert.equal(result.recovered, true);
@@ -298,13 +325,13 @@ test('a failed health recovery carries manual HOME guidance and is not reported 
   const { client, journal, presets, disabled } = await fixture(t, { alwaysReplacement: true, setHomeFailure: true });
   for (const pkg of stock) disabled.add(pkg);
   await journal.append('LAUNCHER_TEST', { action: 'swap', status: 'pending', replacement, disabled: [stock[0]] });
-  const result = await createEngine({ client, journal, presets }).inspect(serial);
+  const result = await createEngine({ client, journal, presets }).recoverLauncher(serial);
   assert.equal(result.manualHomePackage, stock[0]);
   assert.equal(result.recovered, undefined);
   assert.equal((await journal.read('LAUNCHER_TEST')).filter(item => item.action === 'swap').at(-1).status, 'pending');
 });
 
-test('a swap waits for an in-flight health check instead of racing its recovery', async t => {
+test('a swap waits for an in-flight recovery instead of racing it', async t => {
   const { client, journal, presets, disabled } = await fixture(t);
   for (const pkg of stock) disabled.add(pkg);
   await journal.append('LAUNCHER_TEST', { action: 'swap', status: 'pending', replacement, disabled: [stock[0]] });
@@ -316,7 +343,7 @@ test('a swap waits for an in-flight health check instead of racing its recovery'
     return client.listPackages(s, options);
   } };
   const engine = createEngine({ client: slow, journal, presets });
-  const check = engine.launcherStatus(serial);
+  const check = engine.recoverLauncher(serial);
   while (!gated) await new Promise(resolve => setImmediate(resolve));
   const swap = engine.swapLauncher(serial, replacement);
   await new Promise(resolve => setImmediate(resolve));
