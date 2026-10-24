@@ -73,11 +73,20 @@ export function createEngine({ client, journal, presets }) {
       results.push(result);
       onProgress({ done: results.length, total: pkgs.length, ...result });
     }
-    const stocks = STOCK_LAUNCHERS.filter(pkg => installed.includes(pkg));
-    if (restoreAll && (stocks.length || REPLACEMENT_LAUNCHERS.includes(info.homePackage)) && !await restoreHome(serial, stocks)) {
-      results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
-        reason: stocks.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
-      if (stocks.length) outcome.manualHomePackage = stocks[0];
+    if (restoreAll) {
+      const stocks = STOCK_LAUNCHERS.filter(pkg => installed.includes(pkg));
+      let homeHealthy = false;
+      try {
+        const home = await client.resolveHomeActivity(serial);
+        homeHealthy = home !== 'android' && !REPLACEMENT_LAUNCHERS.includes(home)
+          && (await client.listPackages(serial)).includes(home)
+          && !(await client.listPackages(serial, { disabledOnly: true })).includes(home);
+      } catch { /* An unverifiable HOME still needs the shared restoration attempt. */ }
+      if (!homeHealthy && !await restoreHome(serial, stocks)) {
+        results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
+          reason: stocks.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
+        if (stocks.length) outcome.manualHomePackage = stocks[0];
+      }
     }
     return {
       succeeded: results.filter(item => ['disabled', 'enabled'].includes(item.result)).length,

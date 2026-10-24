@@ -9,7 +9,7 @@ const replacement = 'com.spocky.projengmenu';
 const stock = 'com.google.android.apps.tv.launcherx';
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 
-async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false } = {}) {
+async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false, recoveryBusy = false } = {}) {
   const previous = Object.fromEntries(['document', 'Node', 'window', 'localStorage', 'fetch', 'EventSource', 'setTimeout', 'clearTimeout', 'ResizeObserver']
     .map(key => [key, globalThis[key]]));
   const { document, Node } = createDocument();
@@ -50,7 +50,10 @@ async function application(t, { missingCatalog = false, recovered = false, manua
       if (path === '/api/discover') return response({ candidates: [{ ip: '192.168.1.50' }] });
       if (path === '/api/devices/connect') return response({ serial, state: ++connects <= 2 ? 'unauthorized' : 'device' });
       if (path.endsWith('/open-store')) { ready = true; return response({ ok: true }); }
-      if (path.endsWith('/launcher/recover')) { recoveryStarted = true; needsRecovery = false; return response({ jobId: 'recovery' }); }
+      if (path.endsWith('/launcher/recover')) {
+        if (recoveryBusy) { recoveryBusy = false; return { ok: false, status: 409, json: async () => ({ error: { code: 'DEVICE_BUSY' } }) }; }
+        recoveryStarted = true; needsRecovery = false; return response({ jobId: 'recovery' });
+      }
       if (failRecoveryRefresh && recoveryStarted && options.method === 'GET') throw new Error('Connection dropped after recovery');
       if (path.endsWith('/launcher') && !options.body) return response({ home: stock,
         needsRecovery,
@@ -191,6 +194,45 @@ test('manual HOME guidance from a failed health recovery shows on the choose scr
   const app = await application(t, { manualHomePackage: stock });
   await connect(app);
   assert.match(app.byId('bottom-bar').parentElement.textContent, /Press Home on your remote, choose Original home screen, select Always/);
+});
+
+test('automatic recovery locks connection controls, waits through DEVICE_BUSY and reaches choose once', async t => {
+  const app = await application(t, { needsRecovery: true, recoveryBusy: true });
+  await app.click('begin');
+  app.byId('prepared').listeners.change({ target: { checked: true } });
+  await app.click('setup-next');
+  await app.click('find-tv');
+  await app.click('pick-0');
+  const staleRetry = app.byId('retry-connect');
+  await app.polls.shift()();
+  const authorization = app.polls.shift();
+  const connecting = authorization();
+  await settle();
+  const controls = [];
+  const visit = node => {
+    if (['button', 'input'].includes(node.tagName)) controls.push(node);
+    node.children.forEach(visit);
+  };
+  visit(app.document.root);
+  assert.ok(controls.every(node => node.disabled), 'connection controls stay locked during recovery');
+  assert.doesNotMatch(app.document.root.textContent, /still working on another action/);
+  await staleRetry.listeners.click();
+  await settle();
+  assert.equal(app.requests.filter(request => request.path === '/api/devices/connect').length, 3);
+  assert.equal(app.requests.filter(request => request.path.endsWith('/launcher/recover')).length, 1);
+  assert.equal(app.polls.length, 1, 'busy recovery waits before retrying');
+  await app.polls.shift()();
+  await settle();
+  assert.equal(app.sources.length, 1);
+  await staleRetry.listeners.click();
+  await settle();
+  assert.equal(app.requests.filter(request => request.path.endsWith('/launcher/recover')).length, 2);
+  await app.emit('complete', { succeeded: 1, failed: 0, results: [], recovered: true });
+  await connecting;
+  assert.equal(app.byId('clean').disabled, false);
+  assert.match(app.document.root.textContent, /restored the original home apps/);
+  assert.equal(app.document.getElementById('error-retry'), null);
+  assert.ok(app.sources[0].closed);
 });
 
 test('connection automatically posts recovery and shows its notice or manual HOME guidance; GETs carry the token', async t => {

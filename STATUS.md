@@ -11,5 +11,6 @@
 | Fasa 5 tukar pelancar | Codex Sol + Sonnet (kuota Sol habis) | master | done (5c25343) | — |
 | Fasa 6 pembungkusan | Sonnet | master | done (bdfa193) | — |
 | Fasa 2b teks BM/EN | Gemini Flash + semakan Sonnet | master | done (eebf05f) | — |
-| Semakan akhir keseluruhan repo | Codex Sol | master | waiting quota (02:15) | fix findings, rebuild zip |
+| Semakan akhir keseluruhan repo | Codex Sol (2 pusingan) + Sonnet | master | done (RELEASE-OK selepas pembaikan) | — |
+| Pakej portable | build-portable | — | dist/CleanTV-win-x64.zip | uji pada Windows bersih |
 | Ujian TV sebenar, `verified: true` | Pemilik | — | blocked (perlu TV) | jalankan `npm run smoke -- <ip>` dahulu (baca sahaja) |

@@ -28,6 +28,7 @@ let permissionDeadline = 0;
 let source;
 let modalOpener;
 let bottomBarObserver;
+const recoveries = new Map();
 
 function render() {
   const focused = document.activeElement?.id;
@@ -81,17 +82,37 @@ function cancelPolling() {
 }
 function devicePath(suffix = '') { return `/devices/${encodeURIComponent(state.serial)}${suffix}`; }
 
-async function recoverLauncher() {
-  const { jobId } = await api(devicePath('/launcher/recover'), {});
-  const summary = await new Promise((resolve, reject) => {
-    source?.close();
-    source = jobEvents(jobId, { progress() {}, complete: resolve, error: reject });
+function recoverLauncher() {
+  const serial = state.serial;
+  if (recoveries.has(serial)) return recoveries.get(serial);
+  const wasBusy = state.busy;
+  state.busy = true;
+  const pending = (async () => {
+    let jobId;
+    for (;;) {
+      try { ({ jobId } = await api(devicePath('/launcher/recover'), {})); break; }
+      catch (error) {
+        if (error.code !== 'DEVICE_BUSY') throw error;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    const summary = await new Promise((resolve, reject) => {
+      source?.close();
+      source = jobEvents(jobId, { progress() {}, complete: resolve, error: reject });
+    });
+    try { await loadDevice(false); }
+    catch { /* Keep the initial snapshot so completed recovery guidance is still shown. */ }
+    state.recovered ||= Boolean(summary.recovered);
+    state.manualHomePackage = summary.manualHomePackage ?? null;
+    state.journalWarning ||= Boolean(summary.journalWarning);
+  })().finally(() => {
+    recoveries.delete(serial);
+    state.busy = wasBusy;
+    render();
   });
-  try { await loadDevice(false); }
-  catch { /* Keep the initial snapshot so completed recovery guidance is still shown. */ }
-  state.recovered ||= Boolean(summary.recovered);
-  state.manualHomePackage = summary.manualHomePackage ?? null;
-  state.journalWarning ||= Boolean(summary.journalWarning);
+  recoveries.set(serial, pending);
+  render();
+  return pending;
 }
 
 async function loadDevice(repair = true) {
@@ -137,6 +158,8 @@ async function connectAttempt(generation) {
     }
     if (connection.state !== 'device') throw { code: connection.state === 'offline' ? 'DEVICE_OFFLINE' : 'DEVICE_UNREACHABLE' };
     state.serial = connection.serial;
+    state.connection = 'connecting';
+    render();
     await loadDevice();
     if (generation !== connectionGeneration) return;
     state.connection = 'connected';
@@ -160,6 +183,7 @@ function openModal(kind) {
 const actions = {
   render,
   go(screen) {
+    if (state.busy) return;
     cancelPolling();
     state.error = null;
     state.screen = screen;
@@ -172,7 +196,7 @@ const actions = {
     catch (error) { fail(error, actions.health); }
   },
   async discover() {
-    if (state.connection === 'scanning') return;
+    if (state.busy || state.connection === 'scanning') return;
     cancelPolling();
     state.error = null;
     state.connection = 'scanning';
@@ -184,6 +208,7 @@ const actions = {
     } catch (error) { state.connection = 'idle'; fail(error, actions.discover); }
   },
   connect(candidate) {
+    if (state.busy || state.connection === 'connecting') return;
     cancelPolling();
     state.candidate = candidate;
     state.error = null;

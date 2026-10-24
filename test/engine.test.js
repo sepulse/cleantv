@@ -116,6 +116,31 @@ test('restore all works with an empty journal', async t => {
   assert.equal(result.results[0].package, 'com.example.good');
 });
 
+test('restore all checks HOME after restoring packages even without a recognised launcher', async t => {
+  const stock = 'com.google.android.apps.tv.launcherx';
+  for (const [home, installedHome, disabledHome, component, reason] of [
+    [null, false, false, null, 'LAUNCHER_STOCK_MISSING'],
+    ['com.example.missing', false, false, null, 'LAUNCHER_STOCK_MISSING'],
+    ['com.example.untracked', true, true, null, 'LAUNCHER_STOCK_MISSING'],
+    ['com.example.untracked', true, false, null, undefined],
+    ['android', false, false, 'android/com.android.internal.app.ResolverActivity', undefined],
+    ['android', false, false, 'android/.Broken', 'LAUNCHER_STOCK_MISSING'],
+    [null, true, false, null, 'LAUNCHER_RESTORE_FAILED'],
+  ]) {
+    const { engine, client, disabledSet, commands } = await setup(t, {
+      disabled: ['com.example.good', ...(disabledHome ? [home] : [])],
+      installed: [...entries.map(e => e.package), ...(installedHome ? [home ?? stock] : [])],
+    });
+    client.resolveHomeActivity = async () => disabledSet.has('com.example.good') ? null : home;
+    client.resolveHomeComponent = async () => component;
+    const result = await engine.restore(serial, 'all');
+    assert.ok(commands.includes('enable:com.example.good'));
+    assert.equal(result.failed, reason ? 1 : 0, String(home));
+    assert.equal(result.results.at(-1).reason, reason);
+    assert.equal(result.manualHomePackage, reason === 'LAUNCHER_RESTORE_FAILED' ? stock : undefined);
+  }
+});
+
 test('restore all falls back on corrupt history without overwriting it or weakening other actions', async t => {
   for (const contents of ['', '[{', '{}', 'null', '"history"']) {
     const { client, journal, dir, commands, disabledSet } = await setup(t, {
