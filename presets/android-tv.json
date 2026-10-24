@@ -1,0 +1,86 @@
+{
+  "id": "android-tv",
+  "match": {"any":true},
+  "packages": [
+    {
+      "package": "com.google.android.tvlauncher",
+      "risk": "red",
+      "category": "ads",
+      "label": {"en":"Android TV home","ms":""},
+      "description": {"en":"The Android TV home screen shows apps and recommended content.","ms":""},
+      "effect": {"en":"You could lose the home screen. Handled by the launcher-swap step.","ms":""},
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.tvlauncher"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.leanbacklauncher",
+      "risk": "red",
+      "category": "launcher",
+      "label": {"en":"Classic Android TV home","ms":""},
+      "description": {"en":"Provides the home screen or home-screen support on older Android TVs.","ms":""},
+      "effect": {"en":"You could lose the home screen. Handled by the launcher-swap step.","ms":""},
+      "sources": ["https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r1/packages/SystemUI/res/values/arrays_tv.xml","https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.leanbacklauncher.recommendations",
+      "risk": "red",
+      "category": "ads",
+      "label": {"en":"Classic home recommendations","ms":""},
+      "description": {"en":"Supplies recommendation rows on some older Android TV home screens.","ms":""},
+      "effect": {"en":"Home recommendations may disappear or home features may fail; protected.","ms":""},
+      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.tvrecommendations",
+      "risk": "red",
+      "category": "ads",
+      "label": {"en":"Android TV home services","ms":""},
+      "description": {"en":"Supports the Android TV home screen and its recommended content.","ms":""},
+      "effect": {"en":"Home recommendations and other home-screen functions may stop working; protected.","ms":""},
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.tvrecommendations","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.backdrop",
+      "risk": "yellow",
+      "category": "system",
+      "label": {"en":"Android TV photo screensaver","ms":""},
+      "description": {"en":"Shows a photo screensaver while the TV is idle.","ms":""},
+      "effect": {"en":"The photo screensaver stops working until restored; choose another screensaver first.","ms":""},
+      "sources": ["https://github.com/theothernt/AerialViews#how-to-revert-back-to-the-default-screensaver","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.tv.bugreportsender",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"TV problem reporter","ms":""},
+      "description": {"en":"Sends TV problem reports for troubleshooting.","ms":""},
+      "effect": {"en":"You lose this way to send TV problem reports.","ms":""},
+      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.android.tv.settings",
+      "risk": "red",
+      "category": "system",
+      "label": {"en":"TV settings","ms":""},
+      "description": {"en":"Provides TV settings and a backup home screen on some TVs.","ms":""},
+      "effect": {"en":"You could lose access to TV settings and the backup home screen; protected.","ms":""},
+      "sources": ["https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r1/packages/SystemUI/res/values/arrays_tv.xml","https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"],
+      "verified": false
+    },
+    {
+      "package": "com.android.providers.tv",
+      "risk": "red",
+      "category": "system",
+      "label": {"en":"TV channel information","ms":""},
+      "description": {"en":"Stores TV channel and programme information used by TV apps.","ms":""},
+      "effect": {"en":"Live TV apps may lose channel and programme information; protected.","ms":""},
+      "sources": ["https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"],
+      "verified": false
+    }
+  ]
+}

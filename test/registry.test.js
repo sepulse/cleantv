@@ -4,6 +4,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { buildEntryIndex, loadPresets, matchPresets, validatePreset } from '../src/core/registry.js';
+import { NEVER_TOUCH } from '../src/core/safety.js';
 
 function preset() {
   return { id: 'test', match: { any: true }, packages: [{ package: 'com.example.app', risk: 'green', category: 'bloat',
@@ -89,13 +90,31 @@ test('loader reports file name and validation or JSON errors', async t => {
 
 test('real common preset validates, contains 5–10 unverified entries with empty Malay strings', async () => {
   const presets = await loadPresets(resolve(import.meta.dirname, '../presets'));
-  assert.equal(presets.length, 1);
-  assert.equal(presets[0].id, 'common-android-tv');
-  assert.deepEqual(presets[0].match, { any: true });
-  assert.ok(presets[0].packages.length >= 5 && presets[0].packages.length <= 10);
-  for (const entry of presets[0].packages) {
+  const common = presets.find(preset => preset.id === 'common-android-tv');
+  assert.ok(common);
+  assert.deepEqual(common.match, { any: true });
+  assert.ok(common.packages.length >= 5 && common.packages.length <= 10);
+  for (const entry of common.packages) {
     assert.equal(entry.verified, false);
     for (const field of ['label', 'description', 'effect']) assert.equal(entry[field].ms, '');
     assert.ok(entry.sources.length);
+  }
+});
+
+test('all real presets validate and keep protected, launcher and setup packages red with HTTPS sources', async () => {
+  const presets = await loadPresets(resolve(import.meta.dirname, '../presets'));
+  assert.deepEqual(presets.map(preset => preset.id).sort(), [
+    'android-tv', 'common-android-tv', 'google-tv', 'hisense', 'sony', 'tcl', 'xiaomi',
+  ]);
+  for (const preset of presets) {
+    assert.deepEqual(validatePreset(preset), { ok: true, errors: [] }, preset.id);
+    for (const entry of preset.packages) {
+      const context = `${preset.id}: ${entry.package}`;
+      if (NEVER_TOUCH.has(entry.package) || entry.package.startsWith('com.android.providers.')
+        || /launcher|setup/i.test(entry.package)) {
+        assert.equal(entry.risk, 'red', context);
+      }
+      assert.ok(entry.sources.some(source => source.startsWith('https://')), context);
+    }
   }
 });

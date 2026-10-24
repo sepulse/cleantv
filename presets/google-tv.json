@@ -1,0 +1,86 @@
+{
+  "id": "google-tv",
+  "match": {"feature":"google-tv"},
+  "packages": [
+    {
+      "package": "com.google.android.apps.tv.launcherx",
+      "risk": "red",
+      "category": "ads",
+      "label": {"en":"Google TV home","ms":""},
+      "description": {"en":"The Google TV home screen shows apps, recommendations and sponsored content.","ms":""},
+      "effect": {"en":"You could lose the home screen. Handled by the launcher-swap step.","ms":""},
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.apps.tv.launcherx","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.tungsten.setupwraith",
+      "risk": "red",
+      "category": "system",
+      "label": {"en":"TV setup","ms":""},
+      "description": {"en":"Sets up Wi-Fi, accounts and other TV features.","ms":""},
+      "effect": {"en":"Disabling this can break setup, saved Wi-Fi or phone casting; protected.","ms":""},
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.tungsten.setupwraith","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.apps.tv.dreamx",
+      "risk": "yellow",
+      "category": "system",
+      "label": {"en":"Google TV screensaver","ms":""},
+      "description": {"en":"Shows photos and other content while the TV is idle.","ms":""},
+      "effect": {"en":"The Google TV screensaver stops working until restored; choose another screensaver first.","ms":""},
+      "sources": ["https://github.com/theothernt/AerialViews#how-to-revert-back-to-the-default-screensaver","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.apps.mediashell",
+      "risk": "yellow",
+      "category": "system",
+      "label": {"en":"Google Cast","ms":""},
+      "description": {"en":"Receives videos and music sent from phones and other devices.","ms":""},
+      "effect": {"en":"Phone casting stops; TV apps such as Stremio may also lose video playback until restored.","ms":""},
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.apps.mediashell","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.katniss",
+      "risk": "red",
+      "category": "assistant",
+      "label": {"en":"Google voice search","ms":""},
+      "description": {"en":"Provides Google Assistant and voice search on the TV.","ms":""},
+      "effect": {"en":"Voice search, Assistant and possibly Play Store app search would stop working; protected.","ms":""},
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.katniss","https://github.com/Trigun1127/TCL-Chromecast-and-Search-Bar-Fix/blob/main/README.md#fix-1-restore-play-store-search","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.tv.remote.service",
+      "risk": "red",
+      "category": "system",
+      "label": {"en":"TV remote service","ms":""},
+      "description": {"en":"Connects phone remotes and, on some TVs, handles the remote microphone.","ms":""},
+      "effect": {"en":"Phone remote control or the physical remote microphone may stop working; protected.","ms":""},
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.tv.remote.service","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.tv.dfuservice",
+      "risk": "red",
+      "category": "system",
+      "label": {"en":"Remote software updates","ms":""},
+      "description": {"en":"Updates the software inside supported TV remotes.","ms":""},
+      "effect": {"en":"The remote may lose software updates or related functions; protected.","ms":""},
+      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.feedback",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Google feedback reporter","ms":""},
+      "description": {"en":"Sends feedback and problem reports to Google.","ms":""},
+      "effect": {"en":"You lose this way to send feedback and problem reports to Google.","ms":""},
+      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "verified": false
+    }
+  ]
+}
