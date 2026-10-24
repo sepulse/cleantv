@@ -73,12 +73,17 @@ competent friend walking them through it — not a hacker tool.
   in `--primary`, full keyboard flow, labels on every control, `aria-live` for
   progress and connection state, risk communicated by text + icon, never colour alone.
 
-## Language
+## Language (bilingual — owner requirement)
 
-Malay is the default; English toggle in the header (`BM | EN`), remembered in
-`localStorage` (wrapped in try/catch). All UI strings live in `public/i18n/en.json`
-and `public/i18n/ms.json` (same keys). The builder writes `en.json`; Malay is written
-by Gemini (Phase 2b) and tone-checked by a fresh reviewer. Registry texts use the
+The app is fully bilingual so every user can follow it. Malay is the default;
+English toggle in the header (`BM | EN`), remembered in `localStorage` (wrapped in
+try/catch). Because the TV's own menus may be in either language, **every TV menu
+name in the setup steps is shown in both languages** regardless of the toggle, e.g.
+"**Pilihan pembangun** (*Developer options*)", "**Penyahpepijatan USB** (*USB debugging*)".
+Same for the TV's permission dialog mock ("Benarkan" / "Allow"). All UI strings live in `public/i18n/en.json`
+and `public/i18n/ms.json` (same keys). The builder writes `en.json`; Gemini (Phase 2b)
+writes `ms.json` and does a wording/plain-language audit of both files, then a fresh
+reviewer checks tone. Registry texts use the
 entry's `ms` field with fallback to `en`.
 
 ## Front-end structure (no framework, no build)

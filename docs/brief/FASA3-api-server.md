@@ -44,6 +44,8 @@ Small, allowed edits to Phase 1 files:
   `offline` → `DEVICE_OFFLINE`; (b) add `history(serial)` → journal records for that
   device (newest first; empty array if the journal is missing or corrupt).
   Add tests for both.
+- `src/core/adb/locate.js`: `CLEANTV_ADB` pointing at a directory is currently
+  accepted; it must be a file, else `ADB_NOT_FOUND`. Add a test.
 
 ## Behaviour
 
