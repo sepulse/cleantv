@@ -43,12 +43,18 @@ mematikannya untuk anda.
 1. Muat turun `CleanTV-win-x64.zip` dan nyahzip (klik kanan > Extract All).
 2. Pada TV, hidupkan **Pilihan pembangun** dan **Penyahpepijatan USB / rangkaian**
    (aplikasi menunjukkan langkah mengikut jenama TV).
-3. Klik dua kali **`CleanTV.cmd`**. Pelayar akan terbuka.
+3. Sambung ke internet dan klik dua kali **`CleanTV.cmd`**. Kali pertama, ia memuat
+   turun Android platform-tools rasmi Google dan menyemak tandatangan Google pada
+   `adb.exe`. Pelayar akan terbuka. Mod demo tidak memuat turun apa-apa.
 4. Ikut langkah di skrin. Tekan **Benarkan** pada skrin TV apabila diminta.
 
 Jangan tutup tetingkap hitam semasa menggunakan CleanTV. Klik dua kali
-**`CleanTV-Demo.cmd`** untuk mencuba tanpa TV. Jika Windows memberi amaran,
-pilih "More info" > "Run anyway".
+**`CleanTV-Demo.cmd`** untuk mencuba tanpa TV. Windows mungkin memberi amaran kerana
+CleanTV masih baharu dan tiada code signing. Jika anda memilih untuk teruskan,
+pilih **More info → Run anyway**, atau sebelum nyahzip: klik kanan zip →
+**Properties → Unblock → OK**. `node.exe` ditandatangani oleh OpenJS Foundation;
+`adb.exe` yang dimuat turun pada kali pertama ditandatangani oleh Google. Fail
+selebihnya ialah teks JavaScript/HTML dan data yang boleh dibaca.
 
 ### Pembangun
 
@@ -63,15 +69,17 @@ npm run build:win # bina dist/CleanTV-win-x64/ dan dist/CleanTV-win-x64.zip
 ```
 
 `npm run build:win` menyalin `node.exe` semasa (hanya pada Windows x64; di tempat lain
-guna `--node <laluan>`), `app/`, dan platform-tools ke dalam folder mudah alih, kemudian
-memampatkannya (zip hanya dibuat pada Windows). Lihat [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+guna `--node <laluan>`), `app/`, dan skrip muat turun ke dalam folder mudah alih, kemudian
+memampatkannya tanpa adb (zip hanya dibuat pada Windows) dan menghasilkan
+`dist/SHA256SUMS.txt`. Lihat [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 dan [docs/PLAN.md](docs/PLAN.md).
 
 ### Lesen platform-tools
 
-Binaan mudah alih memuat turun binari rasmi Android platform-tools (termasuk `adb`)
-terus daripada Google (`dl.google.com`). Ia tertakluk kepada terma Android SDK
-Google dan bukan sebahagian daripada kod CleanTV. Binari itu tidak disimpan dalam repositori.
+Binaan lite tidak menyertakan adb. `CleanTV.cmd` memuat turun binari rasmi Android
+platform-tools (termasuk `adb`) terus daripada Google (`dl.google.com`) apabila adb
+belum ada. Ia perisian Google di bawah [terma Google](https://developer.android.com/studio/releases/platform-tools)
+dan bukan sebahagian daripada kod CleanTV. Binari itu tidak disimpan dalam repositori.
 
 ---
 
@@ -113,12 +121,17 @@ choose the apps you do not need, and CleanTV turns them off for you.
 1. Download `CleanTV-win-x64.zip` and unzip it (right-click > Extract All).
 2. On the TV, switch on **Developer options** and **USB / network debugging**
    (the app shows the steps for your TV brand).
-3. Double-click **`CleanTV.cmd`**. Your browser will open.
+3. Connect to the internet and double-click **`CleanTV.cmd`**. On first run it
+   downloads Google's official Android platform-tools and checks Google's signature
+   on `adb.exe`. Your browser will open. Demo mode downloads nothing.
 4. Follow the steps on screen. Press **Allow** on the TV when asked.
 
 Do not close the black window while you use CleanTV. Double-click
-**`CleanTV-Demo.cmd`** to try it without a TV. If Windows shows a warning, choose
-"More info" > "Run anyway".
+**`CleanTV-Demo.cmd`** to try it without a TV. Windows may warn because CleanTV is
+new and not code-signed. If you choose to continue, select **More info → Run anyway**,
+or before extracting: right-click the zip → **Properties → Unblock → OK**.
+`node.exe` is signed by the OpenJS Foundation; `adb.exe` downloaded on first run is
+signed by Google. The remaining files are plain, readable JavaScript/HTML text and data.
 
 ### Developers
 
@@ -133,13 +146,57 @@ npm run build:win # build dist/CleanTV-win-x64/ and dist/CleanTV-win-x64.zip
 ```
 
 `npm run build:win` copies the current `node.exe` (Windows x64 only; elsewhere pass
-`--node <path>`), `app/`, and platform-tools into the portable folder, then zips it
-(the zip is only made on Windows). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+`--node <path>`), `app/`, and the download script into the portable folder, then zips
+it without adb (the zip is only made on Windows) and writes `dist/SHA256SUMS.txt`.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 and [docs/PLAN.md](docs/PLAN.md).
 
 ### platform-tools licence
 
-The portable build downloads the official Android platform-tools binaries (including
-`adb`) directly from Google (`dl.google.com`). They are covered by Google's Android
-SDK terms and are not part of the CleanTV code. The binaries are not stored in this
-repository.
+The lite build does not bundle adb. `CleanTV.cmd` downloads the official Android
+platform-tools binaries (including `adb`) directly from Google (`dl.google.com`)
+when adb is missing. This is Google's software under [Google's terms](https://developer.android.com/studio/releases/platform-tools)
+and is not part of the CleanTV code. The binaries are not stored in this repository.
+
+## Keselamatan & privasi / Security & privacy
+
+**Bahasa Melayu.** Kod CleanTV terbuka untuk dibaca: [PAUTAN REPO]. Aplikasi
+berjalan hanya pada komputer anda, dengan server di `127.0.0.1`. Tiada akaun atau
+telemetry. CleanTV tidak menghantar data ke perkhidmatan luar; ia berhubung dengan
+TV anda melalui rangkaian tempatan. Satu-satunya muat turun internet oleh CleanTV
+ialah adb daripada Google pada kali pertama. Ia hanya mematikan aplikasi yang
+dipilih; setiap tindakan boleh dipulihkan, termasuk pertukaran launcher pilihan.
+
+Semak muat turun dengan membandingkan hasil arahan ini dengan `SHA256SUMS.txt`
+daripada release yang sama:
+
+```powershell
+certutil -hashfile CleanTV-win-x64.zip SHA256
+```
+
+Semak juga build attestation GitHub (gantikan `<owner>/<repo>` dengan repositori
+sebenar):
+
+```powershell
+gh attestation verify CleanTV-win-x64.zip --repo <owner>/<repo>
+```
+
+Lihat laporan VirusTotal dalam nota setiap release: [PAUTAN LAPORAN VIRUSTOTAL].
+Checksum mengesan fail yang berbeza; attestation mengaitkannya dengan build GitHub.
+Kedua-duanya dan laporan antivirus bukan jaminan bahawa perisian bebas risiko.
+
+**English.** CleanTV's source code is available to read: [PAUTAN REPO]. The app runs only on this
+computer, with its server on `127.0.0.1`. There is no account or telemetry.
+CleanTV sends no data to outside services; it communicates with your TV over your
+local network. Its only internet download is the first-run adb download from Google.
+It only turns selected apps off, and every action can be undone, including an
+optional launcher switch.
+
+Compare the output of `certutil -hashfile CleanTV-win-x64.zip SHA256` with
+`SHA256SUMS.txt` from the same release. Check the GitHub build attestation with
+`gh attestation verify CleanTV-win-x64.zip --repo <owner>/<repo>` (replace
+`<owner>/<repo>` with the actual repository). See the VirusTotal report linked in
+each release's notes: [PAUTAN LAPORAN VIRUSTOTAL]. A checksum detects a different
+file; an attestation links it to the GitHub build. Neither these checks nor an
+antivirus report guarantees that software is risk-free. Release steps:
+[docs/RELEASE.md](docs/RELEASE.md).

@@ -25,7 +25,7 @@
   "start.begin": "Mari kita mulakan",
   "start.checking": "Memeriksa alat sambungan TV…",
   "start.missingTitle": "Alat sambungan TV tiada",
-  "start.missingBody": "CleanTV memerlukan alat sambungan platform-tools Android pada komputer ini. Tambahkan folder rasmi platform-tools ke PATH anda, atau tetapkan CLEANTV_ADB kepada fail pelaksanaannya, kemudian mulakan semula CleanTV.",
+  "start.missingBody": "Sambung ke internet dan buka CleanTV.cmd semula. Ia akan memuat turun Android platform-tools rasmi secara automatik. Pengguna mahir boleh menetapkan CLEANTV_ADB kepada fail adb.",
   "start.checkAgain": "Periksa lagi",
   "setup.title": "Sediakan TV anda",
   "setup.intro": "Letakkan alat kawalan jauh TV anda berdekatan. Pilih jenama TV anda dan ikuti langkah ini.",

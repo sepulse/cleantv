@@ -64,13 +64,46 @@ async function exists(path) {
   try { await access(path); return true; } catch { return false; }
 }
 
+/** Accept only a valid Authenticode signature from Google (PowerShell emits enum 0 or "Valid"). */
+export function parseSignature(stdout) {
+  let signature;
+  try { signature = JSON.parse(stdout.replace(/^\uFEFF/, '').trim()); }
+  catch { throw new Error('Authenticode check failed: invalid PowerShell response.'); }
+  if (!signature || ![0, 'Valid'].includes(signature.Status)
+    || typeof signature.Subject !== 'string' || !/(^|,\s*)O=Google LLC(,|$)/.test(signature.Subject)) {
+    throw new Error('Authenticode check failed: adb.exe must have a Valid signature from Google.');
+  }
+  return signature;
+}
+
+/** Check before installing or running the extracted binary; run is injectable for offline tests. */
+export async function verifyAdbSignature(adbPath, { platform = process.platform, run = execFileAsync, log = console.log } = {}) {
+  if (platform !== 'win32') {
+    log('Authenticode check skipped: only available on Windows; the portable build is Windows-only.');
+    return;
+  }
+  // The path travels in an environment variable, never inside the command text, so no quoting can break out.
+  const command = "(Get-AuthenticodeSignature -LiteralPath $env:CLEANTV_ADB_SIG_PATH) | Select-Object Status, @{n='Subject';e={$_.SignerCertificate.Subject}} | ConvertTo-Json";
+  let stdout;
+  try {
+    ({ stdout } = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command],
+      { windowsHide: true, timeout: 60_000, env: { ...process.env, CLEANTV_ADB_SIG_PATH: adbPath } }));
+  } catch (error) {
+    throw new Error(`Authenticode check failed: could not verify adb.exe (${error.message}).`);
+  }
+  const signature = parseSignature(stdout);
+  log(`Authenticode signature: Valid; Subject: ${signature.Subject}`);
+}
+
 /**
  * Download and unpack Google's platform-tools into `dest` (default vendor/platform-tools).
  * Idempotent: does nothing when adb is already there unless `force` is set.
- * @param {{ platform?: string, dest?: string, force?: boolean, log?: (message: string) => void }} [options]
+ * @param {{ platform?: string, dest?: string, force?: boolean, log?: (message: string) => void,
+ *   run?: typeof execFileAsync, request?: typeof fetch }} [options]
  * @returns {Promise<string>} path of the adb binary
  */
-export async function fetchAdb({ platform = hostPlatform(), dest = DEFAULT_DEST, force = false, log = console.log } = {}) {
+export async function fetchAdb({ platform = hostPlatform(), dest = DEFAULT_DEST, force = false, log = console.log,
+  run = execFileAsync, request = fetch } = {}) {
   const adbPath = join(dest, adbBinaryName(platform));
   if (!force && await exists(adbPath)) {
     log(`adb already present: ${adbPath} (use --force to download again)`);
@@ -84,7 +117,7 @@ export async function fetchAdb({ platform = hostPlatform(), dest = DEFAULT_DEST,
       let response;
       const signal = AbortSignal.timeout(300_000);
       for (let redirects = 0; ; redirects++) {
-        response = await fetch(url, { redirect: 'manual', signal })
+        response = await request(url, { redirect: 'manual', signal })
           .catch(error => { throw new Error(`Download failed (${error.message}). Check your internet connection and try again.`); });
         if (![301, 302, 303, 307, 308].includes(response.status)) break;
         await response.body?.cancel();
@@ -97,11 +130,16 @@ export async function fetchAdb({ platform = hostPlatform(), dest = DEFAULT_DEST,
       const zipPath = join(work, 'platform-tools.zip');
       await writeFile(zipPath, Buffer.from(await response.arrayBuffer()));
       const { file, args } = extractCommand(hostPlatform(), zipPath, work);
-      await execFileAsync(file, args, { windowsHide: true }).catch(error => {
+      await run(file, args, { windowsHide: true }).catch(error => {
         throw new Error(`Could not unzip with "${file}" (${error.message}).`);
       });
       if (!await exists(join(work, 'platform-tools', adbBinaryName(platform)))) {
         throw new Error('The downloaded archive does not contain adb. Try again with --force.');
+      }
+      if (platform === 'windows') {
+        await verifyAdbSignature(join(work, 'platform-tools', 'adb.exe'), { run, log });
+      } else {
+        log('Authenticode check skipped: non-Windows adb; the portable build is Windows-only.');
       }
       await rm(dest, { recursive: true, force: true });
       await rename(join(work, 'platform-tools'), dest);
@@ -110,7 +148,7 @@ export async function fetchAdb({ platform = hostPlatform(), dest = DEFAULT_DEST,
     }
   }
   if (platform === hostPlatform()) {
-    const { stdout } = await execFileAsync(adbPath, ['version'], { windowsHide: true, timeout: 15_000 })
+    const { stdout } = await run(adbPath, ['version'], { windowsHide: true, timeout: 15_000 })
       .catch(error => { throw new Error(`adb was unpacked but does not run (${error.message}).`); });
     log(stdout.split(/\r?\n/).find(line => line.trim())?.trim() ?? 'adb ok');
   } else {

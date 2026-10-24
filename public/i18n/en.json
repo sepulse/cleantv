@@ -25,7 +25,7 @@
   "start.begin": "Let’s get started",
   "start.checking": "Checking the TV connection tool…",
   "start.missingTitle": "The TV connection tool is missing",
-  "start.missingBody": "CleanTV needs the Android platform-tools package on this computer. Add the official platform-tools folder to your PATH, or set CLEANTV_ADB to point to its executable, then restart CleanTV.",
+  "start.missingBody": "Connect to the internet and open CleanTV.cmd again. It downloads the official Android platform-tools automatically. Advanced users can set CLEANTV_ADB to the adb executable.",
   "start.checkAgain": "Check again",
   "setup.title": "Prepare your TV",
   "setup.intro": "Keep your TV remote nearby. Choose your TV brand and follow these steps.",
