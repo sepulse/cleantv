@@ -13,7 +13,7 @@ ujian hijau → commit. Seni bina rujuk [ARCHITECTURE.md](ARCHITECTURE.md).
 | 4a | Hala tuju visual dashboard (wireframe + token warna/tipografi) | Claude Opus | Pemilik | Pemilik lulus reka bentuk |
 | 4b | Dashboard (`public/*`) ikut reka bentuk yang dilulus | Codex GPT-6 high | Subagent + semakan visual (satu grid tangkapan skrin) | Aliran §6 boleh dijalankan hujung ke hujung dengan runner palsu |
 | 5 | Aliran pelancar (Projectivy via Play Store `market://`, kemudian baru pelancar asal boleh dimatikan) + modul iklan skrin utama | Codex GPT-6.1 Sol | Sol sesi baharu | Pelancar asal tidak boleh dimatikan tanpa pengganti yang disahkan berjalan |
-| 6 | Pembungkusan (Node SEA `.exe`, muat turun platform-tools), ujian pada TV sebenar, set `verified: true` | Codex GPT-6 high + pemilik (TV sebenar) | Sol (diff akhir) | Pemasang satu-klik berfungsi pada Windows bersih |
+| 6 | Pembungkusan (folder/zip mudah alih Windows dengan `node.exe` + `CleanTV.cmd`, bukan Node SEA; muat turun platform-tools), ujian pada TV sebenar, set `verified: true` | Codex GPT-6 high + pemilik (TV sebenar) | Sol (diff akhir) | Pemasang satu-klik berfungsi pada Windows bersih |
 
 ## Risiko terbuka
 

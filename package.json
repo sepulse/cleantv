@@ -7,6 +7,8 @@
     "start": "node src/server/index.js --open",
     "demo": "node src/server/index.js --demo --open",
     "test": "node --test \"test/*.test.js\"",
-    "smoke": "node src/cli/smoke.js"
+    "smoke": "node src/cli/smoke.js",
+    "fetch-adb": "node scripts/fetch-adb.js",
+    "build:win": "node scripts/build-portable.js"
   }
 }
