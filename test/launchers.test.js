@@ -12,10 +12,11 @@ import { REPLACEMENT_LAUNCHERS, STOCK_LAUNCHERS } from '../src/core/launchers.js
 import { CleanTvError } from '../src/core/errors.js';
 
 const serial = '192.168.1.5:5555';
-const replacement = REPLACEMENT_LAUNCHERS[0];
+const replacement = REPLACEMENT_LAUNCHERS[0].package;
 const stock = STOCK_LAUNCHERS.slice(0, 3);
 
 async function fixture(t, options = {}) {
+  const replacement = options.replacement ?? REPLACEMENT_LAUNCHERS[0].package;
   const dir = await mkdtemp(join(tmpdir(), 'cleantv-launcher-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const journal = createJournal(dir);
@@ -91,14 +92,19 @@ test('stock allowlist covers every preset launcher, both Google homes and PatchW
     assert.ok(STOCK_LAUNCHERS.includes(entry.package), entry.package);
   }
   for (const pkg of ['com.google.android.apps.tv.launcherx', 'com.google.android.tvlauncher', 'com.mitv.tvhome.atv']) assert.ok(STOCK_LAUNCHERS.includes(pkg));
-  assert.deepEqual(REPLACEMENT_LAUNCHERS, ['com.spocky.projengmenu']);
+  assert.deepEqual(REPLACEMENT_LAUNCHERS, [
+    { package: 'com.spocky.projengmenu', name: 'Projectivy Launcher' },
+    { package: 'me.efesser.flauncher', name: 'FLauncher' },
+  ]);
 });
 
 test('status reports HOME, all stock states and replacement readiness', async t => {
   const { engine } = await fixture(t);
   const status = await engine.launcherStatus(serial);
   assert.equal(status.home, stock[0]);
-  assert.deepEqual(status.replacement, { package: replacement, installed: true, enabled: true, isHomeCandidate: true });
+  assert.deepEqual(status.replacement, { ...REPLACEMENT_LAUNCHERS[0], installed: true, enabled: true, isHomeCandidate: true });
+  assert.deepEqual(status.replacements, [status.replacement,
+    { ...REPLACEMENT_LAUNCHERS[1], installed: false, enabled: false, isHomeCandidate: false }]);
   assert.deepEqual(status.stock[2], { package: stock[2], installed: true, enabled: false });
   assert.equal(status.stock.at(-1).installed, false);
 });
@@ -496,4 +502,96 @@ test('restoreLauncher with no installed stock launcher explains the original hom
   const result = await engine.restoreLauncher(serial);
   assert.equal(result.failed, 1);
   assert.equal(result.results.at(-1).reason, 'LAUNCHER_STOCK_MISSING');
+});
+
+for (const { package: replacement, name } of REPLACEMENT_LAUNCHERS) {
+  test(name + ': selected status and readiness guards do not use another launcher', async t => {
+    const other = REPLACEMENT_LAUNCHERS.find(entry => entry.package !== replacement).package;
+    for (const [options, condition] of [[{ absent: true }, 'installed'], [{ disabled: true }, 'enabled'], [{ notCandidate: true }, 'isHomeCandidate']]) {
+      const { engine, journal, changes } = await fixture(t, { ...options, replacement, extraInstalled: [other] });
+      const status = await engine.launcherStatus(serial, replacement);
+      assert.equal(status.replacement.package, replacement);
+      assert.equal(status.replacement[condition], false);
+      assert.equal(status.replacements.find(entry => entry.package === other).isHomeCandidate, true);
+      await assert.rejects(engine.swapLauncher(serial, replacement), error => error.code === 'LAUNCHER_NOT_READY' && error.details.condition === condition);
+      assert.deepEqual(changes('disable-user'), []);
+      assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+    }
+  });
+
+  test(name + ': unsupported platforms refuse before changes', async t => {
+    for (const props of [{ 'ro.product.manufacturer': 'Amazon' }, { 'ro.product.manufacturer': 'CVTE' },
+      { 'ro.product.manufacturer': 'Xiaomi', 'ro.build.display.id': 'OS2.0.cn' }]) {
+      const { engine, journal, changes } = await fixture(t, { replacement, props });
+      await assert.rejects(engine.swapLauncher(serial, replacement), { code: 'LAUNCHER_UNSUPPORTED' });
+      assert.deepEqual(changes('disable-user'), []);
+      assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+    }
+  });
+
+  test(name + ': swap verifies selected HOME and restore all returns to stock', async t => {
+    const { engine, calls } = await fixture(t, { replacement });
+    assert.equal((await engine.swapLauncher(serial, replacement)).results[0].result, 'switched');
+    assert.equal((await engine.launcherStatus(serial, replacement)).home, replacement);
+    assert.ok(calls.some(args => args.includes('set-home-activity') && args.at(-1) === replacement + '/.Main'));
+    assert.equal((await engine.restore(serial, 'all')).failed, 0);
+    assert.equal((await engine.launcherStatus(serial, replacement)).home, stock[0]);
+  });
+
+  test(name + ': false HOME success rolls back and verifies stock focus', async t => {
+    const { engine, changes, disabled } = await fixture(t, { replacement, ignoreSetHome: true, focusAfterSwap: stock[0] });
+    const result = await engine.swapLauncher(serial, replacement);
+    assert.equal(result.results[0].reason, 'LAUNCHER_SWAP_ROLLED_BACK');
+    assert.equal(result.results[0].package, replacement);
+    assert.deepEqual(changes('enable'), stock.slice(0, 2));
+    assert.deepEqual([...disabled], [stock[2]]);
+  });
+}
+
+test('status, swap and store reject unregistered packages before device access', async t => {
+  const { engine, calls } = await fixture(t);
+  for (const method of ['launcherStatus', 'swapLauncher', 'openLauncherStore']) {
+    for (const pkg of [null, '', 'com.example.other', 'com.bad;input', {}, ['me.efesser.flauncher']]) {
+      await assert.rejects(engine[method](serial, pkg), { code: 'INVALID_INPUT' });
+    }
+  }
+  for (const method of ['swapLauncher', 'openLauncherStore']) await assert.rejects(engine[method](serial), { code: 'INVALID_INPUT' });
+  assert.deepEqual(calls, []);
+});
+
+test('switching between registered ready launchers still verifies focused HOME', async t => {
+  const { engine, changes } = await fixture(t, { extraInstalled: REPLACEMENT_LAUNCHERS.map(entry => entry.package) });
+  for (const entry of [...REPLACEMENT_LAUNCHERS, REPLACEMENT_LAUNCHERS[0]]) {
+    assert.equal((await engine.swapLauncher(serial, entry.package)).failed, 0);
+    assert.equal((await engine.launcherStatus(serial, entry.package)).home, entry.package);
+  }
+  assert.deepEqual(changes('disable-user'), stock.slice(0, 2));
+});
+
+for (const { package: first, name } of REPLACEMENT_LAUNCHERS) {
+  test(name + ': failed cross-launcher verification restores and verifies original HOME', async t => {
+    const second = REPLACEMENT_LAUNCHERS.find(entry => entry.package !== first).package;
+    const { engine, options, disabled, changes } = await fixture(t, { replacement: first, extraInstalled: [second] });
+    assert.equal((await engine.swapLauncher(serial, first)).failed, 0);
+    options.focusByPress = { 4: ['com.example.wronghome'] };
+    const result = await engine.swapLauncher(serial, second);
+    assert.equal(result.results[0].reason, 'LAUNCHER_SWAP_ROLLED_BACK');
+    assert.deepEqual(changes('enable'), stock);
+    assert.deepEqual([...disabled], []);
+    assert.equal((await engine.launcherStatus(serial, second)).home, stock[0]);
+  });
+}
+
+test('FLauncher restore failures identify original HOME or FLauncher rather than Projectivy', async t => {
+  const replacement = REPLACEMENT_LAUNCHERS[1].package;
+  for (const noStock of [false, true]) for (const method of ['restoreLauncher', 'restore']) {
+    const { engine } = await fixture(t, { replacement, noStock, alwaysReplacement: true, setHomeFailure: true });
+    const result = await engine[method](serial, ...(method === 'restore' ? ['all'] : []));
+    assert.equal(result.results.at(-1).reason, noStock ? 'LAUNCHER_STOCK_MISSING' : 'LAUNCHER_RESTORE_FAILED');
+    assert.equal(result.results.at(-1).package, noStock ? replacement : stock[0]);
+  }
+  const { engine, journal, disabled } = await fixture(t, { replacement, alwaysReplacement: true, setHomeFailure: true });
+  for (const pkg of stock) disabled.add(pkg);
+  await journal.append('LAUNCHER_TEST', { action: 'swap', status: 'pending', replacement, disabled: stock });
+  assert.equal((await engine.recoverLauncher(serial)).results.at(-1).package, stock[0]);
 });

@@ -1,7 +1,10 @@
 import { CleanTvError, ErrorCode } from './errors.js';
 import { appendRecovery, warnJournal } from './journal.js';
 
-export const REPLACEMENT_LAUNCHERS = Object.freeze(['com.spocky.projengmenu']);
+export const REPLACEMENT_LAUNCHERS = Object.freeze([
+  Object.freeze({ package: 'com.spocky.projengmenu', name: 'Projectivy Launcher' }),
+  Object.freeze({ package: 'me.efesser.flauncher', name: 'FLauncher' }),
+]);
 // HOME packages only; recommendation and channel services are deliberately excluded.
 export const STOCK_LAUNCHERS = Object.freeze([
   'com.google.android.apps.tv.launcherx',
@@ -12,7 +15,7 @@ export const STOCK_LAUNCHERS = Object.freeze([
 ]);
 
 export function assertReplacement(pkg) {
-  if (!REPLACEMENT_LAUNCHERS.includes(pkg)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
+  if (!REPLACEMENT_LAUNCHERS.some(entry => entry.package === pkg)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
 }
 
 function unsupportedPlatform({ info, installed }, props) {
@@ -39,15 +42,16 @@ function unsupportedPlatform({ info, installed }, props) {
 export function createLauncherActions({ client, journal, context }) {
   const swapping = new Set();
   const checks = new Map();
-  async function status(serial, ctx) {
+  async function status(serial, ctx, pkg = REPLACEMENT_LAUNCHERS[0].package) {
     const { installed, info } = ctx ?? await context(serial);
     const disabled = await client.listPackages(serial, { disabledOnly: true });
     const candidates = await client.listHomeCandidates(serial);
-    const pkg = REPLACEMENT_LAUNCHERS[0];
+    const replacements = REPLACEMENT_LAUNCHERS.map(entry => ({ ...entry, installed: installed.includes(entry.package),
+      enabled: installed.includes(entry.package) && !disabled.includes(entry.package), isHomeCandidate: candidates.includes(entry.package) }));
     return {
       home: info.homePackage,
-      replacement: { package: pkg, installed: installed.includes(pkg),
-        enabled: installed.includes(pkg) && !disabled.includes(pkg), isHomeCandidate: candidates.includes(pkg) },
+      replacement: replacements.find(entry => entry.package === pkg),
+      replacements,
       stock: STOCK_LAUNCHERS.map(packageName => ({ package: packageName, installed: installed.includes(packageName),
         enabled: installed.includes(packageName) && !disabled.includes(packageName) })),
     };
@@ -132,11 +136,11 @@ export function createLauncherActions({ client, journal, context }) {
     const results = await recover(serial, ctx.info.deviceId, stocks.filter(pkg => disabled.includes(pkg)), outcome);
     const verified = await restoreHome(serial, stocks);
     const recovered = verified && results.every(item => item.result === 'enabled');
-    if (!verified) results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
+    if (!verified) results.push({ package: stocks[0] ?? ctx.info.homePackage ?? REPLACEMENT_LAUNCHERS[0].package, result: 'failed',
       reason: stocks.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
     if (recovered) {
       await appendRecovery(journal, ctx.info.deviceId,
-        swapRecord(marker?.replacement ?? REPLACEMENT_LAUNCHERS[0], marker?.disabled ?? [], 'rolled-back'), outcome);
+        swapRecord(marker?.replacement ?? REPLACEMENT_LAUNCHERS[0].package, marker?.disabled ?? [], 'rolled-back'), outcome);
     }
     return { ...summary(results), ...outcome, ...(recovered ? { recovered: true } : {}),
       ...(!verified && stocks.length ? { manualHomePackage: stocks[0] } : {}) };
@@ -158,10 +162,11 @@ export function createLauncherActions({ client, journal, context }) {
     recoverLauncher,
     restoreHome,
     actualHome,
-    async launcherStatus(serial) {
+    async launcherStatus(serial, pkg = REPLACEMENT_LAUNCHERS[0].package) {
+      assertReplacement(pkg);
       const ctx = await context(serial);
       const outcome = await healthCheck(serial, ctx);
-      return { ...await status(serial, ctx), ...outcome };
+      return { ...await status(serial, ctx, pkg), ...outcome };
     },
     async openLauncherStore(serial, pkg) {
       assertReplacement(pkg);
@@ -175,14 +180,15 @@ export function createLauncherActions({ client, journal, context }) {
       const ctx = await context(serial);
       const reason = unsupportedPlatform(ctx, await client.getprops(serial));
       if (reason) throw new CleanTvError(ErrorCode.LAUNCHER_UNSUPPORTED, reason);
-      const before = await status(serial, ctx);
+      const before = await status(serial, ctx, replacement);
       for (const condition of ['installed', 'enabled', 'isHomeCandidate']) {
         if (!before.replacement[condition]) {
           throw new CleanTvError(ErrorCode.LAUNCHER_NOT_READY, ErrorCode.LAUNCHER_NOT_READY, { condition });
         }
       }
       const targets = before.stock.filter(item => item.installed && item.enabled).map(item => item.package);
-      if (![...targets, replacement].includes(await actualHome(serial))) {
+      const homes = before.replacements.filter(item => item.installed && item.enabled && item.isHomeCandidate).map(item => item.package);
+      if (![...targets, ...homes].includes(await actualHome(serial))) {
         throw new CleanTvError(ErrorCode.LAUNCHER_NOT_READY, ErrorCode.LAUNCHER_NOT_READY, { condition: 'actualHome' });
       }
       const component = (await client.listHomeCandidateComponents(serial))
@@ -221,11 +227,12 @@ export function createLauncherActions({ client, journal, context }) {
         await journal.append(ctx.info.deviceId, swapRecord(replacement, disabledBySwap, 'ok'));
         return summary([{ package: replacement, result: 'switched' }]);
       } catch (error) {
-        let toEnable = attempted;
+        // A previous replacement swap may already have disabled every stock HOME.
+        let toEnable = targets.length ? attempted : before.stock.filter(item => item.installed).map(item => item.package);
         try {
           const disabled = await client.listPackages(serial, { disabledOnly: true });
-          toEnable = attempted.filter(pkg => disabled.includes(pkg));
-        } catch { /* Unknown state: conservatively enable every attempted stock package. */ }
+          toEnable = toEnable.filter(pkg => disabled.includes(pkg));
+        } catch { /* Unknown state: conservatively enable every recovery target. */ }
         const rollback = await recover(serial, ctx.info.deviceId, toEnable, outcome);
         let verified = false;
         let homeVerified = false;
@@ -256,7 +263,7 @@ export function createLauncherActions({ client, journal, context }) {
       }
       const verified = await restoreHome(serial, targets);
       if (!verified) {
-        results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
+        results.push({ package: targets[0] ?? info.homePackage ?? REPLACEMENT_LAUNCHERS[0].package, result: 'failed',
           reason: targets.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
       }
       return { ...summary(results), ...outcome, ...(!verified ? { manualHomePackage: targets[0] } : {}) };

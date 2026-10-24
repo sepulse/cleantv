@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
 import { createAdbClient } from '../src/core/adb/client.js';
 import { fakeRunner } from './helpers/fake-runner.js';
+import { REPLACEMENT_LAUNCHERS } from '../src/core/launchers.js';
 
 const serial = '192.168.1.5:5555';
 const encoded = encodeURIComponent(serial);
@@ -246,4 +247,40 @@ test('manualHomePackage from inspection survives the device, packages and launch
   for (const suffix of ['', '/packages', '/launcher']) {
     assert.equal((await (await get(`/api/devices/${encoded}${suffix}`)).json()).manualHomePackage, 'com.google.android.tvlauncher');
   }
+});
+
+test('launcher routes validate registry selections and preserve the absent-package policy', async t => {
+  const { engine, get, post } = await setup(t);
+  const calls = [];
+  engine.launcherStatus = async (value, pkg) => { calls.push(['status', value, pkg]); return { package: pkg }; };
+  engine.openLauncherStore = async (value, pkg) => { calls.push(['store', value, pkg]); };
+  engine.swapLauncher = async (value, pkg) => { calls.push(['swap', value, pkg]); return { results: [] }; };
+  const path = '/api/devices/' + encoded + '/launcher';
+  assert.equal((await get(path)).status, 200);
+  assert.deepEqual(calls.pop(), ['status', serial, undefined]);
+  for (const { package: pkg } of REPLACEMENT_LAUNCHERS) {
+    assert.deepEqual(await (await get(path + '?package=' + pkg)).json(), { package: pkg });
+    assert.deepEqual(calls.pop(), ['status', serial, pkg]);
+    assert.equal((await post(path + '/open-store', { package: pkg })).status, 200);
+    assert.deepEqual(calls.pop(), ['store', serial, pkg]);
+    const response = await post(path + '/swap', { package: pkg });
+    assert.equal(response.status, 202);
+    await (await get('/api/jobs/' + (await response.json()).jobId + '/events')).text();
+    assert.deepEqual(calls.pop(), ['swap', serial, pkg]);
+  }
+  for (const query of ['?package=', '?package=com.example.other', '?package=com.bad%3Binput',
+    '?package=com.spocky.projengmenu&package=me.efesser.flauncher']) {
+    const response = await get(path + query);
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).error.code, 'INVALID_INPUT');
+  }
+  for (const suffix of ['/swap', '/open-store']) {
+    for (const body of [{}, { package: null }, { package: '' }, { package: 'com.example.other' },
+      { package: 'com.bad;input' }, { package: ['me.efesser.flauncher'] }]) {
+      const response = await post(path + suffix, body);
+      assert.equal(response.status, 400);
+      assert.equal((await response.json()).error.code, 'INVALID_INPUT');
+    }
+  }
+  assert.deepEqual(calls, [], 'invalid requests never reach the engine or start a mutation');
 });

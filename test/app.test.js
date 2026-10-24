@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createDocument } from './helpers/dom.js';
+import { REPLACEMENT_LAUNCHERS } from '../src/core/launchers.js';
 
 let generation = 0;
 const serial = '192.168.1.50:5555';
@@ -9,7 +10,7 @@ const replacement = 'com.spocky.projengmenu';
 const stock = 'com.google.android.apps.tv.launcherx';
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 
-async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false, recoveryBusy = false } = {}) {
+async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false, recoveryBusy = false, launcherFailures = 0 } = {}) {
   const previous = Object.fromEntries(['document', 'Node', 'window', 'localStorage', 'fetch', 'EventSource', 'setTimeout', 'clearTimeout', 'ResizeObserver']
     .map(key => [key, globalThis[key]]));
   const { document, Node } = createDocument();
@@ -19,7 +20,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
   const observers = [];
   const requests = [];
   let connects = 0;
-  let ready = false;
+  const ready = new Set();
   let recoveryStarted = false;
   let jobPost;
   let pagehide;
@@ -49,15 +50,19 @@ async function application(t, { missingCatalog = false, recovered = false, manua
       if (path === '/api/health') return response({ demo: true, adb: { found: true } });
       if (path === '/api/discover') return response({ candidates: [{ ip: '192.168.1.50' }] });
       if (path === '/api/devices/connect') return response({ serial, state: ++connects <= 2 ? 'unauthorized' : 'device' });
-      if (path.endsWith('/open-store')) { ready = true; return response({ ok: true }); }
+      if (path.endsWith('/open-store')) { ready.add(JSON.parse(options.body).package); return response({ ok: true }); }
       if (path.endsWith('/launcher/recover')) {
         if (recoveryBusy) { recoveryBusy = false; return { ok: false, status: 409, json: async () => ({ error: { code: 'DEVICE_BUSY' } }) }; }
         recoveryStarted = true; needsRecovery = false; return response({ jobId: 'recovery' });
       }
       if (failRecoveryRefresh && recoveryStarted && options.method === 'GET') throw new Error('Connection dropped after recovery');
-      if (path.endsWith('/launcher') && !options.body) return response({ home: stock,
+      if (path.split('?')[0].endsWith('/launcher') && launcherFailures-- > 0) {
+        return { ok: false, json: async () => ({ error: { code: 'COMMAND_FAILED' } }) };
+      }
+      if (path.split('?')[0].endsWith('/launcher') && !options.body) return response({ home: stock,
         needsRecovery,
-        replacement: { package: replacement, installed: ready, enabled: ready, isHomeCandidate: ready },
+        replacements: REPLACEMENT_LAUNCHERS.map(entry => ({ ...entry,
+          installed: ready.has(entry.package), enabled: ready.has(entry.package), isHomeCandidate: ready.has(entry.package) })),
         stock: [{ package: stock, installed: true, enabled: true }] });
       if (path.endsWith('/packages')) return response({ recovered, needsRecovery, ...(manualHomePackage ? { manualHomePackage } : {}), packages: [{ package: 'com.example.app', label: { en: 'Example app' },
         risk: 'green', category: 'bloat', installed: true, enabled: true, canDisable: true }] });
@@ -70,7 +75,8 @@ async function application(t, { missingCatalog = false, recovered = false, manua
   const byId = id => { const node = document.getElementById(id); assert.ok(node, id); return node; };
   const click = async id => { const node = byId(id); assert.ok(!node.disabled, `${id} disabled`); await node.listeners.click?.({ target: node }); await settle(); };
   const emit = async (name, data) => { sources.at(-1).handlers[name](data === undefined ? {} : { data: JSON.stringify(data) }); await settle(); };
-  return { document, polls, sources, requests, observers, byId, click, emit, post: handler => { jobPost = handler; } };
+  return { document, polls, sources, requests, observers, byId, click, emit,
+    failLauncher: () => { launcherFailures = 1; }, post: handler => { jobPost = handler; } };
 }
 
 async function connect(app) {
@@ -100,6 +106,7 @@ test('launcher UI checks readiness, waits for POST, bounds rollback progress, an
   await connect(app);
   assert.equal(app.byId('clean').textContent, 'Clean 1 app');
   await app.click('launcher-disclosure');
+  app.byId(`launcher-${replacement}`).listeners.change();
   assert.equal(app.byId('launcher-switch').disabled, true);
   await app.click('launcher-store');
   assert.equal(app.byId('launcher-switch').disabled, true, 'installation requires Check again');
@@ -149,6 +156,9 @@ test('advanced launcher steps are collapsed below package groups, report recover
   assert.equal(properties['--bottom-bar-height'], '142px');
   await app.click('launcher-disclosure');
   assert.equal(app.byId('launcher-disclosure').attributes['aria-expanded'], 'true');
+  assert.equal(app.byId('launcher-original').checked, true);
+  assert.equal(app.document.getElementById('launcher-store'), null);
+  app.byId(`launcher-${replacement}`).listeners.change();
   assert.ok(app.byId('launcher-store'));
   await app.click('launcher-disclosure');
   assert.equal(app.document.getElementById('launcher-store'), null);
@@ -252,4 +262,76 @@ test('connection automatically posts recovery and shows its notice or manual HOM
     }
     assert.match(app.document.root.textContent, recovered ? /restored the original home apps/ : /Press Home on your remote, choose Original home screen, select Always/);
   });
+});
+
+test('launcher picker defaults to keeping the original and makes no request on selection', async t => {
+  const app = await application(t);
+  await connect(app);
+  await app.click('launcher-disclosure');
+  assert.equal(app.byId('launcher-original').checked, true);
+  assert.match(app.document.root.textContent, /Keep original launcher/);
+  assert.equal(app.document.getElementById('launcher-store'), null);
+  const count = app.requests.length;
+  for (const entry of REPLACEMENT_LAUNCHERS) {
+    const option = app.byId('launcher-' + entry.package);
+    assert.match(option.parentElement.textContent, new RegExp(entry.name));
+    assert.match(option.parentElement.textContent, /Not installed/);
+    option.listeners.change();
+    assert.equal(app.byId('launcher-switch').disabled, true);
+  }
+  app.byId('launcher-original').listeners.change();
+  assert.equal(app.byId('launcher-original').checked, true);
+  assert.equal(app.requests.length, count);
+  assert.equal(app.document.getElementById('launcher-switch'), null);
+});
+
+for (const entry of REPLACEMENT_LAUNCHERS) {
+  test(entry.name + ': store, check, confirmation, progress and result use the selection', async t => {
+    const app = await application(t);
+    await connect(app);
+    await app.click('launcher-disclosure');
+    app.byId('launcher-' + entry.package).listeners.change();
+    await app.click('launcher-store');
+    assert.deepEqual(JSON.parse(app.requests.at(-1).options.body), { package: entry.package });
+    assert.match(app.document.root.textContent, new RegExp('open ' + entry.name + ' once'));
+    app.failLauncher();
+    await app.click('launcher-check');
+    assert.equal(app.byId('launcher-switch').disabled, true);
+    assert.doesNotMatch(app.document.root.textContent, /\{name\}/);
+    await app.click('launcher-check');
+    assert.ok(app.requests.at(-1).path.endsWith('/launcher?package=' + encodeURIComponent(entry.package)));
+    assert.match(app.byId('launcher-' + entry.package).parentElement.textContent, /Installed · ready/);
+    assert.equal(app.byId('launcher-switch').disabled, false);
+    await app.click('launcher-switch');
+    assert.equal(app.byId('dialog-title').textContent, 'Switch to ' + entry.name + '?');
+    assert.match(app.byId('dialog-body').textContent, new RegExp('opens ' + entry.name));
+    await app.click('modal-confirm');
+    assert.deepEqual(JSON.parse(app.requests.at(-1).options.body), { package: entry.package });
+    await app.emit('progress', { done: 1, total: 1, package: entry.package, result: 'switched' });
+    assert.match(app.byId('current-app').textContent, new RegExp(entry.name));
+    await app.emit('complete', { succeeded: 1, failed: 0, results: [{ package: entry.package, result: 'switched' }] });
+    assert.match(app.document.root.textContent, new RegExp('Your home screen is now ' + entry.name));
+    await app.click('back-list');
+    app.byId('launcher-original').listeners.change();
+    assert.equal(app.document.getElementById('launcher-store'), null);
+    assert.doesNotMatch(app.document.root.textContent, /The store request was sent/);
+    app.byId('launcher-' + REPLACEMENT_LAUNCHERS.find(other => other !== entry).package).listeners.change();
+    assert.equal(app.byId('launcher-switch').disabled, true, 'readiness belongs to the selected launcher');
+  });
+}
+
+test('a failed initial launcher status keeps a read-only retry available with the original selected', async t => {
+  const app = await application(t, { launcherFailures: 1 });
+  await connect(app);
+  await app.click('launcher-disclosure');
+  assert.equal(app.byId('launcher-original').checked, true);
+  assert.equal(app.document.getElementById('launcher-' + replacement), null);
+  const before = app.requests.length;
+  await app.click('launcher-check');
+  assert.equal(app.requests.length, before + 1);
+  assert.ok(app.requests.at(-1).path.endsWith('/launcher'));
+  assert.equal(app.requests.at(-1).options.method, 'GET');
+  assert.equal(app.byId('launcher-original').checked, true);
+  for (const entry of REPLACEMENT_LAUNCHERS) assert.ok(app.byId('launcher-' + entry.package));
+  assert.equal(app.document.getElementById('launcher-store'), null);
 });

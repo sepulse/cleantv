@@ -63,9 +63,12 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       json(res, { jobId: jobs.start(match.serial,
         onProgress => engine.restore(match.serial, all ? 'all' : body.packages, onProgress)) }, 202);
     }],
-    ['GET', /^\/api\/devices\/([^/]+)\/launcher$/, async (_req, res, match) => {
+    ['GET', /^\/api\/devices\/([^/]+)\/launcher$/, async (req, res, match) => {
       requireAdb();
-      json(res, await engine.launcherStatus(match.serial));
+      const packages = new URL(req.url, 'http://127.0.0.1').searchParams.getAll('package');
+      if (packages.length > 1) invalid();
+      if (packages.length) assertReplacement(packages[0]);
+      json(res, await engine.launcherStatus(match.serial, packages[0]));
     }],
     ['POST', /^\/api\/devices\/([^/]+)\/launcher\/open-store$/, async (_req, res, match, body) => {
       requireAdb();

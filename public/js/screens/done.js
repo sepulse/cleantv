@@ -1,7 +1,7 @@
 import { h, heading, button } from '../dom.js';
 import { t, registryText } from '../i18n.js';
 import { icon } from '../icons.js';
-import { resultRow } from './progress.js';
+import { appName, resultRow } from './progress.js';
 
 export function doneScreen(state, actions) {
   const summary = state.summary;
@@ -10,7 +10,8 @@ export function doneScreen(state, actions) {
   const stock = state.packages.find(entry => entry.package === summary.manualHomePackage);
   return h('section', { className: 'screen' },
     heading(t(launcher ? summary.failed ? 'launcher.failedTitle' : state.operation === 'launcherSwap' ? 'launcher.doneTitle' : 'launcher.restoredTitle'
-      : summary.failed ? 'done.partialTitle' : state.operation === 'restore' ? 'done.restoreTitle' : 'done.title'), t('done.intro')),
+      : summary.failed ? 'done.partialTitle' : state.operation === 'restore' ? 'done.restoreTitle' : 'done.title',
+      { name: appName(state, summary.results.find(item => item.result === 'switched')?.package) }), t('done.intro')),
     h('div', { className: 'card stack' }, icon(summary.failed ? 'optional' : 'check', 'hero-icon success-icon'),
       h('div', { className: 'totals' }, [['succeeded', summary.succeeded], ['skipped', skipped], ['failed', summary.failed]].map(([key, value]) =>
         h('div', { className: 'total' }, h('strong', {}, t('common.number', { n: value })), h('span', {}, t(`done.${key}`))))),

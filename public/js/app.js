@@ -14,7 +14,7 @@ const state = {
   candidates: null, manualIP: '', candidate: null, serial: null, info: null, packages: [],
   selected: new Set(), collapsed: new Set(), showAbsent: false, busy: false, error: null,
   modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, processed: 0, current: null, summary: null,
-  launcher: null, launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
+  launcher: null, launcherPackage: '', launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
 };
 const screens = { start: startScreen, setup: setupScreen, connect: connectScreen, choose: chooseScreen, progress: progressScreen, done: doneScreen };
 const flow = ['setup', 'connect', 'choose', 'progress', 'done'];
@@ -81,6 +81,7 @@ function cancelPolling() {
   connectionGeneration++;
 }
 function devicePath(suffix = '') { return `/devices/${encodeURIComponent(state.serial)}${suffix}`; }
+function selectedLauncher() { return state.launcher?.replacements.find(entry => entry.package === state.launcherPackage); }
 
 function recoverLauncher() {
   const serial = state.serial;
@@ -129,7 +130,7 @@ async function loadDevice(repair = true) {
 
 async function loadLauncher(repair = true) {
   try {
-    state.launcher = await api(devicePath('/launcher')); state.launcherError = null;
+    state.launcher = await api(devicePath('/launcher') + (state.launcherPackage ? `?package=${encodeURIComponent(state.launcherPackage)}` : '')); state.launcherError = null;
     state.recovered ||= Boolean(state.launcher.recovered);
     state.manualHomePackage ||= state.launcher.manualHomePackage ?? null;
     state.journalWarning ||= Boolean(state.launcher.journalWarning);
@@ -157,6 +158,7 @@ async function connectAttempt(generation) {
       return;
     }
     if (connection.state !== 'device') throw { code: connection.state === 'offline' ? 'DEVICE_OFFLINE' : 'DEVICE_UNREACHABLE' };
+    if (state.serial !== connection.serial) { state.launcherPackage = ''; state.storeOpened = false; }
     state.serial = connection.serial;
     state.connection = 'connecting';
     render();
@@ -220,10 +222,16 @@ const actions = {
   retryConnect() { if (state.candidate) actions.connect(state.candidate); },
   confirmClean() { if (state.selected.size) openModal('clean'); },
   confirmRestore() { openModal('restore'); },
-  confirmLauncherSwap() { openModal('launcherSwap'); },
+  selectLauncher(pkg) {
+    if (state.busy || (pkg && !state.launcher?.replacements.some(entry => entry.package === pkg))) return;
+    state.launcherPackage = pkg;
+    state.storeOpened = false;
+    render();
+  },
+  confirmLauncherSwap() { if (selectedLauncher()) openModal('launcherSwap'); },
   confirmLauncherRestore() { openModal('launcherRestore'); },
   async checkLauncher() {
-    if (state.busy) return;
+    if (state.busy || (!state.launcherPackage && !state.launcherError)) return;
     state.busy = true;
     render();
     await loadLauncher();
@@ -231,12 +239,12 @@ const actions = {
     render();
   },
   async openLauncherStore() {
-    if (state.busy) return;
+    if (state.busy || !selectedLauncher()) return;
     state.busy = true;
     state.error = null;
     render();
     try {
-      await api(devicePath('/launcher/open-store'), { package: state.launcher?.replacement.package ?? 'com.spocky.projengmenu' });
+      await api(devicePath('/launcher/open-store'), { package: state.launcherPackage });
       state.storeOpened = true;
       state.busy = false;
       render();
@@ -248,7 +256,7 @@ const actions = {
     document.getElementById(modalOpener)?.focus({ preventScroll: true });
   },
   async startJob(operation) {
-    if (state.busy) return;
+    if (state.busy || (operation === 'launcherSwap' && !selectedLauncher())) return;
     const previousScreen = state.screen;
     state.modal = null;
     state.error = null;
@@ -257,7 +265,7 @@ const actions = {
     try {
       const path = { disable: '/disable', restore: '/restore', launcherSwap: '/launcher/swap', launcherRestore: '/launcher/restore' }[operation];
       const body = operation === 'disable' ? { packages: [...state.selected] } : operation === 'restore' ? { all: true }
-        : operation === 'launcherSwap' ? { package: state.launcher?.replacement.package } : {};
+        : operation === 'launcherSwap' ? { package: state.launcherPackage } : {};
       const data = await api(devicePath(path), body);
       state.operation = operation;
       state.results = [];

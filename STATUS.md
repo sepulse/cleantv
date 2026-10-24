@@ -14,4 +14,4 @@
 | Semakan akhir keseluruhan repo | Codex Sol (2 pusingan) + Sonnet | master | done (RELEASE-OK selepas pembaikan) | — |
 | Pakej portable | build-portable | — | dist/CleanTV-win-x64.zip | uji pada Windows bersih |
 | Ujian TV sebenar, `verified: true` | Pemilik | — | blocked (perlu TV) | jalankan `npm run smoke -- <ip>` dahulu (baca sahaja) |
-| Fasa 8 guard launcher + NEVER_TOUCH + pemilih launcher | Codex GPT-6 + semakan Sol (sesi baharu) | main | A+B siap dan semakan lulus, C belum | Gemini semak draf BM; C di luar skop tugasan ini |
+| Fasa 8 guard launcher + NEVER_TOUCH + pemilih launcher | Codex (bina) + semakan Sol (A+B, 2 pusingan) + Sonnet (C) + Gemini (BM) | main | done, belum push | Wolf Launcher tidak ditambah (tiada di Play Store, pakej tidak dapat disahkan); ujian TV sebenar: guard HOME / pengesanan Xiaomi |

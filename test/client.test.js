@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createAdbClient, parseFocusedPackage } from '../src/core/adb/client.js';
 import { CleanTvError } from '../src/core/errors.js';
 import { fakeRunner } from './helpers/fake-runner.js';
+import { REPLACEMENT_LAUNCHERS } from '../src/core/launchers.js';
 
 const serial = '192.168.1.20:5555';
 const pkg = 'com.example.app';
@@ -138,8 +139,7 @@ test('all argument-taking methods reject unsafe inputs before any runner call', 
   assert.deepEqual(run.calls, []);
 });
 
-test('store command is limited to Projectivy and detects unresolved intents', async () => {
-  const pkg = 'com.spocky.projengmenu';
+for (const { package: pkg } of REPLACEMENT_LAUNCHERS) test(`store command allows only registry packages (${pkg}) and detects unresolved intents`, async () => {
   const args = `${prefix} am start -a android.intent.action.VIEW -d market://details?id=${pkg}`;
   const run = fakeRunner({ [args]: { stdout: 'Starting: Intent' } });
   await createAdbClient(run).openPlayStore(serial, pkg);

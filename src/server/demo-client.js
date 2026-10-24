@@ -13,6 +13,8 @@ export function createDemoClient(presets) {
   const disabled = new Set();
   let attempts = 0;
   let connected = false;
+  let preferredHome;
+  const homePackages = [...STOCK_LAUNCHERS, ...REPLACEMENT_LAUNCHERS.map(entry => entry.package)];
   const validate = value => {
     if (value !== serial) throw new CleanTvError(ErrorCode.DEVICE_UNREACHABLE);
   };
@@ -38,7 +40,7 @@ export function createDemoClient(presets) {
     },
     async resolveHomeActivity(value) {
       validate(value);
-      return [...STOCK_LAUNCHERS, ...REPLACEMENT_LAUNCHERS].find(pkg => installed.has(pkg) && !disabled.has(pkg)) ?? null;
+      return [preferredHome, ...homePackages].find(pkg => installed.has(pkg) && !disabled.has(pkg)) ?? null;
     },
     async resolveHomeComponent(value) {
       const pkg = await this.resolveHomeActivity(value);
@@ -49,10 +51,14 @@ export function createDemoClient(presets) {
     async listHomeCandidateComponents(value) {
       return (await this.listHomeCandidates(value)).map(pkg => `${pkg}/.HomeActivity`);
     },
-    async setHomeActivity(value) { validate(value); },
+    async setHomeActivity(value, component) {
+      const candidates = await this.listHomeCandidateComponents(value);
+      if (!candidates.includes(component)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
+      preferredHome = component.split('/')[0];
+    },
     async listHomeCandidates(value) {
       validate(value);
-      return [...STOCK_LAUNCHERS, ...REPLACEMENT_LAUNCHERS].filter(pkg => installed.has(pkg) && !disabled.has(pkg));
+      return homePackages.filter(pkg => installed.has(pkg) && !disabled.has(pkg));
     },
     async openPlayStore(value, pkg) {
       validate(value);

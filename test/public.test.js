@@ -10,6 +10,7 @@ import { createJournal } from '../src/core/journal.js';
 import { loadPresets } from '../src/core/registry.js';
 import { NEVER_TOUCH } from '../src/core/safety.js';
 import { createAppServer } from '../src/server/index.js';
+import { REPLACEMENT_LAUNCHERS } from '../src/core/launchers.js';
 
 const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
 const read = path => readFile(join(publicDir, path), 'utf8');
@@ -168,7 +169,8 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   const status = async () => (await request(launcher)).json();
   const replacement = 'com.spocky.projengmenu';
   const initial = await status();
-  assert.deepEqual(initial.replacement, { package: replacement, installed: false, enabled: false, isHomeCandidate: false });
+  assert.deepEqual(initial.replacement, { ...REPLACEMENT_LAUNCHERS[0], installed: false, enabled: false, isHomeCandidate: false });
+  assert.deepEqual(initial.replacements, REPLACEMENT_LAUNCHERS.map(entry => ({ ...entry, installed: false, enabled: false, isHomeCandidate: false })));
   const eventsFor = async (path, body) => {
     const response = await request(path, body);
     assert.equal(response.status, 202);
@@ -193,7 +195,7 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   assert.equal((await invalid('/restore', { package: replacement })).status, 400);
   await request(`${launcher}/open-store`, { package: replacement });
   const ready = await status();
-  assert.deepEqual(ready.replacement, { package: replacement, installed: true, enabled: true, isHomeCandidate: true });
+  assert.deepEqual(ready.replacement, { ...REPLACEMENT_LAUNCHERS[0], installed: true, enabled: true, isHomeCandidate: true });
   assert.equal(ready.home, initial.home);
   const swap = await request(`${launcher}/swap`, { package: replacement });
   assert.equal(swap.status, 202);
@@ -206,6 +208,16 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   assert.equal((await status()).home, initial.home);
   await eventsFor(`${launcher}/swap`, { package: replacement });
   assert.match(await eventsFor(`${launcher}/restore`, {}), /"failed":0/);
+  assert.equal((await status()).home, initial.home);
+  for (const entry of REPLACEMENT_LAUNCHERS) {
+    await request(`${launcher}/open-store`, { package: entry.package });
+    const selected = await (await request(`${launcher}?package=${encodeURIComponent(entry.package)}`)).json();
+    assert.deepEqual(selected.replacement, { ...entry, installed: true, enabled: true, isHomeCandidate: true });
+    assert.equal(selected.replacements.length, REPLACEMENT_LAUNCHERS.length);
+    assert.match(await eventsFor(`${launcher}/swap`, { package: entry.package }), /"result":"switched"/);
+    assert.equal((await status()).home, entry.package);
+  }
+  assert.match(await eventsFor(`${device}/restore`, { all: true }), /"failed":0/);
   assert.equal((await status()).home, initial.home);
   for (const path of ['/favicon.svg', '/favicon.ico']) {
     const response = await request(path);

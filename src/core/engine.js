@@ -78,13 +78,13 @@ export function createEngine({ client, journal, presets }) {
       let homeHealthy = false;
       try {
         const home = await client.resolveHomeActivity(serial);
-        homeHealthy = home !== 'android' && !REPLACEMENT_LAUNCHERS.includes(home)
+        homeHealthy = home !== 'android' && !REPLACEMENT_LAUNCHERS.some(entry => entry.package === home)
           && (await client.listPackages(serial)).includes(home)
           && !(await client.listPackages(serial, { disabledOnly: true })).includes(home)
           && await actualHome(serial) === home;
       } catch { /* An unverifiable HOME still needs the shared restoration attempt. */ }
       if (!homeHealthy && !await restoreHome(serial, stocks)) {
-        results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
+        results.push({ package: stocks[0] ?? info.homePackage ?? REPLACEMENT_LAUNCHERS[0].package, result: 'failed',
           reason: stocks.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
         if (stocks.length) outcome.manualHomePackage = stocks[0];
       }

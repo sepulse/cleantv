@@ -20,7 +20,7 @@ Aplikasi web tempatan untuk *debloat* Android TV / Google TV melalui Wi-Fi ADB
 
 Setiap permintaan "matikan pakej" mesti lulus **semua** lapisan, dalam tertib ini:
 
-1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `devices`, `getprops`, `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`, `resolveHomeComponent`, `listHomeCandidates`, `listHomeCandidateComponents`, `setHomeActivity` (`cmd package set-home-activity`, komponen disahkan dengan regex ketat), `pressHome` (`input keyevent KEYCODE_HOME`), `focusedPackage` (`dumpsys activity activities`), `openPlayStore` (Projectivy sahaja).
+1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `devices`, `getprops`, `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`, `resolveHomeComponent`, `listHomeCandidates`, `listHomeCandidateComponents`, `setHomeActivity` (`cmd package set-home-activity`, komponen disahkan dengan regex ketat), `pressHome` (`input keyevent KEYCODE_HOME`), `focusedPackage` (`dumpsys activity activities`), `openPlayStore` (registry launcher sahaja).
 2. **L2 — Pengesahan input.** Nama pakej mesti padan `^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+$`; serial mesti `IPv4:port`. (Hujah `adb shell` digabung semula oleh shell pada TV — pengesahan ini menghalang suntikan arahan.)
 3. **L3 — `NEVER_TOUCH` dalam kod.** Senarai keras pakej teras (systemui, settings, gms, vending, packageinstaller, bluetooth, input method, webview, setup wizard, perkhidmatan alat kawalan jauh, provider, dll.) serta awalan provider, overlay modules, MediaTek, kilang dan Jamdeo TV. Menang mengatasi registry.
 4. **L4 — Registry allowlist.** Pakej mesti wujud dalam preset yang padan dengan peranti, dan risikonya bukan `red`.
@@ -30,7 +30,7 @@ Setiap permintaan "matikan pakej" mesti lulus **semua** lapisan, dalam tertib in
 
 **Restore:** gabungan (jurnal peranti) ∪ (`pm list packages -d` ∩ registry). Jadi Restore tetap berfungsi walaupun jurnal hilang.
 
-Pertukaran launcher ialah laluan khas: hanya Projectivy yang dibenarkan dan ia mesti muncul sebagai calon HOME yang sah; calon factory/test diabaikan. Sebelum sebarang perubahan, HOME sebenar diperiksa dengan butang HOME dan aplikasi fokus. Selepas `set-home-activity` dan pertukaran, pemeriksaan yang sama mesti menunjukkan Projectivy; jika tidak, launcher asal dihidupkan semula dan HOME asal disahkan melalui aplikasi fokus. Pemulihan juga menggunakan pemeriksaan fokus ini; skrin pemilih Android sahaja tidak dikira sebagai HOME asal yang telah pulih. Fire OS, papan CVTE dan Xiaomi dengan sistem HOME China atau identiti pasaran yang belum jelas ditolak sebelum jurnal atau perubahan pakej. Pengesanan menggunakan `ro.product.manufacturer`, `ro.product.brand`, `ro.product.model`, `ro.product.device`, `ro.build.display.id` dan pakej terpasang; ia tidak bergantung pada prop wilayah yang tidak disahkan. Rujukan: [probe cleanyourtv](https://github.com/Gathin23/cleanyourtv/blob/main/tools/tv.py), [panduan launcher](https://github.com/Gathin23/cleanyourtv/blob/main/PROMPT.md), [contoh Xiaomi](https://github.com/Gathin23/cleanyourtv/tree/main/examples/xiaomi-mitv-astp1).
+Pertukaran launcher ialah laluan khas: hanya launcher dalam registry kod (Projectivy Launcher `com.spocky.projengmenu`, FLauncher `me.efesser.flauncher`) dibenarkan dan pilihan mesti muncul sebagai calon HOME yang sah; calon factory/test diabaikan. Sebelum sebarang perubahan, HOME sebenar diperiksa dengan butang HOME dan aplikasi fokus; ia mesti launcher asal yang dihidupkan atau launcher registry yang dipasang, dihidupkan dan calon HOME. Selepas `set-home-activity` dan pertukaran, pemeriksaan yang sama mesti menunjukkan launcher pilihan; jika tidak, launcher asal dihidupkan semula dan HOME asal disahkan melalui aplikasi fokus. Pemulihan juga menggunakan pemeriksaan fokus ini; skrin pemilih Android sahaja tidak dikira sebagai HOME asal yang telah pulih. Fire OS, papan CVTE dan Xiaomi dengan sistem HOME China atau identiti pasaran yang belum jelas ditolak sebelum jurnal atau perubahan pakej. Pengesanan menggunakan `ro.product.manufacturer`, `ro.product.brand`, `ro.product.model`, `ro.product.device`, `ro.build.display.id` dan pakej terpasang; ia tidak bergantung pada prop wilayah yang tidak disahkan. Rujukan: [probe cleanyourtv](https://github.com/Gathin23/cleanyourtv/blob/main/tools/tv.py), [panduan launcher](https://github.com/Gathin23/cleanyourtv/blob/main/PROMPT.md), [contoh Xiaomi](https://github.com/Gathin23/cleanyourtv/tree/main/examples/xiaomi-mitv-astp1).
 
 ## 3. Struktur folder
 
@@ -131,9 +131,9 @@ Bentuk ralat: `{ "error": { "code": "DEVICE_UNAUTHORIZED", "message": "..." } }`
 | POST | `/devices/:serial/disable` | `{ packages: [string] }` | `202 { jobId }` |
 | POST | `/devices/:serial/restore` | `{ packages: [string] }` atau `{ all: true }` | `202 { jobId }` |
 | GET | `/devices/:serial/history` | — | `{ entries: [{ at, action, package, result }] }` |
-| GET | `/devices/:serial/launcher` | — | `{ home, replacement: { package, installed, enabled, isHomeCandidate }, stock: [{ package, installed, enabled }] }` |
-| POST | `/devices/:serial/launcher/open-store` | `{ package }` | `{ ok: true }` (Projectivy only) |
-| POST | `/devices/:serial/launcher/swap` | `{ package }` | `202 { jobId }` (Projectivy only; verified HOME, automatic rollback on failure) |
+| GET | `/devices/:serial/launcher?package=<package>` | — | `{ home, replacement: { package, name, installed, enabled, isHomeCandidate }, replacements: [{ package, name, installed, enabled, isHomeCandidate }], stock: [{ package, installed, enabled }] }` |
+| POST | `/devices/:serial/launcher/open-store` | `{ package }` | `{ ok: true }` (registry launcher only) |
+| POST | `/devices/:serial/launcher/swap` | `{ package }` | `202 { jobId }` (registry launcher only; verified HOME, automatic rollback on failure) |
 | POST | `/devices/:serial/launcher/restore` | `{}` | `202 { jobId }` (enable installed stock launchers, verify stock HOME) |
 | POST | `/devices/:serial/launcher/recover` | `{}` | `202 { jobId }` (repair interrupted/unhealthy launcher switch, verify stock HOME; SSE includes `recovered?`, `manualHomePackage?`) |
 | POST | `/devices/:serial/disconnect` | `{}` | `{ ok: true }` |
@@ -141,6 +141,13 @@ Bentuk ralat: `{ "error": { "code": "DEVICE_UNAUTHORIZED", "message": "..." } }`
 
 `:serial` = `ip:port`, di-*URL-encode*. Satu peranti hanya menjalankan satu kerja
 pada satu masa; kerja kedua → `409 DEVICE_BUSY`.
+
+Status launcher sentiasa melaporkan semua entri registry dalam `replacements`.
+Query `package` memilih `replacement`; jika tiada, Projectivy kekal sebagai lalai
+untuk keserasian API. Query kosong, berulang atau pakej di luar registry ditolak
+dengan `400 INVALID_INPUT`. `swap` dan `open-store` mewajibkan `package` dalam
+registry; tiada pakej juga `400 INVALID_INPUT`. UI bermula dengan “Keep original
+launcher”; memilihnya tidak menghantar arahan atau memulihkan HOME secara automatik.
 
 **Acara SSE:**
 

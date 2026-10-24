@@ -3,7 +3,8 @@ import { t, registryText, errorText } from '../i18n.js';
 import { icon } from '../icons.js';
 
 export function appName(state, pkg) {
-  if (pkg === 'com.spocky.projengmenu') return t('launcher.name');
+  const replacement = state.launcher?.replacements.find(entry => entry.package === pkg);
+  if (replacement) return replacement.name;
   if (state.launcher?.stock.some(entry => entry.package === pkg)) return t('launcher.stockName');
   const entry = state.packages.find(entry => entry.package === pkg);
   return entry ? registryText(entry) : t('apps.unknown');
