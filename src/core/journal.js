@@ -10,7 +10,18 @@ export function defaultDataDir() {
     : join(homedir(), '.cleantv');
 }
 
-/** @typedef {{ at: string, action: 'disable' | 'enable', package: string, status: 'pending' | 'ok' | 'failed', error?: string }} JournalRecord */
+/** @typedef {{ at: string, action: 'disable' | 'enable' | 'swap', package?: string, replacement?: string, disabled?: string[], status: 'pending' | 'ok' | 'failed' | 'rolled-back', error?: string }} JournalRecord */
+
+export function warnJournal(error, result) {
+  console.error('CleanTV recovery journal:', error.message);
+  result.journalWarning = true;
+}
+
+/** Recovery must reach the TV even when persistence fails. */
+export async function appendRecovery(journal, deviceId, record, result) {
+  try { await journal.append(deviceId, record); }
+  catch (error) { warnJournal(error, result); }
+}
 
 /** @param {string} [dataDir] */
 export function createJournal(dataDir = defaultDataDir()) {
@@ -64,7 +75,7 @@ export function createJournal(dataDir = defaultDataDir()) {
     async disabledByUs(deviceId) {
       const latest = new Map();
       for (const record of await read(deviceId)) {
-        if (record.status === 'ok') latest.set(record.package, record.action);
+        if (record.status === 'ok' && record.action !== 'swap') latest.set(record.package, record.action);
       }
       return [...latest].filter(([, action]) => action === 'disable').map(([pkg]) => pkg);
     },

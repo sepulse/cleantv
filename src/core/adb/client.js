@@ -1,5 +1,10 @@
 import { CleanTvError, ErrorCode } from '../errors.js';
 import { isValidPackageName, isValidSerial } from '../safety.js';
+import { assertReplacement } from '../launchers.js';
+
+const homeComponent = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*\/(?:\.?[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
+const parseHomeComponents = output => [...new Set(output.split(/\r?\n/).map(line => line.trim())
+  .filter(line => homeComponent.test(line) && (isValidPackageName(line.split('/')[0]) || line.startsWith('android/'))))];
 
 /** @param {import('./runner.js').Runner} run */
 export function createAdbClient(run) {
@@ -78,14 +83,43 @@ export function createAdbClient(run) {
       const output = await checked(['-s', serial, 'shell', 'pm', 'enable', '--user', '0', pkg]);
       return /new state: enabled(?:\s|$)/.test(output);
     },
+    /** @param {string} serial @param {string} pkg */
+    async openPlayStore(serial, pkg) {
+      validate(serial, pkg);
+      assertReplacement(pkg);
+      const output = await checked(['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW',
+        '-d', `market://details?id=${pkg}`]);
+      if (/Error:|Exception|unable to resolve/i.test(output)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+    },
+    /** @param {string} serial @returns {Promise<string[]>} */
+    async listHomeCandidates(serial) {
+      return [...new Set((await client.listHomeCandidateComponents(serial)).map(component => component.split('/')[0]))];
+    },
+    /** @param {string} serial @returns {Promise<string[]>} */
+    async listHomeCandidateComponents(serial) {
+      validate(serial);
+      const output = await checked(['-s', serial, 'shell', 'cmd', 'package', 'query-activities',
+        '--brief', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.HOME']);
+      return parseHomeComponents(output);
+    },
+    /** @param {string} serial @param {string} component */
+    async setHomeActivity(serial, component) {
+      validate(serial);
+      if (typeof component !== 'string' || component.trim() !== component || !homeComponent.test(component)
+        || !isValidPackageName(component.split('/')[0])) throw new CleanTvError(ErrorCode.INVALID_INPUT);
+      const output = await checked(['-s', serial, 'shell', 'cmd', 'package', 'set-home-activity', component]);
+      if (/Error:|Exception|failed/i.test(output)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+    },
     /** @param {string} serial @returns {Promise<string | null>} */
     async resolveHomeActivity(serial) {
+      return (await client.resolveHomeComponent(serial))?.split('/')[0] ?? null;
+    },
+    /** @param {string} serial @returns {Promise<string | null>} */
+    async resolveHomeComponent(serial) {
       validate(serial);
       const output = await checked(['-s', serial, 'shell', 'cmd', 'package', 'resolve-activity',
         '--brief', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.HOME']);
-      const packages = output.split(/\r?\n/).map(line => line.trim().match(/^([^/\s]+)\/[^\s]+$/)?.[1])
-        .filter(pkg => isValidPackageName(pkg));
-      return packages.at(-1) ?? null;
+      return parseHomeComponents(output).at(-1) ?? null;
     },
   };
   return client;

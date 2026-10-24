@@ -1,6 +1,7 @@
 import { h, heading, button } from '../dom.js';
 import { t, registryText, errorText } from '../i18n.js';
 import { icon } from '../icons.js';
+import { launcherCard } from './launcher.js';
 
 export const protectedApp = entry => Boolean(entry.blockedReason) || entry.risk === 'red';
 const categories = ['ads', 'telemetry', 'bloat', 'store', 'assistant', 'system'];
@@ -22,12 +23,19 @@ function appRow(entry, index, state, actions) {
       entry.verified === false && h('span', { className: 'micro' }, t('apps.unverified')),
       !entry.installed ? h('span', { className: 'micro' }, t('apps.absent')) : !entry.enabled && h('span', { className: 'micro' }, t('apps.disabled')))));
 }
+function manualStock(state) {
+  const stock = state.packages.find(entry => entry.package === state.manualHomePackage);
+  return stock ? registryText(stock) : t('launcher.stockName');
+}
 export function chooseScreen(state, actions) {
   const counts = { green: 0, yellow: 0, red: 0 };
   for (const entry of state.packages.filter(entry => entry.installed)) counts[protectedApp(entry) ? 'red' : entry.risk]++;
-  return h('section', { className: 'screen' }, heading(t('choose.title'), t('choose.intro')),
+  return h('section', { className: 'screen choose-screen' }, heading(t('choose.title'), t('choose.intro')),
+    state.recovered && h('p', { role: 'status' }, t('launcher.recovered')),
+    state.manualHomePackage && h('p', { role: 'status' }, t('launcher.manualHome', { stock: manualStock(state) })),
+    state.journalWarning && h('p', { role: 'status' }, t('launcher.journalWarning')),
     h('div', { className: 'card stack' }, h('div', { className: 'tv-card' }, icon('tv'), h('div', { className: 'tv-info' },
-      h('h2', {}, t('choose.device', state.info)), h('p', {}, t('choose.android', { version: state.info.androidVersion }))),
+      h('h2', {}, t('choose.device', { ...state.info, brand: state.info.brand.charAt(0).toUpperCase() + state.info.brand.slice(1) })), h('p', {}, t('choose.android', { version: state.info.androidVersion }))),
       h('span', { className: 'pill connected' }, icon('check'), t('choose.connected'))),
     h('div', { className: 'chips' }, h('span', { className: 'pill safe' }, icon('check'), t('choose.safeCount', { n: counts.green })),
       h('span', { className: 'pill optional' }, icon('optional'), t('choose.optionalCount', { n: counts.yellow })),
@@ -44,6 +52,7 @@ export function chooseScreen(state, actions) {
     }),
     h('label', { className: 'check-label', for: 'show-absent' }, h('input', { id: 'show-absent', type: 'checkbox', checked: state.showAbsent,
       onchange: event => { state.showAbsent = event.target.checked; actions.render(); } }), t('choose.absent')),
-    h('div', { className: 'bottom-bar' }, button(t('common.restore'), actions.confirmRestore, { id: 'restore-bottom', disabled: state.busy }),
+    launcherCard(state, actions),
+    h('div', { className: 'bottom-bar', id: 'bottom-bar' }, button(t('common.restore'), actions.confirmRestore, { id: 'restore-bottom', disabled: state.busy }),
       button(t('choose.clean', { n: state.selected.size }), actions.confirmClean, { id: 'clean', primary: true, disabled: !state.selected.size || state.busy })));
 }

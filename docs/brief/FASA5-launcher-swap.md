@@ -22,6 +22,28 @@ must make that impossible.
 - All UI strings via i18n keys in `en.json`; copy the English values into `ms.json`
   (Gemini translates later).
 
+## Pre-step: Phase 4b QA + review fixes (do these first)
+
+1. Plurals: `choose.clean`, `confirm.body`, `progress.count` (and any other count
+   string) say "1 apps". Add `*.one` keys in both i18n files and pick by `n === 1`
+   inside `t()` (one rule, not per caller).
+2. `test/public.test.js`: assert identical key sets and identical `{placeholder}`
+   sets between `en.json` and `ms.json` — not identical values (Malay arrives in 2b).
+3. `app.js` `startJob`: switch to the progress screen only after the POST succeeds;
+   on error stay on / return to the previous screen with the friendly error.
+4. Unauthorized polling: re-render only when the connection state changes.
+5. SSE network drop mid-job: show a "still working on the TV — check again" message
+   and offer a refresh of the package list, instead of `DEVICE_UNREACHABLE`.
+6. `initI18n()` failure: catch it and render a plain bilingual fallback message
+   instead of a blank page.
+7. Device model text breaks mid-word on a 375 px screen ("Chromec / ast"): use
+   `overflow-wrap: break-word` (not `break-all`/`anywhere`) and let the "Connected"
+   pill wrap under the name. Show `brand` with its first letter capitalised.
+8. TV permission-dialog mock: the English text inside the highlighted "Benarkan (…)"
+   button is invisible (same colour as the button). Make it readable.
+9. Add `public/favicon.svg` (simple TV glyph in `--primary`), link it in
+   `index.html`, and serve it (currently `/favicon.ico` 404s in the console).
+
 ## Required behaviour
 
 1. **Allowlists in code:** `REPLACEMENT_LAUNCHERS = ['com.spocky.projengmenu']`;

@@ -20,12 +20,14 @@ async function files(dir) {
 const keys = value => Object.entries(value).flatMap(([key, item]) => typeof item === 'object'
   ? keys(item).map(child => `${key}.${child}`) : [key]);
 
-test('language catalogs have identical keys and copied English values', async () => {
+test('language catalogs have identical keys and placeholder sets', async () => {
   const en = JSON.parse(await read('i18n/en.json'));
   const ms = JSON.parse(await read('i18n/ms.json'));
   assert.deepEqual(keys(en).sort(), keys(ms).sort());
-  assert.deepEqual(ms, en);
+  const placeholders = value => [...new Set([...value.matchAll(/\{(\w+)\}/g)].map(match => match[1]))].sort();
+  for (const key of keys(en)) assert.deepEqual(placeholders(en[key]), placeholders(ms[key]), key);
   assert.ok(Object.values(en).every(value => typeof value === 'string' && value.trim()));
+  assert.ok(Object.values(ms).every(value => typeof value === 'string' && value.trim()));
 });
 
 test('all literal translation keys and dynamic key families exist', async () => {
@@ -41,6 +43,27 @@ test('all literal translation keys and dynamic key families exist', async () => 
   for (const code of ['ADB_NOT_FOUND', 'INVALID_INPUT', 'NOT_FOUND', 'DEVICE_UNREACHABLE', 'DEVICE_UNAUTHORIZED',
     'DEVICE_OFFLINE', 'DEVICE_BUSY', 'PACKAGE_PROTECTED', 'PACKAGE_NOT_IN_REGISTRY', 'PACKAGE_IS_LAUNCHER',
     'COMMAND_FAILED', 'TIMEOUT', 'FORBIDDEN', 'INTERNAL']) assert.ok(en[`error.${code}`], code);
+});
+
+test('translation selects singular centrally for numeric one, including progress totals', async t => {
+  const saved = { fetch: globalThis.fetch, document: globalThis.document, localStorage: globalThis.localStorage };
+  const catalogs = Object.fromEntries(await Promise.all(['en', 'ms'].map(async lang => [lang, JSON.parse(await read(`i18n/${lang}.json`))])));
+  globalThis.fetch = async path => ({ ok: true, json: async () => catalogs[path.includes('/en.') ? 'en' : 'ms'] });
+  globalThis.document = { documentElement: {} };
+  globalThis.localStorage = { getItem: () => 'en', setItem: () => {} };
+  t.after(() => Object.assign(globalThis, saved));
+  const { initI18n, t: translate, setLanguage } = await import('../public/js/i18n.js');
+  await initI18n();
+  for (const lang of ['en', 'ms']) {
+    setLanguage(lang);
+    assert.equal(translate('choose.clean', { n: 1 }), 'Clean 1 app');
+    assert.equal(translate('choose.clean', { n: 0 }), 'Clean 0 apps');
+    assert.equal(translate('choose.clean', { n: 2 }), 'Clean 2 apps');
+    assert.equal(translate('choose.clean', { n: '1' }), 'Clean 1 apps');
+    assert.match(translate('confirm.body', { n: 1 }), /1 app\./);
+    assert.equal(translate('progress.count', { done: 1, total: 1 }), '1 of 1 app');
+    assert.equal(translate('progress.count', { done: 1, total: 2 }), '1 of 2 apps');
+  }
 });
 
 test('frontend has no unsafe HTML sinks, remote URLs, or inline script bodies', async () => {
@@ -94,7 +117,7 @@ test('SSE helper closes completed, failed, and interrupted streams', async t => 
   jobEvents('interrupted', callbacks);
   instances[2].handlers.error({});
   assert.equal(instances[2].closed, true);
-  assert.equal(seen.at(-1).code, 'DEVICE_UNREACHABLE');
+  assert.equal(seen.at(-1).code, 'JOB_CONNECTION_LOST');
 });
 
 test('demo supports discovery, authorization, cleaning, history, and restore through HTTP', async t => {
@@ -138,4 +161,51 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   const restore = await (await request(`${device}/restore`, { all: true })).json();
   assert.match(await (await request(`/api/jobs/${restore.jobId}/events`)).text(), /"result":"enabled"/);
   assert.deepEqual(await client.listPackages(serial, { disabledOnly: true }), []);
+  const launcher = `${device}/launcher`;
+  const status = async () => (await request(launcher)).json();
+  const replacement = 'com.spocky.projengmenu';
+  const initial = await status();
+  assert.deepEqual(initial.replacement, { package: replacement, installed: false, enabled: false, isHomeCandidate: false });
+  const eventsFor = async (path, body) => {
+    const response = await request(path, body);
+    assert.equal(response.status, 202);
+    return (await request(`/api/jobs/${(await response.json()).jobId}/events`)).text();
+  };
+  assert.match(await eventsFor(`${launcher}/swap`, { package: replacement }), /LAUNCHER_NOT_READY/);
+  for (const route of ['open-store', 'swap', 'restore']) {
+    const body = route === 'restore' ? {} : { package: replacement };
+    for (const headers of [
+      { 'Content-Type': 'application/json' },
+      { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'wrong' },
+      { 'X-CleanTV-Token': 'demo-test' },
+      { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'demo-test', Origin: 'http://evil.example' },
+    ]) assert.equal((await fetch(base + `${launcher}/${route}`, { method: 'POST', headers, body: JSON.stringify(body) })).status, 403);
+  }
+  assert.equal((await fetch(base + '/api/devices/bad/launcher')).status, 400);
+  const invalid = async (suffix, body) => fetch(base + launcher + suffix, { method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'demo-test' }, body: JSON.stringify(body) });
+  for (const suffix of ['/swap', '/open-store']) {
+    for (const body of [{}, { package: 'com.example.other' }, { package: 'com.bad;input' }]) assert.equal((await invalid(suffix, body)).status, 400);
+  }
+  assert.equal((await invalid('/restore', { package: replacement })).status, 400);
+  await request(`${launcher}/open-store`, { package: replacement });
+  const ready = await status();
+  assert.deepEqual(ready.replacement, { package: replacement, installed: true, enabled: true, isHomeCandidate: true });
+  assert.equal(ready.home, initial.home);
+  const swap = await request(`${launcher}/swap`, { package: replacement });
+  assert.equal(swap.status, 202);
+  assert.equal((await invalid('/restore', {})).status, 409);
+  assert.equal((await fetch(base + `${device}/restore`, { method: 'POST', headers: {
+    'Content-Type': 'application/json', 'X-CleanTV-Token': 'demo-test' }, body: '{"all":true}' })).status, 409);
+  assert.match(await (await request(`/api/jobs/${(await swap.json()).jobId}/events`)).text(), /"result":"switched"/);
+  assert.equal((await status()).home, replacement);
+  assert.match(await eventsFor(`${device}/restore`, { all: true }), /"failed":0/);
+  assert.equal((await status()).home, initial.home);
+  await eventsFor(`${launcher}/swap`, { package: replacement });
+  assert.match(await eventsFor(`${launcher}/restore`, {}), /"failed":0/);
+  assert.equal((await status()).home, initial.home);
+  for (const path of ['/favicon.svg', '/favicon.ico']) {
+    const response = await request(path);
+    assert.match(response.headers.get('content-type'), /image\/svg\+xml/);
+  }
 });

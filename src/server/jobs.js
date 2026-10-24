@@ -24,6 +24,7 @@ export function createJobs() {
   }
 
   return {
+    isBusy(serial) { return busy.has(serial); },
     start(serial, work) {
       if (busy.has(serial)) throw new CleanTvError(ErrorCode.DEVICE_BUSY);
       const job = { id: randomUUID(), serial, events: [], listeners: new Set(), done: false };
@@ -32,7 +33,9 @@ export function createJobs() {
       queueMicrotask(async () => {
         try {
           const result = await work(progress => emit(job, 'progress', progress));
-          emit(job, 'complete', { succeeded: result.succeeded, failed: result.failed, results: result.results });
+          emit(job, 'complete', { succeeded: result.succeeded, failed: result.failed, results: result.results,
+            ...(result.journalWarning ? { journalWarning: true } : {}),
+            ...(result.manualHomePackage ? { manualHomePackage: result.manualHomePackage } : {}) });
         } catch (error) {
           const { code, message } = publicError(error);
           emit(job, 'error', { code, message });

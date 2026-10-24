@@ -21,10 +21,13 @@ small, .small { font-size: 14px; }
 .language button[aria-pressed=true] { color: var(--primary); background: var(--primary-soft); }
 main { padding-top: 12px; padding-bottom: 48px; }
 .screen { display: grid; gap: 24px; }
+.choose-screen { padding-bottom: var(--bottom-bar-height, 82px); }
 .screen.enter { animation: arrive 200ms ease-out; }
 .screen-heading { display: grid; gap: 12px; }
 .card { padding: 24px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
 .stack { display: grid; gap: 12px; }
+.launcher-steps { display: grid; gap: 16px; margin: 0; padding-left: 24px; }
+.launcher-steps li { padding-left: 4px; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 20px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-weight: 600; text-align: center; }
 .button.primary { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
 .button:not(:disabled):hover { filter: brightness(.94); }
@@ -55,7 +58,7 @@ input[type=checkbox] { width: 22px; height: 22px; flex: 0 0 22px; margin: 0; }
 input[type=text] { min-width: 0; width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); caret-color: var(--primary); }
 .manual-form { display: grid; gap: 12px; }
 .tv-card { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
-.tv-card .tv-info { flex: 1; min-width: 120px; overflow-wrap: anywhere; }
+.tv-card .tv-info { flex: 1 1 200px; min-width: 0; overflow-wrap: break-word; }
 .radar { display: grid; place-items: center; position: relative; width: 112px; height: 112px; margin: 16px auto; border: 1px solid var(--primary); border-radius: 50%; color: var(--primary); background: var(--primary-soft); }
 .radar::after { content: ''; position: absolute; inset: 12px; border: 1px solid var(--primary); border-radius: 50%; animation: radar 2s ease-out infinite; }
 .status { display: flex; align-items: center; gap: 12px; }
@@ -64,6 +67,7 @@ input[type=text] { min-width: 0; width: 100%; min-height: 48px; padding: 10px 12
 .mock-check { display: flex; gap: 10px; align-items: flex-start; }
 .mock-box { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border: 2px solid var(--primary); border-radius: 4px; color: var(--primary); }
 .mock-allow { justify-self: end; background: var(--primary); color: var(--primary-ink); padding: 10px 24px; border-radius: var(--radius-sm); font-weight: 700; }
+.mock-allow .tv-menu em { color: inherit; }
 .category { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 .category summary { min-height: 64px; padding: 18px 24px; cursor: pointer; font-size: 18px; font-weight: 600; }
 .app-list { display: grid; gap: 12px; padding: 0 24px 24px; }
@@ -104,6 +108,7 @@ dialog .actions { margin-top: 12px; justify-content: flex-end; }
 @keyframes radar { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 479px) {
+  .choose-screen { padding-bottom: var(--bottom-bar-height, 142px); }
   .site-header, main { padding-left: 16px; padding-right: 16px; }
   .header-actions { width: 100%; justify-content: space-between; }
   .steps { gap: 6px; }

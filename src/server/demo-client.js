@@ -1,5 +1,6 @@
 import { NEVER_TOUCH } from '../core/safety.js';
 import { CleanTvError, ErrorCode } from '../core/errors.js';
+import { assertReplacement, REPLACEMENT_LAUNCHERS, STOCK_LAUNCHERS } from '../core/launchers.js';
 
 const serial = '192.168.1.50:5555';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -35,7 +36,28 @@ export function createDemoClient(presets) {
       validate(value);
       return [...(disabledOnly ? disabled : installed)];
     },
-    async resolveHomeActivity(value) { validate(value); return 'com.google.android.apps.tv.launcherx'; },
+    async resolveHomeActivity(value) {
+      validate(value);
+      return [...STOCK_LAUNCHERS, ...REPLACEMENT_LAUNCHERS].find(pkg => installed.has(pkg) && !disabled.has(pkg)) ?? null;
+    },
+    async resolveHomeComponent(value) {
+      const pkg = await this.resolveHomeActivity(value);
+      return pkg && `${pkg}/.HomeActivity`;
+    },
+    async listHomeCandidateComponents(value) {
+      return (await this.listHomeCandidates(value)).map(pkg => `${pkg}/.HomeActivity`);
+    },
+    async setHomeActivity(value) { validate(value); },
+    async listHomeCandidates(value) {
+      validate(value);
+      return [...STOCK_LAUNCHERS, ...REPLACEMENT_LAUNCHERS].filter(pkg => installed.has(pkg) && !disabled.has(pkg));
+    },
+    async openPlayStore(value, pkg) {
+      validate(value);
+      assertReplacement(pkg);
+      installed.add(pkg);
+      disabled.delete(pkg);
+    },
     async disableUser(value, pkg) {
       validate(value);
       await delay(300);

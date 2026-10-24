@@ -20,7 +20,7 @@ Aplikasi web tempatan untuk *debloat* Android TV / Google TV melalui Wi-Fi ADB
 
 Setiap permintaan "matikan pakej" mesti lulus **semua** lapisan, dalam tertib ini:
 
-1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `devices`, `getprops`, `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`.
+1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `devices`, `getprops`, `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`, `resolveHomeComponent`, `listHomeCandidates`, `listHomeCandidateComponents`, `setHomeActivity` (`cmd package set-home-activity`, komponen disahkan dengan regex ketat), `openPlayStore` (Projectivy sahaja).
 2. **L2 — Pengesahan input.** Nama pakej mesti padan `^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+$`; serial mesti `IPv4:port`. (Hujah `adb shell` digabung semula oleh shell pada TV — pengesahan ini menghalang suntikan arahan.)
 3. **L3 — `NEVER_TOUCH` dalam kod.** Senarai keras pakej teras (systemui, settings, gms, vending, packageinstaller, bluetooth, input method, webview, setup wizard, perkhidmatan alat kawalan jauh, provider, dll.). Menang mengatasi registry.
 4. **L4 — Registry allowlist.** Pakej mesti wujud dalam preset yang padan dengan peranti, dan risikonya bukan `red`.
@@ -118,6 +118,10 @@ Bentuk ralat: `{ "error": { "code": "DEVICE_UNAUTHORIZED", "message": "..." } }`
 | POST | `/devices/:serial/disable` | `{ packages: [string] }` | `202 { jobId }` |
 | POST | `/devices/:serial/restore` | `{ packages: [string] }` atau `{ all: true }` | `202 { jobId }` |
 | GET | `/devices/:serial/history` | — | `{ entries: [{ at, action, package, result }] }` |
+| GET | `/devices/:serial/launcher` | — | `{ home, replacement: { package, installed, enabled, isHomeCandidate }, stock: [{ package, installed, enabled }] }` |
+| POST | `/devices/:serial/launcher/open-store` | `{ package }` | `{ ok: true }` (Projectivy only) |
+| POST | `/devices/:serial/launcher/swap` | `{ package }` | `202 { jobId }` (Projectivy only; verified HOME, automatic rollback on failure) |
+| POST | `/devices/:serial/launcher/restore` | `{}` | `202 { jobId }` (enable installed stock launchers, verify stock HOME) |
 | POST | `/devices/:serial/disconnect` | `{}` | `{ ok: true }` |
 | GET | `/jobs/:jobId/events` | — | SSE (lihat bawah) |
 
@@ -141,6 +145,12 @@ data: { "code": "DEVICE_OFFLINE", "message": "..." }
 `DEVICE_UNAUTHORIZED`, `DEVICE_OFFLINE`, `DEVICE_BUSY`, `PACKAGE_PROTECTED`,
 `PACKAGE_NOT_IN_REGISTRY`, `PACKAGE_IS_LAUNCHER`, `COMMAND_FAILED`, `TIMEOUT`,
 `FORBIDDEN` (token/Host salah), `NOT_FOUND` (route/job tiada), `INTERNAL`.
+
+Launcher flow: `LAUNCHER_NOT_READY` (replacement precondition, HTTP 422),
+`LAUNCHER_SWAP_ROLLED_BACK` (failed result; recovery verified),
+`LAUNCHER_ROLLBACK_FAILED` (failed result; recovery could not be verified),
+`LAUNCHER_RESTORE_FAILED` (failed result; stock HOME could not be verified),
+`LAUNCHER_STOCK_MISSING` (no stock launcher installed to restore).
 
 ## 6. Aliran pengguna (sasaran UX)
 

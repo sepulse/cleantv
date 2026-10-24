@@ -1,5 +1,6 @@
 import { CleanTvError, ErrorCode } from '../core/errors.js';
 import { isValidSerial } from '../core/safety.js';
+import { assertReplacement } from '../core/launchers.js';
 
 const invalid = () => { throw new CleanTvError(ErrorCode.INVALID_INPUT); };
 const json = (response, value, status = 200) => {
@@ -36,12 +37,16 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
     }],
     ['GET', /^\/api\/devices\/([^/]+)$/, async (_req, res, match) => {
       requireAdb();
-      const { info, presets } = await engine.inspect(match.serial);
-      json(res, { ...info, presets });
+      const { info, presets, ...inspection } = await engine.inspect(match.serial);
+      json(res, { ...info, presets, ...(inspection.recovered ? { recovered: true } : {}),
+        ...(inspection.manualHomePackage ? { manualHomePackage: inspection.manualHomePackage } : {}),
+        ...(inspection.journalWarning ? { journalWarning: true } : {}) });
     }],
     ['GET', /^\/api\/devices\/([^/]+)\/packages$/, async (_req, res, match) => {
       requireAdb();
-      json(res, { packages: (await engine.inspect(match.serial)).packages });
+      const { packages, recovered, manualHomePackage, journalWarning } = await engine.inspect(match.serial);
+      json(res, { packages, ...(recovered ? { recovered: true } : {}),
+        ...(manualHomePackage ? { manualHomePackage } : {}), ...(journalWarning ? { journalWarning: true } : {}) });
     }],
     ['POST', /^\/api\/devices\/([^/]+)\/disable$/, async (_req, res, match, body) => {
       requireAdb();
@@ -56,12 +61,35 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       json(res, { jobId: jobs.start(match.serial,
         onProgress => engine.restore(match.serial, all ? 'all' : body.packages, onProgress)) }, 202);
     }],
+    ['GET', /^\/api\/devices\/([^/]+)\/launcher$/, async (_req, res, match) => {
+      requireAdb();
+      json(res, await engine.launcherStatus(match.serial));
+    }],
+    ['POST', /^\/api\/devices\/([^/]+)\/launcher\/open-store$/, async (_req, res, match, body) => {
+      requireAdb();
+      assertReplacement(body?.package);
+      await engine.openLauncherStore(match.serial, body.package);
+      json(res, { ok: true });
+    }],
+    ['POST', /^\/api\/devices\/([^/]+)\/launcher\/swap$/, async (_req, res, match, body) => {
+      requireAdb();
+      assertReplacement(body?.package);
+      json(res, { jobId: jobs.start(match.serial,
+        onProgress => engine.swapLauncher(match.serial, body.package, onProgress)) }, 202);
+    }],
+    ['POST', /^\/api\/devices\/([^/]+)\/launcher\/restore$/, async (_req, res, match, body) => {
+      requireAdb();
+      if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length) invalid();
+      json(res, { jobId: jobs.start(match.serial,
+        onProgress => engine.restoreLauncher(match.serial, onProgress)) }, 202);
+    }],
     ['GET', /^\/api\/devices\/([^/]+)\/history$/, async (_req, res, match) => {
       requireAdb();
       json(res, { entries: await engine.history(match.serial) });
     }],
     ['POST', /^\/api\/devices\/([^/]+)\/disconnect$/, async (_req, res, match) => {
       requireAdb();
+      if (jobs.isBusy(match.serial)) throw new CleanTvError(ErrorCode.DEVICE_BUSY);
       await client.disconnect(match.serial);
       json(res, { ok: true });
     }],

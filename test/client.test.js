@@ -8,9 +8,10 @@ const serial = '192.168.1.20:5555';
 const pkg = 'com.example.app';
 const prefix = `-s ${serial} shell`;
 
-test('client exposes only the eight named methods', () => {
+test('client exposes only the named methods', () => {
   assert.deepEqual(Object.keys(createAdbClient(fakeRunner({}))).sort(), [
-    'connect', 'disconnect', 'devices', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity',
+    'connect', 'disconnect', 'devices', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity',
   ].sort());
 });
 
@@ -90,14 +91,36 @@ test('HOME parser chooses the last valid component or returns null', async () =>
 test('all argument-taking methods reject unsafe inputs before any runner call', async () => {
   const run = fakeRunner({});
   const client = createAdbClient(run);
-  for (const method of ['disconnect', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity']) {
+  for (const method of ['disconnect', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity']) {
     await assert.rejects(client[method]('host;id:5555', pkg), { code: 'INVALID_INPUT' });
   }
-  for (const method of ['disableUser', 'enableUser']) {
+  for (const method of ['disableUser', 'enableUser', 'openPlayStore']) {
     for (const bad of [undefined, null, 'com.app;id', 'com.app\n', 'com.app && id']) await assert.rejects(client[method](serial, bad), { code: 'INVALID_INPUT' });
   }
   for (const [ip, port] of [['host', 5555], ['1.2.3.4', 0], ['256.2.3.4', 5555]]) await assert.rejects(client.connect(ip, port), { code: 'INVALID_INPUT' });
   assert.deepEqual(run.calls, []);
+});
+
+test('store command is limited to Projectivy and detects unresolved intents', async () => {
+  const pkg = 'com.spocky.projengmenu';
+  const args = `${prefix} am start -a android.intent.action.VIEW -d market://details?id=${pkg}`;
+  const run = fakeRunner({ [args]: { stdout: 'Starting: Intent' } });
+  await createAdbClient(run).openPlayStore(serial, pkg);
+  assert.deepEqual(run.calls[0], ['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', `market://details?id=${pkg}`]);
+  await assert.rejects(createAdbClient(run).openPlayStore(serial, 'com.example.other'), { code: 'INVALID_INPUT' });
+  assert.equal(run.calls.length, 1);
+  for (const response of [{ stdout: 'Error: Activity not started, unable to resolve Intent' }, { code: 1 }]) {
+    await assert.rejects(createAdbClient(fakeRunner({ [args]: response })).openPlayStore(serial, pkg), { code: 'COMMAND_FAILED' });
+  }
+});
+
+test('HOME candidates parse unique valid components and reject command failures', async () => {
+  const args = `${prefix} cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME`;
+  const run = fakeRunner({ [args]: { stdout: '2 activities found:\r\ncom.spocky.projengmenu/.Main\r\ncom.spocky.projengmenu/.Other\r\ncom.google.android.tvlauncher/.Main\r\nbad;input/.Main\r\nnoise\r\n' } });
+  assert.deepEqual(await createAdbClient(run).listHomeCandidates(serial), ['com.spocky.projengmenu', 'com.google.android.tvlauncher']);
+  assert.deepEqual(await createAdbClient(fakeRunner({ [args]: { stdout: 'No activities found' } })).listHomeCandidates(serial), []);
+  await assert.rejects(createAdbClient(fakeRunner({ [args]: { code: 1 } })).listHomeCandidates(serial), { code: 'COMMAND_FAILED' });
 });
 
 test('read commands do not parse failed output as real state', async () => {
@@ -105,4 +128,33 @@ test('read commands do not parse failed output as real state', async () => {
   const run = fakeRunner({ known: {} });
   await assert.rejects(run(['unknown']), /Unknown args/);
   assert.deepEqual(run.calls, [['unknown']]);
+});
+
+test('HOME components preserve candidate activities and set HOME with strictly validated arguments', async () => {
+  const query = `${prefix} cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME`;
+  const component = 'com.google.android.tvlauncher/.Main';
+  const run = fakeRunner({ [query]: { stdout: `${component}\ncom.good.home/com.good.home.Main$Inner\ncom.bad.home/.Main;id\ncom.bad.home/.Main&&id\ncom.bad.home/.\n` },
+    [`${prefix} cmd package set-home-activity ${component}`]: {} });
+  const client = createAdbClient(run);
+  assert.deepEqual(await client.listHomeCandidateComponents(serial), [component]);
+  await client.setHomeActivity(serial, component);
+  assert.deepEqual(run.calls.at(-1), ['-s', serial, 'shell', 'cmd', 'package', 'set-home-activity', component]);
+  const before = run.calls.length;
+  for (const bad of [undefined, null, 'com.good.home', 'com.good.home/', 'com.good.home/.Main;id',
+    'com.good.home/.Main\n', 'com.good.home/.Main && id', 'com.good.home/$(id)', 'com.good.home/.Main$Inner', 'com.good.home/.Main/Other', 'android/.Main']) {
+    await assert.rejects(client.setHomeActivity(serial, bad), { code: 'INVALID_INPUT' });
+  }
+  assert.equal(run.calls.length, before);
+  for (const response of [{ code: 1 }, { stdout: 'Error: unsupported' }]) {
+    await assert.rejects(createAdbClient(fakeRunner({ [`${prefix} cmd package set-home-activity ${component}`]: response }))
+      .setHomeActivity(serial, component), { code: 'COMMAND_FAILED' });
+  }
+});
+
+test('system resolver components remain distinguishable from missing HOME', async () => {
+  const args = `${prefix} cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME`;
+  const component = 'android/com.android.internal.app.ResolverActivity';
+  const client = createAdbClient(fakeRunner({ [args]: { stdout: component } }));
+  assert.equal(await client.resolveHomeComponent(serial), component);
+  assert.equal(await client.resolveHomeActivity(serial), 'android');
 });

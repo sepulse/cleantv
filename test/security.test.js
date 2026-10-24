@@ -52,6 +52,17 @@ test('request size and JSON syntax are enforced', async t => {
   assert.equal(JSON.parse(large.body).error.code, 'INVALID_INPUT');
 });
 
+test('launcher status and mutations enforce Host before reaching the device', async t => {
+  const port = await setup(t);
+  const path = '/api/devices/192.168.1.5%3A5555/launcher';
+  assert.equal((await send(port, path, { headers: { Host: 'evil.example' } })).status, 403);
+  for (const suffix of ['open-store', 'swap', 'restore']) {
+    assert.equal((await send(port, `${path}/${suffix}`, { method: 'POST', headers: {
+      Host: 'evil.example', 'Content-Type': 'application/json', 'X-CleanTV-Token': 'secret',
+    }, body: '{}' })).status, 403);
+  }
+});
+
 test('static files inject the token and reject raw traversal paths', async t => {
   const port = await setup(t);
   const page = await send(port, '/');

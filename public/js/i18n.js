@@ -1,5 +1,6 @@
 let language = 'ms';
 let messages = {};
+const unavailable = 'CleanTV could not load its language files. Reload this page. / CleanTV tidak dapat memuatkan fail bahasa. Muat semula halaman ini.';
 export async function initI18n() {
   const [en, ms] = await Promise.all(['en', 'ms'].map(async code => {
     const response = await fetch(`/i18n/${code}.json`);
@@ -14,7 +15,10 @@ export async function initI18n() {
   document.documentElement.lang = language;
 }
 export function t(key, vars = {}) {
-  const message = messages[language]?.[key] ?? messages.en?.[key] ?? key;
+  const n = vars.n ?? vars.total;
+  const selected = n === 1 && (messages[language]?.[`${key}.one`] ?? messages.en?.[`${key}.one`]) ? `${key}.one` : key;
+  const message = messages[language]?.[selected] ?? messages.en?.[selected]
+    ?? (key === 'error.I18N_UNAVAILABLE' ? unavailable : key);
   return message.replace(/\{(\w+)\}/g, (match, name) => vars[name] === undefined ? match : String(vars[name]));
 }
 export function getLanguage() { return language; }

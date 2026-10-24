@@ -13,7 +13,8 @@ const state = {
   screen: 'start', health: null, brand: 'google', prepared: false, connection: 'idle',
   candidates: null, manualIP: '', candidate: null, serial: null, info: null, packages: [],
   selected: new Set(), collapsed: new Set(), showAbsent: false, busy: false, error: null,
-  modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, current: null, summary: null,
+  modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, processed: 0, current: null, summary: null,
+  launcher: null, launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
 };
 const screens = { start: startScreen, setup: setupScreen, connect: connectScreen, choose: chooseScreen, progress: progressScreen, done: doneScreen };
 const flow = ['setup', 'connect', 'choose', 'progress', 'done'];
@@ -26,6 +27,7 @@ let connectionGeneration = 0;
 let permissionDeadline = 0;
 let source;
 let modalOpener;
+let bottomBarObserver;
 
 function render() {
   const focused = document.activeElement?.id;
@@ -45,10 +47,18 @@ function render() {
     }, t(key)))));
   const error = state.error && h('div', { className: 'error-card stack', role: 'alert' },
     h('p', {}, state.error.key ? t(state.error.key) : errorText(state.error.code)),
-    state.error.retry && button(t('common.retry'), state.error.retry, { id: 'error-retry' }));
+    state.error.retry && button(t(state.error.retryLabel ?? 'common.retry'), state.error.retry, { id: 'error-retry' }));
   const screen = screens[state.screen](state, actions);
   if (changed) screen.classList.add('enter');
   root.replaceChildren(...[indicator, error, screen].filter(Boolean));
+  bottomBarObserver?.disconnect();
+  const bottomBar = document.getElementById('bottom-bar');
+  if (bottomBar && typeof ResizeObserver !== 'undefined') {
+    bottomBarObserver = new ResizeObserver(() => {
+      screen.style.setProperty('--bottom-bar-height', `${bottomBar.getBoundingClientRect().height}px`);
+    });
+    bottomBarObserver.observe(bottomBar);
+  }
   if (state.modal) {
     const dialog = confirmScreen(state, actions);
     root.append(dialog);
@@ -74,8 +84,22 @@ function devicePath(suffix = '') { return `/devices/${encodeURIComponent(state.s
 async function loadDevice() {
   const [info, data] = await Promise.all([api(devicePath()), api(devicePath('/packages'))]);
   state.info = info;
+  state.recovered = Boolean(info.recovered || data.recovered);
+  state.manualHomePackage = info.manualHomePackage ?? data.manualHomePackage ?? null;
+  state.journalWarning = Boolean(info.journalWarning || data.journalWarning);
   state.packages = data.packages;
   state.selected = new Set(state.packages.filter(entry => entry.risk === 'green' && entry.canDisable && entry.enabled).map(entry => entry.package));
+  await loadLauncher();
+}
+
+async function loadLauncher() {
+  try {
+    state.launcher = await api(devicePath('/launcher')); state.launcherError = null;
+    state.recovered ||= Boolean(state.launcher.recovered);
+    state.manualHomePackage ||= state.launcher.manualHomePackage ?? null;
+    state.journalWarning ||= Boolean(state.launcher.journalWarning);
+  }
+  catch (error) { state.launcher = null; state.launcherError = error.code ?? 'INTERNAL'; }
 }
 
 async function connectAttempt(generation) {
@@ -89,8 +113,10 @@ async function connectAttempt(generation) {
         render();
         return;
       }
-      state.connection = 'unauthorized';
-      render();
+      if (state.connection !== 'unauthorized') {
+        state.connection = 'unauthorized';
+        render();
+      }
       pollTimer = setTimeout(() => connectAttempt(generation), Math.min(2000, permissionDeadline - Date.now()));
       return;
     }
@@ -154,6 +180,28 @@ const actions = {
   retryConnect() { if (state.candidate) actions.connect(state.candidate); },
   confirmClean() { if (state.selected.size) openModal('clean'); },
   confirmRestore() { openModal('restore'); },
+  confirmLauncherSwap() { openModal('launcherSwap'); },
+  confirmLauncherRestore() { openModal('launcherRestore'); },
+  async checkLauncher() {
+    if (state.busy) return;
+    state.busy = true;
+    render();
+    await loadLauncher();
+    state.busy = false;
+    render();
+  },
+  async openLauncherStore() {
+    if (state.busy) return;
+    state.busy = true;
+    state.error = null;
+    render();
+    try {
+      await api(devicePath('/launcher/open-store'), { package: state.launcher?.replacement.package ?? 'com.spocky.projengmenu' });
+      state.storeOpened = true;
+      state.busy = false;
+      render();
+    } catch (error) { state.busy = false; fail(error); }
+  },
   closeModal() {
     state.modal = null;
     render();
@@ -161,21 +209,30 @@ const actions = {
   },
   async startJob(operation) {
     if (state.busy) return;
+    const previousScreen = state.screen;
     state.modal = null;
     state.error = null;
     state.busy = true;
-    state.operation = operation;
-    state.results = [];
-    state.current = null;
-    state.total = operation === 'disable' ? state.selected.size : state.packages.filter(entry => entry.installed && !entry.enabled).length;
-    state.screen = 'progress';
     render();
     try {
-      const data = await api(devicePath(operation === 'restore' ? '/restore' : '/disable'), operation === 'restore' ? { all: true } : { packages: [...state.selected] });
+      const path = { disable: '/disable', restore: '/restore', launcherSwap: '/launcher/swap', launcherRestore: '/launcher/restore' }[operation];
+      const body = operation === 'disable' ? { packages: [...state.selected] } : operation === 'restore' ? { all: true }
+        : operation === 'launcherSwap' ? { package: state.launcher?.replacement.package } : {};
+      const data = await api(devicePath(path), body);
+      state.operation = operation;
+      state.results = [];
+      state.processed = 0;
+      state.current = null;
+      state.total = operation === 'disable' ? state.selected.size : operation.startsWith('launcher')
+        ? state.launcher?.stock.filter(entry => entry.installed && (operation === 'launcherRestore' || entry.enabled)).length ?? 0
+        : state.packages.filter(entry => entry.installed && !entry.enabled).length;
+      state.screen = 'progress';
+      render();
       source?.close();
       source = jobEvents(data.jobId, {
         progress(event) {
           state.total = event.total;
+          state.processed = Math.min(event.done, event.total);
           state.current = event.package;
           state.results.push(event);
           updateProgress(state);
@@ -187,9 +244,14 @@ const actions = {
           state.screen = 'done';
           render();
         },
-        error(error) { state.busy = false; fail(error, actions.backToList); },
+        error(error) {
+          state.busy = false;
+          state.error = { code: error.code, retry: actions.backToList,
+            ...(error.code === 'JOB_CONNECTION_LOST' ? { retryLabel: 'progress.checkAgain' } : {}) };
+          render();
+        },
       });
-    } catch (error) { state.busy = false; fail(error, actions.backToList); }
+    } catch (error) { state.busy = false; state.screen = previousScreen; fail(error); }
   },
   async backToList() {
     if (state.busy) return;
@@ -207,7 +269,11 @@ const actions = {
   },
 };
 
-await initI18n();
-render();
-await actions.health();
-window.addEventListener('pagehide', () => { cancelPolling(); source?.close(); });
+try {
+  await initI18n();
+  render();
+  await actions.health();
+} catch {
+  root.replaceChildren(h('p', { role: 'alert' }, t('error.I18N_UNAVAILABLE')));
+}
+window.addEventListener('pagehide', () => { cancelPolling(); source?.close(); bottomBarObserver?.disconnect(); });

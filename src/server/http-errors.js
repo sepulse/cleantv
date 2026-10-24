@@ -14,6 +14,7 @@ const statuses = {
   [ErrorCode.ADB_NOT_FOUND]: 503,
   [ErrorCode.TIMEOUT]: 504,
   [ErrorCode.COMMAND_FAILED]: 502,
+  [ErrorCode.LAUNCHER_NOT_READY]: 422,
 };
 
 const genericMessages = {

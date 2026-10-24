@@ -22,7 +22,7 @@ export async function serveStatic(request, response, publicDir, token) {
   } catch { return false; }
   if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\') || path.includes('\0')
     || path.split('/').some(part => part === '..' || part === '.') || path.includes(':')) return false;
-  const name = path === '/' ? 'index.html' : path.slice(1);
+  const name = path === '/' ? 'index.html' : path === '/favicon.ico' ? 'favicon.svg' : path.slice(1);
   if (!name || isAbsolute(name)) return false;
   const root = await realpath(publicDir);
   const candidate = resolve(root, name);

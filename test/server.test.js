@@ -7,6 +7,8 @@ import { CleanTvError } from '../src/core/errors.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
+import { createAdbClient } from '../src/core/adb/client.js';
+import { fakeRunner } from './helpers/fake-runner.js';
 
 const serial = '192.168.1.5:5555';
 const encoded = encodeURIComponent(serial);
@@ -73,6 +75,46 @@ test('all API routes return their contracted shapes', async t => {
   assert.equal((await get('/api/jobs/unknown/events')).status, 404);
 });
 
+test('disconnect refuses a busy serial for every job type and permits it after completion', async t => {
+  const other = '192.168.1.6:5555';
+  const run = fakeRunner({ [`disconnect ${serial}`]: {}, [`disconnect ${other}`]: {} });
+  const { engine, post, get } = await setup(t, { client: createAdbClient(run) });
+  for (const [method, suffix, body] of [
+    ['disable', '/disable', { packages: ['com.example.foo'] }],
+    ['swapLauncher', '/launcher/swap', { package: 'com.spocky.projengmenu' }],
+    ['restoreLauncher', '/launcher/restore', {}],
+  ]) {
+    let finish;
+    engine[method] = () => new Promise(resolve => { finish = resolve; });
+    const { jobId } = await (await post(`/api/devices/${encoded}${suffix}`, body)).json();
+    const before = run.calls.length;
+    const blocked = await post(`/api/devices/${encoded}/disconnect`, {});
+    assert.equal(blocked.status, 409);
+    assert.equal((await blocked.json()).error.code, 'DEVICE_BUSY');
+    assert.equal(run.calls.length, before);
+    assert.equal((await post(`/api/devices/${encodeURIComponent(other)}/disconnect`, {})).status, 200);
+    finish({ succeeded: 0, failed: 0, results: [] });
+    await (await get(`/api/jobs/${jobId}/events`)).text();
+    assert.equal((await post(`/api/devices/${encoded}/disconnect`, {})).status, 200);
+  }
+});
+
+test('inspection recovery flags and recovery guidance survive HTTP and SSE', async t => {
+  const { engine, get, post } = await setup(t);
+  engine.inspect = async () => ({ info: { serial }, presets: [], packages: [], recovered: true, journalWarning: true });
+  for (const suffix of ['', '/packages']) {
+    const result = await (await get(`/api/devices/${encoded}${suffix}`)).json();
+    assert.equal(result.recovered, true);
+    assert.equal(result.journalWarning, true);
+  }
+  engine.restoreLauncher = async () => ({ succeeded: 1, failed: 1, results: [], journalWarning: true,
+    manualHomePackage: 'com.google.android.tvlauncher' });
+  const { jobId } = await (await post(`/api/devices/${encoded}/launcher/restore`, {})).json();
+  const events = await (await get(`/api/jobs/${jobId}/events`)).text();
+  assert.match(events, /"journalWarning":true/);
+  assert.match(events, /"manualHomePackage":"com.google.android.tvlauncher"/);
+});
+
 test('busy serial, input validation, and absent ADB', async t => {
   let finish;
   const gate = new Promise(resolve => { finish = resolve; });
@@ -88,6 +130,8 @@ test('busy serial, input validation, and absent ADB', async t => {
   assert.equal((await (await missing.get('/api/health')).json()).adb.found, false);
   assert.equal((await missing.get('/api/devices')).status, 503);
   assert.equal((await missing.post(`/api/devices/${encoded}/disconnect`, {})).status, 503);
+  assert.equal((await missing.get(`/api/devices/${encoded}/launcher`)).status, 503);
+  for (const route of ['open-store', 'swap', 'restore']) assert.equal((await missing.post(`/api/devices/${encoded}/launcher/${route}`, {})).status, 503);
 });
 
 test('known error codes map to statuses and unexpected faults are redacted', async t => {
@@ -186,4 +230,13 @@ test('bootstrap resolves presets and public files outside the repo working direc
   await promisify(execFile)(process.execPath, ['--input-type=module', '-e', source], {
     cwd: tmpdir(), env: { ...process.env, CLEANTV_ADB: 'nonexistent-cleantv-test-adb' }, timeout: 15000,
   });
+});
+
+test('manualHomePackage from inspection survives the device, packages and launcher payloads', async t => {
+  const { engine, get } = await setup(t);
+  engine.inspect = async () => ({ info: { serial }, presets: [], packages: [], manualHomePackage: 'com.google.android.tvlauncher' });
+  engine.launcherStatus = async () => ({ manualHomePackage: 'com.google.android.tvlauncher' });
+  for (const suffix of ['', '/packages', '/launcher']) {
+    assert.equal((await (await get(`/api/devices/${encoded}${suffix}`)).json()).manualHomePackage, 'com.google.android.tvlauncher');
+  }
 });

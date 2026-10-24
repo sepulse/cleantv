@@ -50,7 +50,7 @@ async function setup(t, { disabled = [], installed = entries.map(e => e.package)
   return { engine: createEngine({ client, journal, presets }), client, journal, commands, disabledSet, dir };
 }
 
-test('inspect composes real client parsers, device info, matching and states without duplicate reads', async () => {
+test('inspect composes real client parsers, launcher health, device info, matching and states', async () => {
   const prefix = `-s ${serial} shell`;
   const run = fakeRunner({
     'devices -l': { stdout: `List of devices attached\r\n${serial} device\r\n` },
@@ -66,7 +66,7 @@ test('inspect composes real client parsers, device info, matching and states wit
   assert.equal(inspection.packages.length, entries.length);
   assert.equal(inspection.packages[0].enabled, false);
   assert.equal(inspection.packages[1].installed, false);
-  assert.equal(run.calls.filter(args => args.includes('packages')).length, 2);
+  assert.equal(run.calls.filter(args => args.includes('packages')).length, 3);
 });
 
 test('disable sequentially journals, verifies, skips blocked entries and continues after failures', async t => {
@@ -136,7 +136,8 @@ test('restore all falls back on corrupt history without overwriting it or weaken
     assert.deepEqual(result.results, [{ package: 'com.example.good', result: 'enabled' }]);
     assert.equal(result.succeeded, 1);
     assert.deepEqual(commands.filter(command => command.startsWith('enable:')), ['enable:com.example.good']);
-    await assert.rejects(engine.restore(serial, ['com.example.good']));
+    assert.equal((await engine.restore(serial, ['com.example.good'])).succeeded, 1);
+    assert.equal(await readFile(file, 'utf8'), contents);
     await assert.rejects(engine.disable(serial, ['com.example.good']));
     assert.equal(await readFile(file, 'utf8'), contents);
   }

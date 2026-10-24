@@ -23,7 +23,7 @@ export function jobEvents(id, { progress, complete, error }) {
   });
   source.addEventListener('error', event => {
     source.close();
-    let detail = { code: 'DEVICE_UNREACHABLE' };
+    let detail = { code: 'JOB_CONNECTION_LOST' };
     try { if (event.data) detail = JSON.parse(event.data); } catch { detail = { code: 'INTERNAL' }; }
     error(detail);
   });
