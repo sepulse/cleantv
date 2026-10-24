@@ -28,12 +28,29 @@ contract), and `src/server/*` (Phase 3, the real API you call).
   repo `https://github.com/tokotype/PlusJakartaSans` (OFL) into `public/fonts/` with
   `OFL.txt`. If download is impossible, fall back to the system stack and say so.
 
+## Pre-step: Phase 3 review fixes (do these first, one regression test each)
+
+1. `engine.history()`: drop `pending` records that have a later record for the same
+   package + action, so each action appears once.
+2. `src/server/http-errors.js`: send fixed, generic messages for `COMMAND_FAILED`,
+   `TIMEOUT`, `ADB_NOT_FOUND` (HTTP and SSE); log the raw detail to stderr only.
+3. `src/server/static.js`: detect index.html with
+   `relative(root, file).toLowerCase() === 'index.html'`; reject any path containing `:`.
+4. Unknown route / unknown job → 404 with a new `NOT_FOUND` code (add to `errors.js`
+   and ARCHITECTURE §5 error list), not `DEVICE_UNREACHABLE`.
+5. `security.js`: compare only the media type before `;` (accept
+   `application/json; charset=utf-8`).
+6. Treat an empty POST body as `{}`.
+7. `src/server/index.js`: resolve `presets/` and `public/` relative to the repo root
+   via `import.meta.url`, not the current working directory.
+
 ## Behaviour
 
 - Screens exactly as DESIGN.md "Flow". State machine in `app.js`; API calls in
   `api.js` (adds `X-CleanTV-Token` from the meta tag and JSON content-type on POST;
   turns `{ error }` into a thrown error with `code`); SSE via `EventSource` on
-  `/api/jobs/:id/events`.
+  `/api/jobs/:id/events` — call `close()` on `complete` and `error` (the server's
+  `retry: 2000` would otherwise make the browser reconnect in a loop).
 - Unauthorized: poll `POST /api/devices/connect` every 2 s (max 2 min) until `device`.
 - Error codes map to friendly i18n messages (one key per code in §5), with a
   "Cuba lagi / Try again" action where it makes sense.

@@ -5,6 +5,7 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "start": "node src/server/index.js --open",
+    "demo": "node src/server/index.js --demo --open",
     "test": "node --test \"test/*.test.js\"",
     "smoke": "node src/cli/smoke.js"
   }

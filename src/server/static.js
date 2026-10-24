@@ -21,7 +21,7 @@ export async function serveStatic(request, response, publicDir, token) {
     }
   } catch { return false; }
   if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\') || path.includes('\0')
-    || path.split('/').some(part => part === '..' || part === '.') || /^[A-Za-z]:/.test(path.slice(1))) return false;
+    || path.split('/').some(part => part === '..' || part === '.') || path.includes(':')) return false;
   const name = path === '/' ? 'index.html' : path.slice(1);
   if (!name || isAbsolute(name)) return false;
   const root = await realpath(publicDir);
@@ -31,7 +31,7 @@ export async function serveStatic(request, response, publicDir, token) {
     const rel = relative(root, file);
     if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return false;
     const contents = await readFile(file);
-    const body = name === 'index.html'
+    const body = relative(root, file).toLowerCase() === 'index.html'
       ? Buffer.from(contents.toString('utf8').replaceAll('{{CLEANTV_TOKEN}}', token)) : contents;
     response.writeHead(200, { 'Content-Type': types[extname(file).toLowerCase()] ?? 'application/octet-stream' });
     response.end(body);

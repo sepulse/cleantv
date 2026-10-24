@@ -62,3 +62,30 @@ test('static files inject the token and reject raw traversal paths', async t => 
     assert.equal((await send(port, path)).status, 404, path);
   }
 });
+
+test('static index aliases inject token and colon paths are rejected', async t => {
+  const port = await setup(t);
+  for (const path of ['/index.html', '/INDEX.HTML']) {
+    const page = await send(port, path);
+    // Case aliases exist on the Windows filesystem.
+    if (path === '/INDEX.HTML' && process.platform !== 'win32') continue;
+    assert.equal(page.status, 200);
+    assert.match(page.body, /name="cleantv-token" content="secret"/);
+    assert.doesNotMatch(page.body, /\{\{CLEANTV_TOKEN\}\}/);
+  }
+  for (const path of ['/index.html:stream', '/fonts/a%3Ab']) assert.equal((await send(port, path)).status, 404);
+});
+
+test('JSON content type accepts charset parameters', async t => {
+  const port = await setup(t);
+  assert.equal((await send(port, '/api/discover', { method: 'POST', headers: {
+    'Content-Type': 'application/json; charset=utf-8', 'X-CleanTV-Token': 'secret',
+  }, body: '{}' })).status, 200);
+});
+
+test('empty POST body is an empty JSON object', async t => {
+  const port = await setup(t);
+  assert.equal((await send(port, '/api/discover', { method: 'POST', headers: {
+    'Content-Type': 'application/json', 'X-CleanTV-Token': 'secret',
+  } })).status, 200);
+});

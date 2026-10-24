@@ -3,6 +3,9 @@ import { randomBytes } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { createDemoClient, scanDemo } from './demo-client.js';
 import { locateAdb } from '../core/adb/locate.js';
 import { createRunner } from '../core/adb/runner.js';
 import { createAdbClient } from '../core/adb/client.js';
@@ -22,9 +25,9 @@ import { serveStatic } from './static.js';
  *   journal: ReturnType<typeof createJournal>, scan: typeof scanForAdb, publicDir: string, token: string }} dependencies
  * @returns {import('node:http').Server}
  */
-export function createAppServer({ engine, client, journal, scan, publicDir, token }) {
+export function createAppServer({ engine, client, journal, scan, publicDir, token, demo = false }) {
   const jobs = createJobs();
-  const routes = createRoutes({ engine, client, journal, scan, jobs });
+  const routes = createRoutes({ engine, client, journal, scan, jobs, demo });
   return createServer(async (request, response) => {
     const pathname = request.url?.split('?')[0] ?? '';
     securityHeaders(response, pathname);
@@ -39,7 +42,7 @@ export function createAppServer({ engine, client, journal, scan, publicDir, toke
         if (await routes(request, response, pathname, body)) return;
       } else if (request.method === 'GET' && await serveStatic(request, response, publicDir, token)) return;
       response.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-      response.end(JSON.stringify({ error: { code: ErrorCode.DEVICE_UNREACHABLE, message: 'Not found' } }));
+      response.end(JSON.stringify({ error: { code: ErrorCode.NOT_FOUND, message: 'Not found' } }));
     } catch (error) {
       if (!response.headersSent) sendError(response, error);
       else response.end();
@@ -49,8 +52,13 @@ export function createAppServer({ engine, client, journal, scan, publicDir, toke
 
 /** @returns {Promise<import('node:http').Server>} */
 export async function main() {
+  const demo = process.argv.includes('--demo');
+  const presets = await loadPresets(fileURLToPath(new URL('../../presets/', import.meta.url)));
   let client = null;
-  try {
+  if (demo) {
+    console.log('DEMO MODE — no real TV');
+    client = createDemoClient(presets);
+  } else try {
     const adbPath = await locateAdb();
     const run = createRunner(adbPath);
     client = createAdbClient(run);
@@ -60,12 +68,11 @@ export async function main() {
   } catch (error) {
     if (error.code !== ErrorCode.ADB_NOT_FOUND) throw error;
   }
-  const journal = createJournal();
-  const presets = await loadPresets(resolve('presets'));
+  const journal = createJournal(demo ? await mkdtemp(resolve(tmpdir(), 'cleantv-demo-')) : undefined);
   const engine = client ? createEngine({ client, journal, presets }) : null;
   const token = randomBytes(32).toString('base64url');
   const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
-  const server = createAppServer({ engine, client, journal, scan: scanForAdb, publicDir, token });
+  const server = createAppServer({ engine, client, journal, scan: demo ? scanDemo : scanForAdb, publicDir, token, demo });
   const configured = process.env.CLEANTV_PORT;
   const ports = configured === undefined ? Array.from({ length: 11 }, (_, i) => 8765 + i) : [Number(configured)];
   if (ports.some(port => !Number.isInteger(port) || port < 1 || port > 65535)) {

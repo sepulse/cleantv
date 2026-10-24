@@ -24,7 +24,7 @@ export function checkMutation(request, token) {
   const candidate = request.headers['x-cleantv-token'];
   const actual = typeof candidate === 'string' ? Buffer.from(candidate) : Buffer.alloc(0);
   const expected = Buffer.from(token);
-  if (request.headers['content-type']?.toLowerCase() !== 'application/json'
+  if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json'
     || actual.length !== expected.length || !timingSafeEqual(actual, expected)
     || (origin !== undefined && ![`http://127.0.0.1:${port}`, `http://localhost:${port}`].includes(origin))) {
     throw new CleanTvError(ErrorCode.FORBIDDEN);
@@ -40,6 +40,6 @@ export async function readJson(request) {
     if (size > 64 * 1024) throw new CleanTvError(ErrorCode.INVALID_INPUT, 'Request body exceeds 64 KiB', { tooLarge: true });
     parts.push(part);
   }
-  try { return JSON.parse(Buffer.concat(parts).toString('utf8')); }
+  try { return size === 0 ? {} : JSON.parse(Buffer.concat(parts).toString('utf8')); }
   catch { throw new CleanTvError(ErrorCode.INVALID_INPUT, 'Invalid JSON'); }
 }

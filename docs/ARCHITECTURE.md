@@ -140,7 +140,7 @@ data: { "code": "DEVICE_OFFLINE", "message": "..." }
 **Kod ralat:** `ADB_NOT_FOUND`, `INVALID_INPUT`, `DEVICE_UNREACHABLE`,
 `DEVICE_UNAUTHORIZED`, `DEVICE_OFFLINE`, `DEVICE_BUSY`, `PACKAGE_PROTECTED`,
 `PACKAGE_NOT_IN_REGISTRY`, `PACKAGE_IS_LAUNCHER`, `COMMAND_FAILED`, `TIMEOUT`,
-`FORBIDDEN` (token/Host salah).
+`FORBIDDEN` (token/Host salah), `NOT_FOUND` (route/job tiada), `INTERNAL`.
 
 ## 6. Aliran pengguna (sasaran UX)
 

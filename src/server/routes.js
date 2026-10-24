@@ -11,10 +11,10 @@ const packages = value => Array.isArray(value) && value.length >= 1 && value.len
 
 /** @param {{ engine: object | null, client: object | null, scan: Function,
  *   jobs: ReturnType<typeof import('./jobs.js').createJobs> }} dependencies */
-export function createRoutes({ engine, client, scan, jobs }) {
+export function createRoutes({ engine, client, scan, jobs, demo = false }) {
   const requireAdb = () => { if (!client) throw new CleanTvError(ErrorCode.ADB_NOT_FOUND); };
   const routes = [
-    ['GET', /^\/api\/health$/, async (_req, res) => json(res, { ok: true, adb: {
+    ['GET', /^\/api\/health$/, async (_req, res) => json(res, { ok: true, ...(demo ? { demo: true } : {}), adb: {
       found: Boolean(client), path: client?.adbPath ?? null, version: client?.adbVersion ?? null,
     } })],
     ['POST', /^\/api\/discover$/, async (_req, res) => {
@@ -66,7 +66,7 @@ export function createRoutes({ engine, client, scan, jobs }) {
       json(res, { ok: true });
     }],
     ['GET', /^\/api\/jobs\/([^/]+)\/events$/, async (req, res, match) => {
-      if (!jobs.stream(match[1], req, res)) json(res, { error: { code: ErrorCode.DEVICE_UNREACHABLE, message: 'Job not found' } }, 404);
+      if (!jobs.stream(match[1], req, res)) json(res, { error: { code: ErrorCode.NOT_FOUND, message: 'Job not found' } }, 404);
     }],
   ];
   return async (req, res, pathname, body) => {

@@ -92,7 +92,9 @@ export function createEngine({ client, journal, presets }) {
       const { info } = await context(serial);
       try {
         const records = await journal.read(info.deviceId);
-        return records.slice().reverse().map(record => ({
+        return records.filter((record, i) => record.status !== 'pending'
+          || !records.slice(i + 1).some(later => later.package === record.package && later.action === record.action))
+          .reverse().map(record => ({
           at: record.at, action: record.action, package: record.package,
           result: record.status === 'ok' ? (record.action === 'disable' ? 'disabled' : 'enabled') : record.status,
         }));

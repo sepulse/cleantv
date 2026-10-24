@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { createAppServer } from '../src/server/index.js';
 import { createEngine } from '../src/core/engine.js';
 import { CleanTvError } from '../src/core/errors.js';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { tmpdir } from 'node:os';
 
 const serial = '192.168.1.5:5555';
 const encoded = encodeURIComponent(serial);
@@ -99,7 +102,9 @@ test('known error codes map to statuses and unexpected faults are redacted', asy
     engine.inspect = async () => { throw new CleanTvError(code, 'public message'); };
     const response = await get(`/api/devices/${encoded}`);
     assert.equal(response.status, status, code);
-    assert.deepEqual(await response.json(), { error: { code, message: 'public message' } });
+    const message = { COMMAND_FAILED: 'The TV could not complete the action.',
+      TIMEOUT: 'The TV took too long to respond.', ADB_NOT_FOUND: 'The TV connection tool is not available.' }[code] ?? 'public message';
+    assert.deepEqual(await response.json(), { error: { code, message } });
   }
   engine.inspect = async () => { throw new Error('private diagnostic'); };
   const response = await get(`/api/devices/${encoded}`);
@@ -133,4 +138,52 @@ test('engine maps device states before package work and history reads newest fir
   ]);
   journal.read = async () => { throw new SyntaxError('corrupt'); };
   assert.deepEqual(await engine.history(serial), []);
+});
+
+test('history drops resolved pending intents but keeps unresolved ones and distinct actions', async () => {
+  const client = { devices: async () => [{ serial, state: 'device' }], listPackages: async () => [],
+    getprops: async () => ({ 'ro.serialno': 'TV123' }), resolveHomeActivity: async () => null };
+  const records = [
+    { at: '1', package: 'com.example.foo', action: 'disable', status: 'pending' },
+    { at: '2', package: 'com.example.foo', action: 'disable', status: 'ok' },
+    { at: '3', package: 'com.example.foo', action: 'enable', status: 'pending' },
+  ];
+  const engine = createEngine({ client, presets: [], journal: { read: async () => records } });
+  assert.deepEqual((await engine.history(serial)).map(item => item.result), ['pending', 'disabled']);
+});
+
+test('command diagnostics are redacted in HTTP and SSE', async t => {
+  const { engine, get, post } = await setup(t);
+  for (const code of ['COMMAND_FAILED', 'TIMEOUT', 'ADB_NOT_FOUND']) {
+    engine.inspect = async () => { throw new CleanTvError(code, 'private path and output'); };
+    const response = await get(`/api/devices/${encoded}`);
+    assert.doesNotMatch(await response.text(), /private path/);
+    engine.disable = async () => { throw new CleanTvError(code, 'private path and output'); };
+    const { jobId } = await (await post(`/api/devices/${encoded}/disable`, { packages: ['com.example.foo'] })).json();
+    const events = await (await get(`/api/jobs/${jobId}/events`)).text();
+    assert.match(events, new RegExp(code));
+    assert.doesNotMatch(events, /private path/);
+  }
+});
+
+test('unknown routes and jobs have NOT_FOUND, distinct from unreachable TVs', async t => {
+  const { get } = await setup(t);
+  for (const path of ['/api/unknown', '/missing', '/api/jobs/unknown/events']) {
+    const response = await get(path);
+    assert.equal(response.status, 404);
+    assert.equal((await response.json()).error.code, 'NOT_FOUND');
+  }
+});
+
+test('bootstrap resolves presets and public files outside the repo working directory', async () => {
+  const moduleUrl = new URL('../src/server/index.js', import.meta.url).href;
+  const source = `import { main } from ${JSON.stringify(moduleUrl)};
+    const server = await main();
+    try {
+      const response = await fetch('http://127.0.0.1:' + server.address().port + '/');
+      if (response.status !== 200 || !(await response.text()).includes('cleantv-token')) process.exitCode = 1;
+    } finally { server.closeAllConnections(); await new Promise(r => server.close(r)); }`;
+  await promisify(execFile)(process.execPath, ['--input-type=module', '-e', source], {
+    cwd: tmpdir(), env: { ...process.env, CLEANTV_ADB: 'nonexistent-cleantv-test-adb' }, timeout: 15000,
+  });
 });
