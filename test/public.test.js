@@ -54,7 +54,9 @@ test('translation selects singular centrally for numeric one, including progress
   t.after(() => Object.assign(globalThis, saved));
   const { initI18n, t: translate, setLanguage } = await import('../public/js/i18n.js');
   await initI18n();
-  for (const lang of ['en', 'ms']) {
+  setLanguage('ms');
+  assert.equal(translate('choose.clean', { n: 1 }), catalogs.ms['choose.clean.one'].replace('{n}', '1'));
+  for (const lang of ['en']) {
     setLanguage(lang);
     assert.equal(translate('choose.clean', { n: 1 }), 'Clean 1 app');
     assert.equal(translate('choose.clean', { n: 0 }), 'Clean 0 apps');

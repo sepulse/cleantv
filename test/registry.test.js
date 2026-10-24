@@ -88,7 +88,7 @@ test('loader reports file name and validation or JSON errors', async t => {
   assert.equal((await loadPresets(dir)).length, 1);
 });
 
-test('real common preset validates, contains 5–10 unverified entries with empty Malay strings', async () => {
+test('real common preset validates, contains 5–10 unverified entries with Malay text', async () => {
   const presets = await loadPresets(resolve(import.meta.dirname, '../presets'));
   const common = presets.find(preset => preset.id === 'common-android-tv');
   assert.ok(common);
@@ -96,7 +96,7 @@ test('real common preset validates, contains 5–10 unverified entries with empt
   assert.ok(common.packages.length >= 5 && common.packages.length <= 10);
   for (const entry of common.packages) {
     assert.equal(entry.verified, false);
-    for (const field of ['label', 'description', 'effect']) assert.equal(entry[field].ms, '');
+    for (const field of ['label', 'description', 'effect']) assert.ok(entry[field].ms);
     assert.ok(entry.sources.length);
   }
 });

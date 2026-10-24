@@ -152,7 +152,7 @@ test('failed HOME restoration shows remote guidance and Check again retries veri
   await app.click('modal-confirm');
   await app.emit('complete', { succeeded: 1, failed: 1, journalWarning: true, manualHomePackage: stock,
     results: [{ package: stock, result: 'enabled' }, { package: replacement, result: 'failed', reason: 'LAUNCHER_RESTORE_FAILED' }] });
-  assert.match(app.document.root.textContent, /Press Home on the remote, choose Original home screen, select Always, then Check again/);
+  assert.match(app.document.root.textContent, /Press Home on your remote, choose Original home screen, select Always, then choose Check again/);
   assert.match(app.document.root.textContent, /could not save some recovery history/);
   await app.click('launcher-check-restore');
   assert.ok(app.requests.at(-1).path.endsWith('/launcher/restore'));
@@ -183,5 +183,5 @@ test('failed clean POST stays on choose; lost SSE offers package refresh without
 test('manual HOME guidance from a failed health recovery shows on the choose screen', async t => {
   const app = await application(t, { manualHomePackage: stock });
   await connect(app);
-  assert.match(app.byId('bottom-bar').parentElement.textContent, /Press Home on the remote, choose Original home screen, select Always/);
+  assert.match(app.byId('bottom-bar').parentElement.textContent, /Press Home on your remote, choose Original home screen, select Always/);
 });

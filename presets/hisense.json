@@ -1,125 +1,157 @@
 {
   "id": "hisense",
-  "match": {"brand":["hisense"],"manufacturer":["hisense"]},
+  "match": {
+    "brand": [
+      "hisense"
+    ],
+    "manufacturer": [
+      "hisense"
+    ]
+  },
   "packages": [
     {
       "package": "com.hisense.evservice",
       "risk": "green",
       "category": "telemetry",
-      "label": {"en":"Hisense viewing recognition","ms":""},
-      "description": {"en":"Recognises on-screen content for viewing data collection.","ms":""},
-      "effect": {"en":"Enhanced Viewing content recognition and its data collection stop.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt","https://github.com/pengchujin/aerial-tv/issues/285"],
+      "label": {"en":"Hisense viewing recognition","ms":"Pengecaman tontonan Hisense"},
+      "description": {"en":"Recognises on-screen content for viewing data collection.","ms":"Mengecam kandungan pada skrin untuk pengumpulan data tontonan."},
+      "effect": {"en":"Enhanced Viewing content recognition and its data collection stop.","ms":"Pengecaman kandungan Enhanced Viewing dan pengumpulan datanya akan berhenti."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt",
+        "https://github.com/pengchujin/aerial-tv/issues/285"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.storemode",
       "risk": "green",
       "category": "bloat",
-      "label": {"en":"Hisense shop mode","ms":""},
-      "description": {"en":"Provides features for displaying the TV in a shop.","ms":""},
-      "effect": {"en":"Shop display features stop working until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense shop mode","ms":"Mod kedai Hisense"},
+      "description": {"en":"Provides features for displaying the TV in a shop.","ms":"Menyediakan ciri untuk mempamerkan TV di kedai."},
+      "effect": {"en":"Shop display features stop working until restored.","ms":"Ciri paparan kedai berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.hibrowser",
       "risk": "yellow",
       "category": "bloat",
-      "label": {"en":"Hisense browser","ms":""},
-      "description": {"en":"Opens websites on the TV.","ms":""},
-      "effect": {"en":"The Hisense browser and links that need it stop working until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense browser","ms":"Pelayar Hisense"},
+      "description": {"en":"Opens websites on the TV.","ms":"Membuka laman web pada TV."},
+      "effect": {"en":"The Hisense browser and links that need it stop working until restored.","ms":"Pelayar Hisense dan pautan yang memerlukannya berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.service.message",
       "risk": "yellow",
       "category": "bloat",
-      "label": {"en":"Hisense messages","ms":""},
-      "description": {"en":"Shows messages sent by Hisense.","ms":""},
-      "effect": {"en":"Messages delivered by this Hisense service stop appearing until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense messages","ms":"Mesej Hisense"},
+      "description": {"en":"Shows messages sent by Hisense.","ms":"Memaparkan mesej yang dihantar oleh Hisense."},
+      "effect": {"en":"Messages delivered by this Hisense service stop appearing until restored.","ms":"Mesej yang disampaikan oleh perkhidmatan Hisense ini berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.tv.smartsense",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Hisense SmartSense","ms":""},
-      "description": {"en":"A Hisense service linked to startup on some models.","ms":""},
-      "effect": {"en":"Disabling this may prevent normal TV startup; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense SmartSense","ms":"Hisense SmartSense"},
+      "description": {"en":"A Hisense service linked to startup on some models.","ms":"Perkhidmatan Hisense yang berkaitan dengan permulaan sistem pada sesetengah model."},
+      "effect": {"en":"Disabling this may prevent normal TV startup; protected.","ms":"Mematikan ini mungkin menghalang TV bermula seperti biasa; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.vt.tv.smartsense.ui",
       "risk": "red",
       "category": "system",
-      "label": {"en":"SmartSense screen support","ms":""},
-      "description": {"en":"A SmartSense component linked to startup on some Hisense TVs.","ms":""},
-      "effect": {"en":"Disabling this may prevent normal TV startup; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"SmartSense screen support","ms":"Sokongan skrin SmartSense"},
+      "description": {"en":"A SmartSense component linked to startup on some Hisense TVs.","ms":"Komponen SmartSense yang berkaitan dengan permulaan sistem pada sesetengah TV Hisense."},
+      "effect": {"en":"Disabling this may prevent normal TV startup; protected.","ms":"Mematikan ini mungkin menghalang TV bermula seperti biasa; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.vt.tv.aiot",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Hisense smart device support","ms":""},
-      "description": {"en":"A smart device component linked to startup on some Hisense TVs.","ms":""},
-      "effect": {"en":"Disabling this may prevent normal TV startup; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense smart device support","ms":"Sokongan peranti pintar Hisense"},
+      "description": {"en":"A smart device component linked to startup on some Hisense TVs.","ms":"Komponen peranti pintar yang berkaitan dengan permulaan sistem pada sesetengah TV Hisense."},
+      "effect": {"en":"Disabling this may prevent normal TV startup; protected.","ms":"Mematikan ini mungkin menghalang TV bermula seperti biasa; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.tv.ota",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Hisense system updates","ms":""},
-      "description": {"en":"Provides TV system software updates.","ms":""},
-      "effect": {"en":"The TV may stop receiving system software updates; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense system updates","ms":"Kemas kini sistem Hisense"},
+      "description": {"en":"Provides TV system software updates.","ms":"Menyediakan kemas kini perisian sistem TV."},
+      "effect": {"en":"The TV may stop receiving system software updates; protected.","ms":"TV mungkin berhenti menerima kemas kini perisian sistem; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.remoteupgrade",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Hisense update support","ms":""},
-      "description": {"en":"Supports Hisense TV software updates.","ms":""},
-      "effect": {"en":"TV software updates may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense update support","ms":"Sokongan kemas kini Hisense"},
+      "description": {"en":"Supports Hisense TV software updates.","ms":"Menyokong kemas kini perisian TV Hisense."},
+      "effect": {"en":"TV software updates may stop working; protected.","ms":"Kemas kini perisian TV mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.vt.tv.usbota",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Hisense USB updates","ms":""},
-      "description": {"en":"Supports TV software updates from USB storage.","ms":""},
-      "effect": {"en":"Updating TV software from USB storage may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense USB updates","ms":"Kemas kini USB Hisense"},
+      "description": {"en":"Supports TV software updates from USB storage.","ms":"Menyokong kemas kini perisian TV daripada storan USB."},
+      "effect": {"en":"Updating TV software from USB storage may stop working; protected.","ms":"Kemas kini perisian TV daripada storan USB mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.tv.hitvinput",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Hisense TV inputs","ms":""},
-      "description": {"en":"Supports Hisense TV input functions.","ms":""},
-      "effect": {"en":"TV inputs or input switching may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense TV inputs","ms":"Input TV Hisense"},
+      "description": {"en":"Supports Hisense TV input functions.","ms":"Menyokong fungsi input TV Hisense."},
+      "effect": {"en":"TV inputs or input switching may stop working; protected.","ms":"Input TV atau pertukaran input mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.hisense.tv.customerlauncher",
       "risk": "red",
       "category": "launcher",
-      "label": {"en":"Hisense home support","ms":""},
-      "description": {"en":"Supports the Hisense home screen.","ms":""},
-      "effect": {"en":"The TV home screen or related system functions may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"],
+      "label": {"en":"Hisense home support","ms":"Sokongan skrin utama Hisense"},
+      "description": {"en":"Supports the Hisense home screen.","ms":"Menyokong skrin utama Hisense."},
+      "effect": {"en":"The TV home screen or related system functions may stop working; protected.","ms":"Skrin utama TV atau fungsi sistem berkaitan mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
+      ],
       "verified": false
     }
   ]

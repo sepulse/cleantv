@@ -1,85 +1,110 @@
 {
   "id": "google-tv",
-  "match": {"feature":"google-tv"},
+  "match": {
+    "feature": "google-tv"
+  },
   "packages": [
     {
       "package": "com.google.android.apps.tv.launcherx",
       "risk": "red",
       "category": "ads",
-      "label": {"en":"Google TV home","ms":""},
-      "description": {"en":"The Google TV home screen shows apps, recommendations and sponsored content.","ms":""},
-      "effect": {"en":"You could lose the home screen. Handled by the launcher-swap step.","ms":""},
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.apps.tv.launcherx","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "label": {"en":"Google TV home","ms":"Skrin utama Google TV"},
+      "description": {"en":"The Google TV home screen shows apps, recommendations and sponsored content.","ms":"Skrin utama Google TV memaparkan aplikasi, syor dan kandungan yang ditaja."},
+      "effect": {"en":"You could lose the home screen. Handled by the launcher-swap step.","ms":"Anda mungkin kehilangan skrin utama. Dikendalikan oleh langkah pertukaran launcher."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.apps.tv.launcherx",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.tungsten.setupwraith",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TV setup","ms":""},
-      "description": {"en":"Sets up Wi-Fi, accounts and other TV features.","ms":""},
-      "effect": {"en":"Disabling this can break setup, saved Wi-Fi or phone casting; protected.","ms":""},
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.tungsten.setupwraith","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "label": {"en":"TV setup","ms":"Persediaan TV"},
+      "description": {"en":"Sets up Wi-Fi, accounts and other TV features.","ms":"Menyediakan Wi-Fi, akaun dan ciri TV yang lain."},
+      "effect": {"en":"Disabling this can break setup, saved Wi-Fi or phone casting; protected.","ms":"Mematikan ini boleh merosakkan persediaan, Wi-Fi yang disimpan atau casting telefon; dilindungi."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.tungsten.setupwraith",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.apps.tv.dreamx",
       "risk": "yellow",
       "category": "system",
-      "label": {"en":"Google TV screensaver","ms":""},
-      "description": {"en":"Shows photos and other content while the TV is idle.","ms":""},
-      "effect": {"en":"The Google TV screensaver stops working until restored; choose another screensaver first.","ms":""},
-      "sources": ["https://github.com/theothernt/AerialViews#how-to-revert-back-to-the-default-screensaver","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "label": {"en":"Google TV screensaver","ms":"Penyelamat skrin Google TV"},
+      "description": {"en":"Shows photos and other content while the TV is idle.","ms":"Memaparkan foto dan kandungan lain semasa TV tidak digunakan."},
+      "effect": {"en":"The Google TV screensaver stops working until restored; choose another screensaver first.","ms":"Penyelamat skrin Google TV berhenti berfungsi sehingga dipulihkan; pilih penyelamat skrin lain terlebih dahulu."},
+      "sources": [
+        "https://github.com/theothernt/AerialViews#how-to-revert-back-to-the-default-screensaver",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.apps.mediashell",
       "risk": "yellow",
       "category": "system",
-      "label": {"en":"Google Cast","ms":""},
-      "description": {"en":"Receives videos and music sent from phones and other devices.","ms":""},
-      "effect": {"en":"Phone casting stops; TV apps such as Stremio may also lose video playback until restored.","ms":""},
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.apps.mediashell","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "label": {"en":"Google Cast","ms":"Google Cast"},
+      "description": {"en":"Receives videos and music sent from phones and other devices.","ms":"Menerima video dan muzik yang dihantar daripada telefon dan peranti lain."},
+      "effect": {"en":"Phone casting stops; TV apps such as Stremio may also lose video playback until restored.","ms":"Casting telefon terhenti; aplikasi TV seperti Stremio juga mungkin kehilangan main balik video sehingga dipulihkan."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.apps.mediashell",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.katniss",
       "risk": "red",
       "category": "assistant",
-      "label": {"en":"Google voice search","ms":""},
-      "description": {"en":"Provides Google Assistant and voice search on the TV.","ms":""},
-      "effect": {"en":"Voice search, Assistant and possibly Play Store app search would stop working; protected.","ms":""},
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.katniss","https://github.com/Trigun1127/TCL-Chromecast-and-Search-Bar-Fix/blob/main/README.md#fix-1-restore-play-store-search","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "label": {"en":"Google voice search","ms":"Carian suara Google"},
+      "description": {"en":"Provides Google Assistant and voice search on the TV.","ms":"Menyediakan Google Assistant dan carian suara pada TV."},
+      "effect": {"en":"Voice search, Assistant and possibly Play Store app search would stop working; protected.","ms":"Carian suara, Assistant dan mungkin carian aplikasi Play Store akan berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.katniss",
+        "https://github.com/Trigun1127/TCL-Chromecast-and-Search-Bar-Fix/blob/main/README.md#fix-1-restore-play-store-search",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.tv.remote.service",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TV remote service","ms":""},
-      "description": {"en":"Connects phone remotes and, on some TVs, handles the remote microphone.","ms":""},
-      "effect": {"en":"Phone remote control or the physical remote microphone may stop working; protected.","ms":""},
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.tv.remote.service","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "label": {"en":"TV remote service","ms":"Perkhidmatan alat kawalan jauh TV"},
+      "description": {"en":"Connects phone remotes and, on some TVs, handles the remote microphone.","ms":"Menyambungkan alat kawalan jauh telefon dan, pada sesetengah TV, mengendalikan mikrofon alat kawalan jauh."},
+      "effect": {"en":"Phone remote control or the physical remote microphone may stop working; protected.","ms":"Kawalan jauh telefon atau mikrofon fizikal alat kawalan jauh mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.tv.remote.service",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.tv.dfuservice",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Remote software updates","ms":""},
-      "description": {"en":"Updates the software inside supported TV remotes.","ms":""},
-      "effect": {"en":"The remote may lose software updates or related functions; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "label": {"en":"Remote software updates","ms":"Kemas kini perisian alat kawalan jauh"},
+      "description": {"en":"Updates the software inside supported TV remotes.","ms":"Mengemas kini perisian di dalam alat kawalan jauh TV yang disokong."},
+      "effect": {"en":"The remote may lose software updates or related functions; protected.","ms":"Alat kawalan jauh mungkin kehilangan kemas kini perisian atau fungsi berkaitan; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.feedback",
       "risk": "green",
       "category": "telemetry",
-      "label": {"en":"Google feedback reporter","ms":""},
-      "description": {"en":"Sends feedback and problem reports to Google.","ms":""},
-      "effect": {"en":"You lose this way to send feedback and problem reports to Google.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"],
+      "label": {"en":"Google feedback reporter","ms":"Pelapor maklum balas Google"},
+      "description": {"en":"Sends feedback and problem reports to Google.","ms":"Menghantar maklum balas dan laporan masalah kepada Google."},
+      "effect": {"en":"You lose this way to send feedback and problem reports to Google.","ms":"Anda kehilangan cara ini untuk menghantar maklum balas dan laporan masalah kepada Google."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"
+      ],
       "verified": false
     }
   ]

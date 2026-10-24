@@ -1,105 +1,136 @@
 {
   "id": "sony",
-  "match": {"brand":["sony"],"manufacturer":["sony"]},
+  "match": {
+    "brand": [
+      "sony"
+    ],
+    "manufacturer": [
+      "sony"
+    ]
+  },
   "packages": [
     {
       "package": "tv.samba.ssm",
       "risk": "green",
       "category": "telemetry",
-      "label": {"en":"Samba TV viewing recognition","ms":""},
-      "description": {"en":"Recognises what is on screen to collect viewing information.","ms":""},
-      "effect": {"en":"Samba TV viewing recognition and its data collection stop.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt","https://github.com/jellyfin/jellyfin-androidtv/issues/5398"],
+      "label": {"en":"Samba TV viewing recognition","ms":"Pengecaman tontonan Samba TV"},
+      "description": {"en":"Recognises what is on screen to collect viewing information.","ms":"Mengecam kandungan pada skrin untuk mengumpul maklumat tontonan."},
+      "effect": {"en":"Samba TV viewing recognition and its data collection stop.","ms":"Pengecaman tontonan Samba TV dan pengumpulan datanya akan berhenti."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt",
+        "https://github.com/jellyfin/jellyfin-androidtv/issues/5398"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.demosupport",
       "risk": "green",
       "category": "bloat",
-      "label": {"en":"Sony shop demo support","ms":""},
-      "description": {"en":"Supports demonstrations used when the TV is displayed in a shop.","ms":""},
-      "effect": {"en":"Shop demonstration features may stop working until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"],
+      "label": {"en":"Sony shop demo support","ms":"Sokongan demo kedai Sony"},
+      "description": {"en":"Supports demonstrations used when the TV is displayed in a shop.","ms":"Menyokong demonstrasi yang digunakan apabila TV dipamerkan di kedai."},
+      "effect": {"en":"Shop demonstration features may stop working until restored.","ms":"Ciri demonstrasi kedai mungkin berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.promos",
       "risk": "green",
       "category": "bloat",
-      "label": {"en":"Sony offers","ms":""},
-      "description": {"en":"Shows Sony promotional offers.","ms":""},
-      "effect": {"en":"Sony offers and the related promotional tile become unavailable until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"],
+      "label": {"en":"Sony offers","ms":"Tawaran Sony"},
+      "description": {"en":"Shows Sony promotional offers.","ms":"Memaparkan tawaran promosi Sony."},
+      "effect": {"en":"Sony offers and the related promotional tile become unavailable until restored.","ms":"Tawaran Sony dan jubin promosi berkaitan tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.sonyselect",
       "risk": "yellow",
       "category": "ads",
-      "label": {"en":"Sony Select","ms":""},
-      "description": {"en":"Shows recommended subscription services and apps.","ms":""},
-      "effect": {"en":"Sony Select recommendations and app links become unavailable until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt","https://raw.githubusercontent.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/main/resources/assets/uad_lists.json"],
+      "label": {"en":"Sony Select","ms":"Sony Select"},
+      "description": {"en":"Shows recommended subscription services and apps.","ms":"Memaparkan perkhidmatan langganan dan aplikasi yang disyorkan."},
+      "effect": {"en":"Sony Select recommendations and app links become unavailable until restored.","ms":"Syor Sony Select dan pautan aplikasi tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt",
+        "https://raw.githubusercontent.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/main/resources/assets/uad_lists.json"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.seeds.iot",
       "risk": "yellow",
       "category": "assistant",
-      "label": {"en":"Sony smart speaker control","ms":""},
-      "description": {"en":"Lets supported smart speakers control the TV.","ms":""},
-      "effect": {"en":"TV control through the linked smart speaker stops working until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt","https://raw.githubusercontent.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/main/resources/assets/uad_lists.json"],
+      "label": {"en":"Sony smart speaker control","ms":"Kawalan pembesar suara pintar Sony"},
+      "description": {"en":"Lets supported smart speakers control the TV.","ms":"Membolehkan pembesar suara pintar yang disokong mengawal TV."},
+      "effect": {"en":"TV control through the linked smart speaker stops working until restored.","ms":"Kawalan TV melalui pembesar suara pintar yang dihubungkan berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt",
+        "https://raw.githubusercontent.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/main/resources/assets/uad_lists.json"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.tvx",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Sony live TV and HDMI","ms":""},
-      "description": {"en":"Handles live TV and HDMI viewing on Sony TVs.","ms":""},
-      "effect": {"en":"Live TV and HDMI viewing may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt","https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"],
+      "label": {"en":"Sony live TV and HDMI","ms":"TV langsung dan HDMI Sony"},
+      "description": {"en":"Handles live TV and HDMI viewing on Sony TVs.","ms":"Mengendalikan tontonan TV langsung dan HDMI pada TV Sony."},
+      "effect": {"en":"Live TV and HDMI viewing may stop working; protected.","ms":"Tontonan TV langsung dan HDMI mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt",
+        "https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.braviasyncservice",
       "risk": "red",
       "category": "system",
-      "label": {"en":"BRAVIA Sync","ms":""},
-      "description": {"en":"Links TV controls with compatible HDMI devices.","ms":""},
-      "effect": {"en":"Control of linked HDMI devices may stop working; protected.","ms":""},
-      "sources": ["https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"],
+      "label": {"en":"BRAVIA Sync","ms":"BRAVIA Sync"},
+      "description": {"en":"Links TV controls with compatible HDMI devices.","ms":"Menghubungkan kawalan TV dengan peranti HDMI yang serasi."},
+      "effect": {"en":"Control of linked HDMI devices may stop working; protected.","ms":"Kawalan peranti HDMI yang dihubungkan mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.tvinput.external",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Sony external inputs","ms":""},
-      "description": {"en":"Connects external video inputs to TV apps.","ms":""},
-      "effect": {"en":"HDMI and other external inputs may stop working; protected.","ms":""},
-      "sources": ["https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"],
+      "label": {"en":"Sony external inputs","ms":"Input luaran Sony"},
+      "description": {"en":"Connects external video inputs to TV apps.","ms":"Menyambungkan input video luaran kepada aplikasi TV."},
+      "effect": {"en":"HDMI and other external inputs may stop working; protected.","ms":"HDMI dan input luaran lain mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://gist.github.com/sarabveer/f5dd6c1a443549d708603cc85cadb009"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.smarthelp",
       "risk": "yellow",
       "category": "bloat",
-      "label": {"en":"Sony TV help","ms":""},
-      "description": {"en":"Shows help for using the TV.","ms":""},
-      "effect": {"en":"The Sony TV help pages provided by this app become unavailable until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"],
+      "label": {"en":"Sony TV help","ms":"Bantuan TV Sony"},
+      "description": {"en":"Shows help for using the TV.","ms":"Memaparkan bantuan untuk menggunakan TV."},
+      "effect": {"en":"The Sony TV help pages provided by this app become unavailable until restored.","ms":"Halaman bantuan TV Sony yang disediakan oleh aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.sony.dtv.sonybugreportsys",
       "risk": "green",
       "category": "telemetry",
-      "label": {"en":"Sony problem reporter","ms":""},
-      "description": {"en":"Collects TV problem reports for Sony.","ms":""},
-      "effect": {"en":"Sony loses problem reports collected by this reporter.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"],
+      "label": {"en":"Sony problem reporter","ms":"Pelapor masalah Sony"},
+      "description": {"en":"Collects TV problem reports for Sony.","ms":"Mengumpul laporan masalah TV untuk Sony."},
+      "effect": {"en":"Sony loses problem reports collected by this reporter.","ms":"Sony kehilangan laporan masalah yang dikumpulkan oleh pelapor ini."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"
+      ],
       "verified": false
     }
   ]

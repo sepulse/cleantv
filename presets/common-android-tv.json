@@ -1,55 +1,67 @@
 {
   "id": "common-android-tv",
-  "match": { "any": true },
+  "match": {
+    "any": true
+  },
   "packages": [
     {
       "package": "com.google.android.youtube.tv",
       "risk": "yellow",
       "category": "bloat",
-      "label": { "en": "YouTube", "ms": "" },
-      "description": { "en": "YouTube app for Android TV.", "ms": "" },
-      "effect": { "en": "YouTube playback through this app and its remote shortcuts becomes unavailable until restored.", "ms": "" },
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.youtube.tv"],
+      "label": {"en":"YouTube","ms":"YouTube"},
+      "description": {"en":"YouTube app for Android TV.","ms":"Aplikasi YouTube untuk Android TV."},
+      "effect": {"en":"YouTube playback through this app and its remote shortcuts becomes unavailable until restored.","ms":"Main balik YouTube melalui aplikasi ini dan pintasan alat kawalan jauhnya tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.youtube.tv"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.youtube.tvmusic",
       "risk": "yellow",
       "category": "bloat",
-      "label": { "en": "YouTube Music", "ms": "" },
-      "description": { "en": "YouTube Music app for TVs.", "ms": "" },
-      "effect": { "en": "The YouTube Music TV app becomes unavailable until restored.", "ms": "" },
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.youtube.tvmusic"],
+      "label": {"en":"YouTube Music","ms":"YouTube Music"},
+      "description": {"en":"YouTube Music app for TVs.","ms":"Aplikasi YouTube Music untuk TV."},
+      "effect": {"en":"The YouTube Music TV app becomes unavailable until restored.","ms":"Aplikasi TV YouTube Music tidak tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.youtube.tvmusic"
+      ],
       "verified": false
     },
     {
       "package": "com.google.android.play.games",
       "risk": "yellow",
       "category": "bloat",
-      "label": { "en": "Google Play Games", "ms": "" },
-      "description": { "en": "Google Play Games app for game profiles and supported game features.", "ms": "" },
-      "effect": { "en": "The Play Games app becomes unavailable; games that depend on it may lose features until restored.", "ms": "" },
-      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.play.games"],
+      "label": {"en":"Google Play Games","ms":"Google Play Games"},
+      "description": {"en":"Google Play Games app for game profiles and supported game features.","ms":"Aplikasi Google Play Games untuk profil permainan dan ciri permainan yang disokong."},
+      "effect": {"en":"The Play Games app becomes unavailable; games that depend on it may lose features until restored.","ms":"Aplikasi Play Games tidak tersedia; permainan yang bergantung padanya mungkin kehilangan ciri sehingga dipulihkan."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.google.android.play.games"
+      ],
       "verified": false
     },
     {
       "package": "com.netflix.ninja",
       "risk": "yellow",
       "category": "bloat",
-      "label": { "en": "Netflix", "ms": "" },
-      "description": { "en": "Netflix streaming app for TVs.", "ms": "" },
-      "effect": { "en": "Netflix playback and its remote shortcuts become unavailable until restored.", "ms": "" },
-      "sources": ["https://play.google.com/store/apps/details?id=com.netflix.ninja"],
+      "label": {"en":"Netflix","ms":"Netflix"},
+      "description": {"en":"Netflix streaming app for TVs.","ms":"Aplikasi penstriman Netflix untuk TV."},
+      "effect": {"en":"Netflix playback and its remote shortcuts become unavailable until restored.","ms":"Main balik Netflix dan pintasan alat kawalan jauhnya tidak tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.netflix.ninja"
+      ],
       "verified": false
     },
     {
       "package": "com.amazon.amazonvideo.livingroom",
       "risk": "yellow",
       "category": "bloat",
-      "label": { "en": "Prime Video", "ms": "" },
-      "description": { "en": "Amazon Prime Video streaming app for TVs.", "ms": "" },
-      "effect": { "en": "Prime Video playback and its remote shortcuts become unavailable until restored.", "ms": "" },
-      "sources": ["https://play.google.com/store/apps/details?id=com.amazon.amazonvideo.livingroom"],
+      "label": {"en":"Prime Video","ms":"Prime Video"},
+      "description": {"en":"Amazon Prime Video streaming app for TVs.","ms":"Aplikasi penstriman Amazon Prime Video untuk TV."},
+      "effect": {"en":"Prime Video playback and its remote shortcuts become unavailable until restored.","ms":"Main balik Prime Video dan pintasan alat kawalan jauhnya tidak tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://play.google.com/store/apps/details?id=com.amazon.amazonvideo.livingroom"
+      ],
       "verified": false
     }
   ]

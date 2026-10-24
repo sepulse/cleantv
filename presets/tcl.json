@@ -1,125 +1,158 @@
 {
   "id": "tcl",
-  "match": {"brand":["tcl"],"manufacturer":["tcl"]},
+  "match": {
+    "brand": [
+      "tcl"
+    ],
+    "manufacturer": [
+      "tcl"
+    ]
+  },
   "packages": [
     {
       "package": "com.tcl.logkit",
       "risk": "green",
       "category": "telemetry",
-      "label": {"en":"TCL log reporter","ms":""},
-      "description": {"en":"Collects and uploads TV problem logs.","ms":""},
-      "effect": {"en":"TCL loses problem logs collected by this reporter.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt","https://github.com/reisxd/TizenTube/issues/511"],
+      "label": {"en":"TCL log reporter","ms":"Pelapor log TCL"},
+      "description": {"en":"Collects and uploads TV problem logs.","ms":"Mengumpul dan memuat naik log masalah TV."},
+      "effect": {"en":"TCL loses problem logs collected by this reporter.","ms":"TCL kehilangan log masalah yang dikumpulkan oleh pelapor ini."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt",
+        "https://github.com/reisxd/TizenTube/issues/511"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.messagebox",
       "risk": "yellow",
       "category": "ads",
-      "label": {"en":"TCL messages and promotions","ms":""},
-      "description": {"en":"Shows TCL messages and promotional content.","ms":""},
-      "effect": {"en":"TCL messages and promotions stop appearing until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "label": {"en":"TCL messages and promotions","ms":"Mesej dan promosi TCL"},
+      "description": {"en":"Shows TCL messages and promotional content.","ms":"Memaparkan mesej dan kandungan promosi TCL."},
+      "effect": {"en":"TCL messages and promotions stop appearing until restored.","ms":"Mesej dan promosi TCL berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.esticker",
       "risk": "green",
       "category": "bloat",
-      "label": {"en":"TCL shop demo stickers","ms":""},
-      "description": {"en":"Shows promotional stickers used when the TV is on display in a shop.","ms":""},
-      "effect": {"en":"Shop demo stickers stop appearing until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "label": {"en":"TCL shop demo stickers","ms":"Pelekat demo kedai TCL"},
+      "description": {"en":"Shows promotional stickers used when the TV is on display in a shop.","ms":"Memaparkan pelekat promosi yang digunakan apabila TV dipamerkan di kedai."},
+      "effect": {"en":"Shop demo stickers stop appearing until restored.","ms":"Pelekat demo kedai berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.smartalexa",
       "risk": "yellow",
       "category": "assistant",
-      "label": {"en":"TCL Alexa","ms":""},
-      "description": {"en":"Provides Alexa features on supported TCL TVs.","ms":""},
-      "effect": {"en":"Alexa features provided by this app stop working until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "label": {"en":"TCL Alexa","ms":"TCL Alexa"},
+      "description": {"en":"Provides Alexa features on supported TCL TVs.","ms":"Menyediakan ciri Alexa pada TV TCL yang disokong."},
+      "effect": {"en":"Alexa features provided by this app stop working until restored.","ms":"Ciri Alexa yang disediakan oleh aplikasi ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.miracast",
       "risk": "yellow",
       "category": "system",
-      "label": {"en":"TCL screen mirroring","ms":""},
-      "description": {"en":"Receives wireless screen mirroring from compatible devices.","ms":""},
-      "effect": {"en":"Miracast screen mirroring stops working until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "label": {"en":"TCL screen mirroring","ms":"Pencerminan skrin TCL"},
+      "description": {"en":"Receives wireless screen mirroring from compatible devices.","ms":"Menerima pencerminan skrin tanpa wayar daripada peranti yang serasi."},
+      "effect": {"en":"Miracast screen mirroring stops working until restored.","ms":"Pencerminan skrin Miracast berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.ttvs",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TCL shared TV services","ms":""},
-      "description": {"en":"Handles viewing data, casting, voice services or TV updates, depending on the model.","ms":""},
-      "effect": {"en":"Casting, voice features or TV software updates may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt","https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"],
+      "label": {"en":"TCL shared TV services","ms":"Perkhidmatan TV kongsi TCL"},
+      "description": {"en":"Handles viewing data, casting, voice services or TV updates, depending on the model.","ms":"Mengendalikan data tontonan, casting, perkhidmatan suara atau kemas kini TV, bergantung pada model."},
+      "effect": {"en":"Casting, voice features or TV software updates may stop working; protected.","ms":"Casting, ciri suara atau kemas kini perisian TV mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.tv",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TCL live TV and inputs","ms":""},
-      "description": {"en":"Plays live TV and HDMI inputs on TCL TVs.","ms":""},
-      "effect": {"en":"Live TV and HDMI viewing may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"],
+      "label": {"en":"TCL live TV and inputs","ms":"TV langsung dan input TCL"},
+      "description": {"en":"Plays live TV and HDMI inputs on TCL TVs.","ms":"Memainkan TV langsung dan input HDMI pada TV TCL."},
+      "effect": {"en":"Live TV and HDMI viewing may stop working; protected.","ms":"Tontonan TV langsung dan HDMI mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.tvinput",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TCL input services","ms":""},
-      "description": {"en":"Connects HDMI, antenna and other TV inputs to apps.","ms":""},
-      "effect": {"en":"HDMI, antenna and other TV inputs may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"],
+      "label": {"en":"TCL input services","ms":"Perkhidmatan input TCL"},
+      "description": {"en":"Connects HDMI, antenna and other TV inputs to apps.","ms":"Menyambungkan HDMI, antena dan input TV lain kepada aplikasi."},
+      "effect": {"en":"HDMI, antenna and other TV inputs may stop working; protected.","ms":"HDMI, antena dan input TV lain mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.autopair",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TCL remote pairing","ms":""},
-      "description": {"en":"Pairs supported Bluetooth remotes with the TV.","ms":""},
-      "effect": {"en":"Bluetooth remote pairing may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"],
+      "label": {"en":"TCL remote pairing","ms":"Penyandingan alat kawalan jauh TCL"},
+      "description": {"en":"Pairs supported Bluetooth remotes with the TV.","ms":"Menyandingkan alat kawalan jauh Bluetooth yang disokong dengan TV."},
+      "effect": {"en":"Bluetooth remote pairing may stop working; protected.","ms":"Penyandingan alat kawalan jauh Bluetooth mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.initsetup",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TCL first setup","ms":""},
-      "description": {"en":"Handles initial TCL TV setup.","ms":""},
-      "effect": {"en":"Initial TV setup or related system functions may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "label": {"en":"TCL first setup","ms":"Persediaan awal TCL"},
+      "description": {"en":"Handles initial TCL TV setup.","ms":"Mengendalikan persediaan awal TV TCL."},
+      "effect": {"en":"Initial TV setup or related system functions may stop working; protected.","ms":"Persediaan awal TV atau fungsi sistem berkaitan mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.suspension",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TCL input panel","ms":""},
-      "description": {"en":"Opens the input panel used by the remote Input button.","ms":""},
-      "effect": {"en":"The remote Input button or input panel may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"],
+      "label": {"en":"TCL input panel","ms":"Panel input TCL"},
+      "description": {"en":"Opens the input panel used by the remote Input button.","ms":"Membuka panel input yang digunakan oleh butang Input pada alat kawalan jauh."},
+      "effect": {"en":"The remote Input button or input panel may stop working; protected.","ms":"Butang Input atau panel input alat kawalan jauh mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-c755-google-tv/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.tcl.settings",
       "risk": "red",
       "category": "system",
-      "label": {"en":"TCL picture and sound settings","ms":""},
-      "description": {"en":"Provides TCL picture and sound settings.","ms":""},
-      "effect": {"en":"Picture and sound settings may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"],
+      "label": {"en":"TCL picture and sound settings","ms":"Tetapan gambar dan bunyi TCL"},
+      "description": {"en":"Provides TCL picture and sound settings.","ms":"Menyediakan tetapan gambar dan bunyi TCL."},
+      "effect": {"en":"Picture and sound settings may stop working; protected.","ms":"Tetapan gambar dan bunyi mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"
+      ],
       "verified": false
     }
   ]

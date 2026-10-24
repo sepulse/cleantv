@@ -1,125 +1,157 @@
 {
   "id": "xiaomi",
-  "match": {"brand":["xiaomi"],"manufacturer":["xiaomi"]},
+  "match": {
+    "brand": [
+      "xiaomi"
+    ],
+    "manufacturer": [
+      "xiaomi"
+    ]
+  },
   "packages": [
     {
       "package": "com.miui.tv.analytics",
       "risk": "green",
       "category": "telemetry",
-      "label": {"en":"Xiaomi TV analytics","ms":""},
-      "description": {"en":"Collects TV usage information for Xiaomi.","ms":""},
-      "effect": {"en":"Xiaomi loses usage reports from this service.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt","https://github.com/pengchujin/aerial-tv/issues/245"],
+      "label": {"en":"Xiaomi TV analytics","ms":"Analitis TV Xiaomi"},
+      "description": {"en":"Collects TV usage information for Xiaomi.","ms":"Mengumpul maklumat penggunaan TV untuk Xiaomi."},
+      "effect": {"en":"Xiaomi loses usage reports from this service.","ms":"Xiaomi kehilangan laporan penggunaan daripada perkhidmatan ini."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt",
+        "https://github.com/pengchujin/aerial-tv/issues/245"
+      ],
       "verified": false
     },
     {
       "package": "com.xiaomi.statistic",
       "risk": "green",
       "category": "telemetry",
-      "label": {"en":"Xiaomi usage statistics","ms":""},
-      "description": {"en":"Reports TV usage statistics to Xiaomi.","ms":""},
-      "effect": {"en":"Xiaomi loses usage statistics from this service.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"],
+      "label": {"en":"Xiaomi usage statistics","ms":"Statistik penggunaan Xiaomi"},
+      "description": {"en":"Reports TV usage statistics to Xiaomi.","ms":"Melaporkan statistik penggunaan TV kepada Xiaomi."},
+      "effect": {"en":"Xiaomi loses usage statistics from this service.","ms":"Xiaomi kehilangan statistik penggunaan daripada perkhidmatan ini."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mitv.tvhome.atv",
       "risk": "red",
       "category": "ads",
-      "label": {"en":"PatchWall home","ms":""},
-      "description": {"en":"Shows Xiaomi PatchWall recommendations and promotional content.","ms":""},
-      "effect": {"en":"You could lose PatchWall home. Handled by the launcher-swap step.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"],
+      "label": {"en":"PatchWall home","ms":"Skrin utama PatchWall"},
+      "description": {"en":"Shows Xiaomi PatchWall recommendations and promotional content.","ms":"Memaparkan syor dan kandungan promosi Xiaomi PatchWall."},
+      "effect": {"en":"You could lose PatchWall home. Handled by the launcher-swap step.","ms":"Anda mungkin kehilangan skrin utama PatchWall. Dikendalikan oleh langkah pertukaran launcher."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mitv.tvhome.michannel",
       "risk": "red",
       "category": "ads",
-      "label": {"en":"Mi Channel home content","ms":""},
-      "description": {"en":"Adds Xiaomi content and recommendations to the home screen.","ms":""},
-      "effect": {"en":"Mi Channel rows and related home-screen features may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"],
+      "label": {"en":"Mi Channel home content","ms":"Kandungan skrin utama Mi Channel"},
+      "description": {"en":"Adds Xiaomi content and recommendations to the home screen.","ms":"Menambahkan kandungan dan syor Xiaomi pada skrin utama."},
+      "effect": {"en":"Mi Channel rows and related home-screen features may stop working; protected.","ms":"Baris Mi Channel dan ciri skrin utama berkaitan mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mitv.tvhome.mitvplus",
       "risk": "yellow",
       "category": "bloat",
-      "label": {"en":"Mi TV+","ms":""},
-      "description": {"en":"Offers Xiaomi live streaming channels.","ms":""},
-      "effect": {"en":"Mi TV+ channels become unavailable until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "label": {"en":"Mi TV+","ms":"Mi TV+"},
+      "description": {"en":"Offers Xiaomi live streaming channels.","ms":"Menawarkan saluran penstriman langsung Xiaomi."},
+      "effect": {"en":"Mi TV+ channels become unavailable until restored.","ms":"Saluran Mi TV+ tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mitv.milinkservice",
       "risk": "yellow",
       "category": "system",
-      "label": {"en":"Mi screen sharing","ms":""},
-      "description": {"en":"Receives screen sharing through Xiaomi MiLink.","ms":""},
-      "effect": {"en":"MiLink screen sharing stops working until restored.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"],
+      "label": {"en":"Mi screen sharing","ms":"Perkongsian skrin Mi"},
+      "description": {"en":"Receives screen sharing through Xiaomi MiLink.","ms":"Menerima perkongsian skrin melalui Xiaomi MiLink."},
+      "effect": {"en":"MiLink screen sharing stops working until restored.","ms":"Perkongsian skrin MiLink berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.xiaomi.mitv.updateservice",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Xiaomi TV software updates","ms":""},
-      "description": {"en":"Checks for TV system software updates.","ms":""},
-      "effect": {"en":"The TV may stop receiving system software updates; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"],
+      "label": {"en":"Xiaomi TV software updates","ms":"Kemas kini perisian TV Xiaomi"},
+      "description": {"en":"Checks for TV system software updates.","ms":"Memeriksa kemas kini perisian sistem TV."},
+      "effect": {"en":"The TV may stop receiving system software updates; protected.","ms":"TV mungkin berhenti menerima kemas kini perisian sistem; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mitv.overseaservice",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Xiaomi remote support","ms":""},
-      "description": {"en":"Supports remote buttons and Bluetooth remotes on some Xiaomi TVs.","ms":""},
-      "effect": {"en":"Remote buttons or Bluetooth remote functions may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "label": {"en":"Xiaomi remote support","ms":"Sokongan alat kawalan jauh Xiaomi"},
+      "description": {"en":"Supports remote buttons and Bluetooth remotes on some Xiaomi TVs.","ms":"Menyokong butang alat kawalan jauh dan alat kawalan jauh Bluetooth pada sesetengah TV Xiaomi."},
+      "effect": {"en":"Remote buttons or Bluetooth remote functions may stop working; protected.","ms":"Butang alat kawalan jauh atau fungsi alat kawalan jauh Bluetooth mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mitv.setup",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Xiaomi TV setup","ms":""},
-      "description": {"en":"Provides Xiaomi TV setup features.","ms":""},
-      "effect": {"en":"TV setup or related system functions may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "label": {"en":"Xiaomi TV setup","ms":"Persediaan TV Xiaomi"},
+      "description": {"en":"Provides Xiaomi TV setup features.","ms":"Menyediakan ciri persediaan TV Xiaomi."},
+      "effect": {"en":"TV setup or related system functions may stop working; protected.","ms":"Persediaan TV atau fungsi sistem berkaitan mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.xiaomi.android.tvsetup.partnercustomizer",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Xiaomi setup customisation","ms":""},
-      "description": {"en":"Applies Xiaomi customisation during TV setup.","ms":""},
-      "effect": {"en":"TV setup or related home-screen features may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "label": {"en":"Xiaomi setup customisation","ms":"Penyesuaian persediaan Xiaomi"},
+      "description": {"en":"Applies Xiaomi customisation during TV setup.","ms":"Menggunakan penyesuaian Xiaomi semasa persediaan TV."},
+      "effect": {"en":"TV setup or related home-screen features may stop working; protected.","ms":"Persediaan TV atau ciri skrin utama berkaitan mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mitv.livetv",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Xiaomi live TV and inputs","ms":""},
-      "description": {"en":"Handles live TV and input viewing on supported Xiaomi TVs.","ms":""},
-      "effect": {"en":"Live TV or input viewing may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "label": {"en":"Xiaomi live TV and inputs","ms":"TV langsung dan input Xiaomi"},
+      "description": {"en":"Handles live TV and input viewing on supported Xiaomi TVs.","ms":"Mengendalikan tontonan TV langsung dan input pada TV Xiaomi yang disokong."},
+      "effect": {"en":"Live TV or input viewing may stop working; protected.","ms":"Tontonan TV langsung atau input mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
+      ],
       "verified": false
     },
     {
       "package": "com.mi.bluetooth",
       "risk": "red",
       "category": "system",
-      "label": {"en":"Xiaomi Bluetooth support","ms":""},
-      "description": {"en":"Supports Bluetooth functions on Xiaomi TVs.","ms":""},
-      "effect": {"en":"Bluetooth devices, including the remote, may stop working; protected.","ms":""},
-      "sources": ["https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"],
+      "label": {"en":"Xiaomi Bluetooth support","ms":"Sokongan Bluetooth Xiaomi"},
+      "description": {"en":"Supports Bluetooth functions on Xiaomi TVs.","ms":"Menyokong fungsi Bluetooth pada TV Xiaomi."},
+      "effect": {"en":"Bluetooth devices, including the remote, may stop working; protected.","ms":"Peranti Bluetooth, termasuk alat kawalan jauh, mungkin berhenti berfungsi; dilindungi."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
+      ],
       "verified": false
     }
   ]
