@@ -20,15 +20,17 @@ Aplikasi web tempatan untuk *debloat* Android TV / Google TV melalui Wi-Fi ADB
 
 Setiap permintaan "matikan pakej" mesti lulus **semua** lapisan, dalam tertib ini:
 
-1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `devices`, `getprops`, `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`, `resolveHomeComponent`, `listHomeCandidates`, `listHomeCandidateComponents`, `setHomeActivity` (`cmd package set-home-activity`, komponen disahkan dengan regex ketat), `openPlayStore` (Projectivy sahaja).
+1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `devices`, `getprops`, `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`, `resolveHomeComponent`, `listHomeCandidates`, `listHomeCandidateComponents`, `setHomeActivity` (`cmd package set-home-activity`, komponen disahkan dengan regex ketat), `pressHome` (`input keyevent KEYCODE_HOME`), `focusedPackage` (`dumpsys activity activities`), `openPlayStore` (Projectivy sahaja).
 2. **L2 — Pengesahan input.** Nama pakej mesti padan `^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+$`; serial mesti `IPv4:port`. (Hujah `adb shell` digabung semula oleh shell pada TV — pengesahan ini menghalang suntikan arahan.)
-3. **L3 — `NEVER_TOUCH` dalam kod.** Senarai keras pakej teras (systemui, settings, gms, vending, packageinstaller, bluetooth, input method, webview, setup wizard, perkhidmatan alat kawalan jauh, provider, dll.). Menang mengatasi registry.
+3. **L3 — `NEVER_TOUCH` dalam kod.** Senarai keras pakej teras (systemui, settings, gms, vending, packageinstaller, bluetooth, input method, webview, setup wizard, perkhidmatan alat kawalan jauh, provider, dll.) serta awalan provider, overlay modules, MediaTek, kilang dan Jamdeo TV. Menang mengatasi registry.
 4. **L4 — Registry allowlist.** Pakej mesti wujud dalam preset yang padan dengan peranti, dan risikonya bukan `red`.
 5. **L5 — Pelancar semasa dilindungi.** Aktiviti HOME semasa (`cmd package resolve-activity ... HOME`) tidak boleh dimatikan. Tukar pelancar ialah aliran khas (Fasa 5).
 6. **L6 — Jurnal dahulu.** Niat ditulis ke jurnal (`pending`) sebelum arahan; hasil dikemas kini selepasnya.
 7. **L7 — Sahkan selepas.** Status pakej dibaca semula; UI memaparkan keadaan sebenar, bukan keadaan yang diandaikan.
 
 **Restore:** gabungan (jurnal peranti) ∪ (`pm list packages -d` ∩ registry). Jadi Restore tetap berfungsi walaupun jurnal hilang.
+
+Pertukaran launcher ialah laluan khas: hanya Projectivy yang dibenarkan dan ia mesti muncul sebagai calon HOME yang sah; calon factory/test diabaikan. Sebelum sebarang perubahan, HOME sebenar diperiksa dengan butang HOME dan aplikasi fokus. Selepas `set-home-activity` dan pertukaran, pemeriksaan yang sama mesti menunjukkan Projectivy; jika tidak, launcher asal dihidupkan semula dan HOME asal disahkan melalui aplikasi fokus. Pemulihan juga menggunakan pemeriksaan fokus ini; skrin pemilih Android sahaja tidak dikira sebagai HOME asal yang telah pulih. Fire OS, papan CVTE dan Xiaomi dengan sistem HOME China atau identiti pasaran yang belum jelas ditolak sebelum jurnal atau perubahan pakej. Pengesanan menggunakan `ro.product.manufacturer`, `ro.product.brand`, `ro.product.model`, `ro.product.device`, `ro.build.display.id` dan pakej terpasang; ia tidak bergantung pada prop wilayah yang tidak disahkan. Rujukan: [probe cleanyourtv](https://github.com/Gathin23/cleanyourtv/blob/main/tools/tv.py), [panduan launcher](https://github.com/Gathin23/cleanyourtv/blob/main/PROMPT.md), [contoh Xiaomi](https://github.com/Gathin23/cleanyourtv/tree/main/examples/xiaomi-mitv-astp1).
 
 ## 3. Struktur folder
 
@@ -159,6 +161,7 @@ data: { "code": "DEVICE_OFFLINE", "message": "..." }
 `FORBIDDEN` (token/Host salah), `NOT_FOUND` (route/job tiada), `INTERNAL`.
 
 Launcher flow: `LAUNCHER_NOT_READY` (replacement precondition, HTTP 422),
+`LAUNCHER_UNSUPPORTED` (Fire OS, papan CVTE atau Xiaomi China/tidak dapat disahkan; HTTP 422 dengan sebab platform dalam mesej),
 `LAUNCHER_SWAP_ROLLED_BACK` (failed result; recovery verified),
 `LAUNCHER_ROLLBACK_FAILED` (failed result; recovery could not be verified),
 `LAUNCHER_RESTORE_FAILED` (failed result; stock HOME could not be verified),

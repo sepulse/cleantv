@@ -80,7 +80,8 @@ export function createEngine({ client, journal, presets }) {
         const home = await client.resolveHomeActivity(serial);
         homeHealthy = home !== 'android' && !REPLACEMENT_LAUNCHERS.includes(home)
           && (await client.listPackages(serial)).includes(home)
-          && !(await client.listPackages(serial, { disabledOnly: true })).includes(home);
+          && !(await client.listPackages(serial, { disabledOnly: true })).includes(home)
+          && await actualHome(serial) === home;
       } catch { /* An unverifiable HOME still needs the shared restoration attempt. */ }
       if (!homeHealthy && !await restoreHome(serial, stocks)) {
         results.push({ package: REPLACEMENT_LAUNCHERS[0], result: 'failed',
@@ -97,7 +98,7 @@ export function createEngine({ client, journal, presets }) {
     };
   }
 
-  const { checkLauncherHealth, restoreHome, ...launcherActions } = createLauncherActions({ client, journal, context });
+  const { checkLauncherHealth, restoreHome, actualHome, ...launcherActions } = createLauncherActions({ client, journal, context });
   return {
     ...launcherActions,
     /** @param {string} serial */

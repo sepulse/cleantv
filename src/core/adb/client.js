@@ -5,6 +5,20 @@ import { assertReplacement } from '../launchers.js';
 const homeComponent = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*\/(?:\.?[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
 const parseHomeComponents = output => [...new Set(output.split(/\r?\n/).map(line => line.trim())
   .filter(line => homeComponent.test(line) && (isValidPackageName(line.split('/')[0]) || line.startsWith('android/'))))];
+const isFactoryHome = pkg => /factory|(?:^|[._])test(?:[._]|$)/i.test(pkg);
+
+/** @param {string} output @returns {string | null} */
+export function parseFocusedPackage(output) {
+  const packages = new Set();
+  for (const marker of [/\bmFocusedApp\s*=/, /\b(?:mResumedActivity|topResumedActivity|ResumedActivity)\s*[:=]/]) {
+    for (const line of output.split(/\r?\n/)) {
+      if (!marker.test(line)) continue;
+      const match = line.match(/\bu\d+\s+([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\//);
+      if (match && (match[1] === 'android' || isValidPackageName(match[1]))) packages.add(match[1]);
+    }
+  }
+  return packages.size === 1 ? [...packages][0] : null;
+}
 
 /** @param {import('./runner.js').Runner} run */
 export function createAdbClient(run) {
@@ -100,7 +114,17 @@ export function createAdbClient(run) {
       validate(serial);
       const output = await checked(['-s', serial, 'shell', 'cmd', 'package', 'query-activities',
         '--brief', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.HOME']);
-      return parseHomeComponents(output);
+      return parseHomeComponents(output).filter(component => !isFactoryHome(component.split('/')[0]));
+    },
+    /** @param {string} serial */
+    async pressHome(serial) {
+      validate(serial);
+      await checked(['-s', serial, 'shell', 'input', 'keyevent', 'KEYCODE_HOME']);
+    },
+    /** @param {string} serial @returns {Promise<string | null>} */
+    async focusedPackage(serial) {
+      validate(serial);
+      return parseFocusedPackage(await checked(['-s', serial, 'shell', 'dumpsys', 'activity', 'activities']));
     },
     /** @param {string} serial @param {string} component */
     async setHomeActivity(serial, component) {

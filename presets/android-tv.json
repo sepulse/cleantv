@@ -60,7 +60,7 @@
       "category": "system",
       "label": {"en":"Android TV photo screensaver","ms":"Penyelamat skrin foto Android TV"},
       "description": {"en":"Shows a photo screensaver while the TV is idle.","ms":"Memaparkan penyelamat skrin foto semasa TV tidak digunakan."},
-      "effect": {"en":"The photo screensaver stops working until restored; choose another screensaver first.","ms":"Penyelamat skrin foto berhenti berfungsi sehingga dipulihkan; pilih penyelamat skrin lain terlebih dahulu."},
+      "effect": {"en":"Switch the TV to another screensaver before turning this app off. The photo screensaver will stop working until restored.","ms":"Tukar TV ke screensaver lain sebelum mematikan aplikasi ini. Screensaver foto akan berhenti berfungsi sehingga dipulihkan."},
       "sources": [
         "https://github.com/theothernt/AerialViews#how-to-revert-back-to-the-default-screensaver",
         "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"

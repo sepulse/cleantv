@@ -36,7 +36,7 @@
       "category": "system",
       "label": {"en":"Google TV screensaver","ms":"Penyelamat skrin Google TV"},
       "description": {"en":"Shows photos and other content while the TV is idle.","ms":"Memaparkan foto dan kandungan lain semasa TV tidak digunakan."},
-      "effect": {"en":"The Google TV screensaver stops working until restored; choose another screensaver first.","ms":"Penyelamat skrin Google TV berhenti berfungsi sehingga dipulihkan; pilih penyelamat skrin lain terlebih dahulu."},
+      "effect": {"en":"Switch the TV to another screensaver before turning this app off. The Google TV screensaver will stop working until restored.","ms":"Tukar TV ke screensaver lain sebelum mematikan aplikasi ini. Screensaver Google TV akan berhenti berfungsi sehingga dipulihkan."},
       "sources": [
         "https://github.com/theothernt/AerialViews#how-to-revert-back-to-the-default-screensaver",
         "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"

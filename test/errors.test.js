@@ -8,7 +8,7 @@ test('error codes match the architecture exactly and are frozen', () => {
     'DEVICE_OFFLINE', 'DEVICE_BUSY', 'PACKAGE_PROTECTED', 'PACKAGE_NOT_IN_REGISTRY',
     'PACKAGE_IS_LAUNCHER', 'COMMAND_FAILED', 'TIMEOUT', 'FORBIDDEN', 'INTERNAL', 'NOT_FOUND',
     'LAUNCHER_NOT_READY', 'LAUNCHER_SWAP_ROLLED_BACK', 'LAUNCHER_ROLLBACK_FAILED', 'LAUNCHER_RESTORE_FAILED',
-    'LAUNCHER_STOCK_MISSING',
+    'LAUNCHER_STOCK_MISSING', 'LAUNCHER_UNSUPPORTED',
   ].sort());
   assert.ok(Object.isFrozen(ErrorCode));
   for (const [key, value] of Object.entries(ErrorCode)) assert.equal(key, value);

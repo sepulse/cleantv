@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAdbClient } from '../src/core/adb/client.js';
+import { createAdbClient, parseFocusedPackage } from '../src/core/adb/client.js';
 import { CleanTvError } from '../src/core/errors.js';
 import { fakeRunner } from './helpers/fake-runner.js';
 
@@ -11,7 +11,7 @@ const prefix = `-s ${serial} shell`;
 test('client exposes only the named methods', () => {
   assert.deepEqual(Object.keys(createAdbClient(fakeRunner({}))).sort(), [
     'connect', 'disconnect', 'devices', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
-    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity',
+    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage',
   ].sort());
 });
 
@@ -88,11 +88,47 @@ test('HOME parser chooses the last valid component or returns null', async () =>
   }
 });
 
+test('HOME keyevent and focused activity parser use actual activity state', async () => {
+  const keyevent = `${prefix} input keyevent KEYCODE_HOME`;
+  const dump = `${prefix} dumpsys activity activities`;
+  const cases = [
+    ['mFocusedApp=ActivityRecord{aa u0 com.spocky.projengmenu/.Main t7}\r\n  ResumedActivity: ActivityRecord{bb u0 com.other.app/.Main t8}', null],
+    ['mFocusedApp=null\r\n  ResumedActivity: ActivityRecord{bb u0 com.google.android.tvlauncher/.Main t8}', 'com.google.android.tvlauncher'],
+    ['mFocusedApp=null\r\n  mResumedActivity: ActivityRecord{bb u0 com.google.android.tvlauncher/.Main t8}', 'com.google.android.tvlauncher'],
+    ['topResumedActivity=ActivityRecord{bb u0 com.google.android.tvlauncher/.Main t8}', 'com.google.android.tvlauncher'],
+    ['mFocusedApp=null\r\nResumedActivity: null', null],
+    ['mFocusedApp=ActivityRecord{aa u0 com.bad;input/.Main t7}', null],
+  ];
+  for (const [output, expected] of cases) {
+    const run = fakeRunner({ [keyevent]: {}, [dump]: { stdout: output } });
+    const client = createAdbClient(run);
+    await client.pressHome(serial);
+    assert.equal(await client.focusedPackage(serial), expected);
+    assert.deepEqual(run.calls, [['-s', serial, 'shell', 'input', 'keyevent', 'KEYCODE_HOME'],
+      ['-s', serial, 'shell', 'dumpsys', 'activity', 'activities']]);
+    assert.equal(parseFocusedPackage(output), expected);
+  }
+  await assert.rejects(createAdbClient(fakeRunner({ [keyevent]: { code: 1 } })).pressHome(serial), { code: 'COMMAND_FAILED' });
+  await assert.rejects(createAdbClient(fakeRunner({ [dump]: { code: 1 } })).focusedPackage(serial), { code: 'COMMAND_FAILED' });
+});
+
+test('focused activity preserves android and rejects conflicting focus and resumed markers', () => {
+  const chooser = 'mFocusedApp=ActivityRecord{aa u0 android/com.android.internal.app.ResolverActivity t7}';
+  const projectivy = 'ResumedActivity: ActivityRecord{bb u0 com.spocky.projengmenu/.Main t8}';
+  assert.equal(parseFocusedPackage(chooser), 'android');
+  for (const marker of ['ResumedActivity:', 'mResumedActivity:', 'topResumedActivity=']) {
+    const resumed = projectivy.replace('ResumedActivity:', marker);
+    assert.equal(parseFocusedPackage(`${chooser}\n${resumed}`), null);
+    assert.equal(parseFocusedPackage(`${resumed}\n${chooser}`), null);
+  }
+  assert.equal(parseFocusedPackage(`${projectivy}\nmFocusedApp=ActivityRecord{aa u0 com.spocky.projengmenu/.Main t7}`), 'com.spocky.projengmenu');
+});
+
 test('all argument-taking methods reject unsafe inputs before any runner call', async () => {
   const run = fakeRunner({});
   const client = createAdbClient(run);
   for (const method of ['disconnect', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
-    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity']) {
+    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage']) {
     await assert.rejects(client[method]('host;id:5555', pkg), { code: 'INVALID_INPUT' });
   }
   for (const method of ['disableUser', 'enableUser', 'openPlayStore']) {
@@ -117,7 +153,7 @@ test('store command is limited to Projectivy and detects unresolved intents', as
 
 test('HOME candidates parse unique valid components and reject command failures', async () => {
   const args = `${prefix} cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME`;
-  const run = fakeRunner({ [args]: { stdout: '2 activities found:\r\ncom.spocky.projengmenu/.Main\r\ncom.spocky.projengmenu/.Other\r\ncom.google.android.tvlauncher/.Main\r\nbad;input/.Main\r\nnoise\r\n' } });
+  const run = fakeRunner({ [args]: { stdout: '2 activities found:\r\ncom.spocky.projengmenu/.Main\r\ncom.spocky.projengmenu/.Other\r\ncom.google.android.tvlauncher/.Main\r\ncom.vendor.factorytest/.Main\r\ncom.example.test.launcher/.Main\r\nbad;input/.Main\r\nnoise\r\n' } });
   assert.deepEqual(await createAdbClient(run).listHomeCandidates(serial), ['com.spocky.projengmenu', 'com.google.android.tvlauncher']);
   assert.deepEqual(await createAdbClient(fakeRunner({ [args]: { stdout: 'No activities found' } })).listHomeCandidates(serial), []);
   await assert.rejects(createAdbClient(fakeRunner({ [args]: { code: 1 } })).listHomeCandidates(serial), { code: 'COMMAND_FAILED' });

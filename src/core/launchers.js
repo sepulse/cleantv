@@ -15,6 +15,26 @@ export function assertReplacement(pkg) {
   if (!REPLACEMENT_LAUNCHERS.includes(pkg)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
 }
 
+function unsupportedPlatform({ info, installed }, props) {
+  const identity = [info.brand, info.manufacturer, info.model, props['ro.product.device'], props['ro.build.display.id']].join(' ');
+  if (/amazon/i.test(info.manufacturer) || /amazon/i.test(info.brand) || /^AFT/i.test(info.model)
+    || installed.includes('com.amazon.tv.launcher')) {
+    return 'Fire OS supports debloating only; launcher switching is unsupported.';
+  }
+  if (/cvte/i.test(identity) || installed.some(pkg => pkg.startsWith('com.cvte.'))) {
+    return 'This CVTE-board TV does not support launcher switching.';
+  }
+  const xiaomi = /xiaomi|redmi/i.test(identity)
+    || installed.some(pkg => pkg.startsWith('com.mitv.') || pkg.startsWith('com.xiaomi.mitv.'));
+  if (xiaomi && (installed.includes('com.mitv.tvhome') || installed.includes('com.xiaomi.mitv.settings')
+    || /\.cn(?:\b|$)/i.test(props['ro.build.display.id'] ?? '')
+    || !['com.mitv.tvhome.atv', 'com.google.android.apps.tv.launcherx',
+      'com.google.android.tvlauncher'].some(pkg => installed.includes(pkg)))) {
+    return 'This Xiaomi TV may use the China-market home system; launcher switching is unsupported.';
+  }
+  return null;
+}
+
 /** Dedicated launcher operations; ordinary package cleanup never uses this path. */
 export function createLauncherActions({ client, journal, context }) {
   const swapping = new Set();
@@ -45,6 +65,19 @@ export function createLauncherActions({ client, journal, context }) {
       && !(await client.listPackages(serial, { disabledOnly: true })).includes(pkg);
   }
 
+  async function actualHome(serial) {
+    await client.pressHome(serial);
+    let previous = null;
+    let focused = null;
+    // Activity focus can lag behind HOME, including when the first read already matches.
+    for (let sample = 0; sample < 5; sample++) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      previous = focused;
+      focused = await client.focusedPackage(serial);
+    }
+    return focused && focused === previous ? focused : null;
+  }
+
   // Recovery must still reach the TV when the journal is damaged or storage is full.
   async function recover(serial, deviceId, pkgs, outcome) {
     const results = [];
@@ -62,24 +95,19 @@ export function createLauncherActions({ client, journal, context }) {
   }
 
   async function stockHome(serial) {
-    const home = await client.resolveHomeActivity(serial);
-    if (STOCK_LAUNCHERS.includes(home)) return enabled(serial, home);
-    if (home !== 'android') return false;
-    const component = await client.resolveHomeComponent(serial);
-    return /^android\/(?:[A-Za-z_][A-Za-z0-9_$]*\.)*(?:[A-Za-z0-9_$]*ResolverActivity|ChooserActivity)$/.test(component ?? '');
+    const home = await actualHome(serial);
+    return STOCK_LAUNCHERS.includes(home) && await enabled(serial, home);
   }
 
   async function restoreHome(serial, targets) {
     try {
       if (await stockHome(serial)) return true;
-      if (REPLACEMENT_LAUNCHERS.includes(await client.resolveHomeActivity(serial))) {
-        const candidates = await client.listHomeCandidateComponents(serial);
-        for (const component of candidates) {
-          const pkg = component.split('/')[0];
-          if (targets.includes(pkg) && await enabled(serial, pkg)) {
-            await client.setHomeActivity(serial, component);
-            break;
-          }
+      const candidates = await client.listHomeCandidateComponents(serial);
+      for (const component of candidates) {
+        const pkg = component.split('/')[0];
+        if (targets.includes(pkg) && await enabled(serial, pkg)) {
+          await client.setHomeActivity(serial, component);
+          break;
         }
       }
       return await stockHome(serial);
@@ -129,6 +157,7 @@ export function createLauncherActions({ client, journal, context }) {
     checkLauncherHealth: healthCheck,
     recoverLauncher,
     restoreHome,
+    actualHome,
     async launcherStatus(serial) {
       const ctx = await context(serial);
       const outcome = await healthCheck(serial, ctx);
@@ -144,6 +173,8 @@ export function createLauncherActions({ client, journal, context }) {
       // Never interleave with a health check that is still re-enabling stock launchers.
       while (checks.has(serial)) await checks.get(serial).catch(() => {});
       const ctx = await context(serial);
+      const reason = unsupportedPlatform(ctx, await client.getprops(serial));
+      if (reason) throw new CleanTvError(ErrorCode.LAUNCHER_UNSUPPORTED, reason);
       const before = await status(serial, ctx);
       for (const condition of ['installed', 'enabled', 'isHomeCandidate']) {
         if (!before.replacement[condition]) {
@@ -151,6 +182,12 @@ export function createLauncherActions({ client, journal, context }) {
         }
       }
       const targets = before.stock.filter(item => item.installed && item.enabled).map(item => item.package);
+      if (![...targets, replacement].includes(await actualHome(serial))) {
+        throw new CleanTvError(ErrorCode.LAUNCHER_NOT_READY, ErrorCode.LAUNCHER_NOT_READY, { condition: 'actualHome' });
+      }
+      const component = (await client.listHomeCandidateComponents(serial))
+        .find(candidate => candidate.split('/')[0] === replacement);
+      if (!component) throw new CleanTvError(ErrorCode.LAUNCHER_NOT_READY);
       const attempted = [];
       const disabledBySwap = [];
       const outcome = {};
@@ -176,7 +213,8 @@ export function createLauncherActions({ client, journal, context }) {
           await journal.append(ctx.info.deviceId, swapRecord(replacement, disabledBySwap, 'pending'));
           onProgress({ done: i + 1, total: targets.length, package: pkg, result: 'disabled' });
         }
-        if (await client.resolveHomeActivity(serial) !== replacement || !await enabled(serial, replacement)
+        await client.setHomeActivity(serial, component);
+        if (await actualHome(serial) !== replacement || !await enabled(serial, replacement)
           || !(await client.listHomeCandidates(serial)).includes(replacement)) {
           throw new CleanTvError(ErrorCode.COMMAND_FAILED);
         }

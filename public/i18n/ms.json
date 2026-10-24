@@ -202,6 +202,7 @@
   "launcher.doneTip": "Tekan butang Home pada alat kawalan jauh TV anda untuk menyemak skrin utama. Anda boleh memulihkan skrin utama asal di sini pada bila-bila masa.",
   "result.switched": "Skrin utama ditukar",
   "error.LAUNCHER_NOT_READY": "Projectivy belum sedia. Pasang daripada Play Store, hidupkan dan buka sekali pada TV, kemudian periksa lagi.",
+  "error.LAUNCHER_UNSUPPORTED": "Penukaran launcher tidak tersedia pada Fire OS, TV papan CVTE dan TV Xiaomi dengan home system pasaran China atau yang belum disahkan. Anda masih boleh menggunakan pembersihan aplikasi CleanTV.",
   "error.LAUNCHER_SWAP_ROLLED_BACK": "Pertukaran gagal. CleanTV menghidupkan semula aplikasi skrin utama asal yang terjejas dan mengesahkan skrin utama sedia digunakan.",
   "error.LAUNCHER_ROLLBACK_FAILED": "Pertukaran gagal dan CleanTV tidak dapat mengesahkan pemulihan. Pastikan TV kekal bersambung dan pilih “Pulihkan skrin utama asal” untuk mencuba memulihkannya.",
   "error.LAUNCHER_RESTORE_FAILED": "CleanTV tidak dapat mengesahkan skrin utama asal telah dipulihkan. Pastikan TV kekal bersambung dan cuba pulihkannya sekali lagi.",

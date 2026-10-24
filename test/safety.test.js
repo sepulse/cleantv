@@ -2,6 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { assertCanDisable, canDisable, isValidPackageName, isValidSerial, NEVER_TOUCH } from '../src/core/safety.js';
 import { CleanTvError } from '../src/core/errors.js';
+import { loadPresets } from '../src/core/registry.js';
+import { fileURLToPath } from 'node:url';
+
+const addedProtected = [
+  'com.google.android.ext.services', 'com.google.android.ext.shared', 'com.android.ext.services',
+  'com.android.ext.shared', 'com.google.android.modulemetadata', 'com.android.devicelockcontroller',
+  'com.cvte.tv.hkcfac', 'com.cvte.tv.fac.menu', 'mediatek.factorymenu.ui', 'com.tcl.cyberui',
+  'com.tcl.providers.config', 'com.tcl.system.server', 'com.tcl.factory.view', 'com.tianci.movieplatform',
+  'com.sony.dtv.b2b.hotelmode', 'com.droidlogic.tvinput', 'org.droidtv.eum', 'org.droidtv.aurora',
+  'org.droidtv.xtv', 'com.amazon.imp', 'com.amazon.tv.oobe',
+];
+const addedPrefixes = ['com.google.android.overlay.modules', 'com.mediatek.', 'com.at.factory.', 'com.jamdeo.tv.'];
 
 test('disable rejects every risk except exact green or yellow before the launcher guard', () => {
   for (const risk of [undefined, null, '', 'GREEN', 'Yellow', 'blue', 0, {}, ['green']]) {
@@ -58,5 +70,23 @@ test('disable guards run in the required order and wrapper reports each code', (
   for (const risk of ['green', 'yellow']) {
     assert.doesNotThrow(() => assertCanDisable('com.example.app', { entry: { risk } }));
     assert.deepEqual(canDisable('com.example.app', { entry: { risk } }), { ok: true });
+  }
+});
+
+test('new upstream protected packages and prefixes override a green registry entry', () => {
+  for (const pkg of addedProtected) {
+    assert.ok(NEVER_TOUCH.has(pkg), pkg);
+    assert.deepEqual(canDisable(pkg, { entry: { risk: 'green' } }), { ok: false, reason: 'PACKAGE_PROTECTED' });
+  }
+  for (const pkg of addedPrefixes.map(prefix => `${prefix}example`)) {
+    assert.deepEqual(canDisable(pkg, { entry: { risk: 'green' } }), { ok: false, reason: 'PACKAGE_PROTECTED' });
+  }
+});
+
+test('new protected names do not collide with any preset entry', async () => {
+  const presets = await loadPresets(fileURLToPath(new URL('../presets/', import.meta.url)));
+  const entries = presets.flatMap(preset => preset.packages.map(entry => entry.package));
+  for (const pkg of entries) {
+    assert.ok(!addedProtected.includes(pkg) && !addedPrefixes.some(prefix => pkg.startsWith(prefix)), pkg);
   }
 });

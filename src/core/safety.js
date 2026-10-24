@@ -28,6 +28,13 @@ export const NEVER_TOUCH = new Set([
   'com.google.android.tv.remote.service', 'com.android.networkstack',
   'com.google.android.networkstack', 'com.android.wifi.resources',
   'com.android.phone', 'com.android.keychain',
+  'com.google.android.ext.services', 'com.google.android.ext.shared',
+  'com.android.ext.services', 'com.android.ext.shared', 'com.google.android.modulemetadata',
+  'com.android.devicelockcontroller', 'com.cvte.tv.hkcfac', 'com.cvte.tv.fac.menu',
+  'mediatek.factorymenu.ui', 'com.tcl.cyberui', 'com.tcl.providers.config',
+  'com.tcl.system.server', 'com.tcl.factory.view', 'com.tianci.movieplatform',
+  'com.sony.dtv.b2b.hotelmode', 'com.droidlogic.tvinput', 'org.droidtv.eum',
+  'org.droidtv.aurora', 'org.droidtv.xtv', 'com.amazon.imp', 'com.amazon.tv.oobe',
 ]);
 // Freezing a Set alone does not protect its contents.
 for (const method of ['add', 'delete', 'clear']) {
@@ -44,7 +51,8 @@ Object.freeze(NEVER_TOUCH);
  */
 export function assertCanDisable(pkg, { entry, homePackage } = {}) {
   if (!isValidPackageName(pkg)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
-  if (NEVER_TOUCH.has(pkg) || pkg.startsWith('com.android.providers.')) {
+  if (NEVER_TOUCH.has(pkg) || ['com.android.providers.', 'com.google.android.overlay.modules',
+    'com.mediatek.', 'com.at.factory.', 'com.jamdeo.tv.'].some(prefix => pkg.startsWith(prefix))) {
     throw new CleanTvError(ErrorCode.PACKAGE_PROTECTED);
   }
   if (!entry) throw new CleanTvError(ErrorCode.PACKAGE_NOT_IN_REGISTRY);

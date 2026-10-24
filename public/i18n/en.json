@@ -202,6 +202,7 @@
   "launcher.doneTip": "Press Home on your TV remote to check the home screen. You can restore the original home screen here at any time.",
   "result.switched": "Home screen switched",
   "error.LAUNCHER_NOT_READY": "Projectivy is not ready. Install it from Play Store, enable it and open it once on the TV, then check again.",
+  "error.LAUNCHER_UNSUPPORTED": "Launcher switching is unavailable on Fire OS, CVTE-board TVs and Xiaomi TVs with a China-market or unverified home system. You can still use CleanTV's app cleanup.",
   "error.LAUNCHER_SWAP_ROLLED_BACK": "The switch failed. CleanTV turned the affected original home apps back on and verified that a home screen is available.",
   "error.LAUNCHER_ROLLBACK_FAILED": "The switch failed and CleanTV could not verify recovery. Keep the TV connected and choose “Restore the original home screen” to try restoring it.",
   "error.LAUNCHER_RESTORE_FAILED": "CleanTV could not verify that the original home screen is back. Keep the TV connected and try restoring it again.",

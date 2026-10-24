@@ -15,6 +15,7 @@ const statuses = {
   [ErrorCode.TIMEOUT]: 504,
   [ErrorCode.COMMAND_FAILED]: 502,
   [ErrorCode.LAUNCHER_NOT_READY]: 422,
+  [ErrorCode.LAUNCHER_UNSUPPORTED]: 422,
 };
 
 const genericMessages = {

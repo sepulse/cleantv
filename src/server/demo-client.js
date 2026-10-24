@@ -7,9 +7,9 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /** An isolated, in-memory TV; package data comes from the real registry. */
 export function createDemoClient(presets) {
-  const installed = new Set([...NEVER_TOUCH, ...presets
+  const installed = new Set([...NEVER_TOUCH].filter(pkg => !pkg.startsWith('com.cvte.')).concat(presets
     .filter(preset => ['common-android-tv', 'google-tv'].includes(preset.id))
-    .flatMap(preset => preset.packages.map(entry => entry.package))]);
+    .flatMap(preset => preset.packages.map(entry => entry.package))));
   const disabled = new Set();
   let attempts = 0;
   let connected = false;
@@ -44,6 +44,8 @@ export function createDemoClient(presets) {
       const pkg = await this.resolveHomeActivity(value);
       return pkg && `${pkg}/.HomeActivity`;
     },
+    async pressHome(value) { validate(value); },
+    async focusedPackage(value) { return this.resolveHomeActivity(value); },
     async listHomeCandidateComponents(value) {
       return (await this.listHomeCandidates(value)).map(pkg => `${pkg}/.HomeActivity`);
     },

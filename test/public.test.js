@@ -151,7 +151,8 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   assert.equal(info.model, 'Chromecast');
   assert.equal(info.sdk, 34);
   const installed = new Set(await client.listPackages(serial));
-  for (const pkg of [...NEVER_TOUCH, ...presets.filter(p => ['common-android-tv', 'google-tv'].includes(p.id)).flatMap(p => p.packages.map(e => e.package))]) assert.ok(installed.has(pkg));
+  for (const pkg of [[...NEVER_TOUCH].filter(item => !item.startsWith('com.cvte.')),
+    presets.filter(p => ['common-android-tv', 'google-tv'].includes(p.id)).flatMap(p => p.packages.map(e => e.package))].flat()) assert.ok(installed.has(pkg));
   const { packages } = await (await request(`${device}/packages`)).json();
   const pkg = packages.find(entry => entry.canDisable && entry.enabled).package;
   const clean = await (await request(`${device}/disable`, { packages: [pkg] })).json();

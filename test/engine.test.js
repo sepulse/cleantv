@@ -24,6 +24,8 @@ async function setup(t, { disabled = [], installed = entries.map(e => e.package)
     devices: async () => [{ serial, state: 'device' }],
     getprops: async () => ({ 'ro.serialno': 'TV123', 'ro.product.brand': 'Example', 'ro.product.model': 'TV' }),
     resolveHomeActivity: async () => 'com.example.home',
+    pressHome: async () => {},
+    focusedPackage: async () => client.resolveHomeActivity(serial),
     listPackages: async (s, options) => {
       assert.equal(s, serial);
       commands.push(options?.disabledOnly ? 'list-disabled' : 'list');
@@ -123,7 +125,7 @@ test('restore all checks HOME after restoring packages even without a recognised
     ['com.example.missing', false, false, null, 'LAUNCHER_STOCK_MISSING'],
     ['com.example.untracked', true, true, null, 'LAUNCHER_STOCK_MISSING'],
     ['com.example.untracked', true, false, null, undefined],
-    ['android', false, false, 'android/com.android.internal.app.ResolverActivity', undefined],
+    ['android', false, false, 'android/com.android.internal.app.ResolverActivity', 'LAUNCHER_STOCK_MISSING'],
     ['android', false, false, 'android/.Broken', 'LAUNCHER_STOCK_MISSING'],
     [null, true, false, null, 'LAUNCHER_RESTORE_FAILED'],
   ]) {

@@ -19,26 +19,39 @@ async function fixture(t, options = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'cleantv-launcher-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const journal = createJournal(dir);
-  const installed = new Set([...stock, ...(options.absent ? [] : [replacement])]);
+  const installed = new Set([...(options.noStock ? [] : stock), ...(options.absent ? [] : [replacement]), ...(options.extraInstalled ?? [])]);
   const disabled = new Set([stock[2], ...(options.disabled ? [replacement] : [])]);
   const calls = [];
   let preferredHome;
+  let homePress = 0;
+  let focusRead = 0;
+  const home = () => preferredHome ?? options.home ?? (options.alwaysReplacement ? replacement : stock.find(pkg => installed.has(pkg) && !disabled.has(pkg))
+    ?? (options.badFinalHome ? null : options.competingHome ?? replacement));
   const run = async args => {
     calls.push(args);
     const result = stdout => ({ stdout, stderr: '', code: 0 });
     if (args[0] === 'devices') return result(`${serial} device\n`);
     assert.deepEqual(args.slice(0, 3), ['-s', serial, 'shell']);
     const command = args.slice(3).join(' ');
-    if (command === 'getprop') return result('[ro.serialno]: [LAUNCHER_TEST]\n');
+    if (command === 'getprop') return result(['[ro.serialno]: [LAUNCHER_TEST]', ...Object.entries(options.props ?? {})
+      .map(([key, value]) => `[${key}]: [${value}]`)].join('\n'));
     if (command === 'pm list packages --user 0') return result([...installed].map(pkg => `package:${pkg}`).join('\n'));
     if (command === 'pm list packages --user 0 -d') return result([...disabled].map(pkg => `package:${pkg}`).join('\n'));
     if (command === 'cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME') {
       return result([...installed].filter(pkg => !disabled.has(pkg) && !(options.notCandidate && pkg === replacement)).map(pkg => `${pkg}/.Main`).join('\n'));
     }
     if (command === 'cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME') {
-      const home = preferredHome ?? options.home ?? (options.alwaysReplacement ? replacement : stock.find(pkg => installed.has(pkg) && !disabled.has(pkg))
-        ?? (options.badFinalHome ? null : replacement));
-      return result(home ? home.includes('/') ? home : `${home}/.Main` : 'No activity found');
+      const resolved = home();
+      return result(resolved ? resolved.includes('/') ? resolved : `${resolved}/.Main` : 'No activity found');
+    }
+    if (command === 'input keyevent KEYCODE_HOME') { homePress++; focusRead = 0; return result(''); }
+    if (command === 'dumpsys activity activities') {
+      const sequence = options.focusByPress?.[homePress];
+      const focused = sequence ? sequence[Math.min(focusRead++, sequence.length - 1)]
+        : options.focusBefore && stock.slice(0, 2).every(pkg => !disabled.has(pkg)) && !preferredHome ? options.focusBefore
+        : options.focusAfterSwap && stock.slice(0, 2).every(pkg => disabled.has(pkg)) ? options.focusAfterSwap
+        : options.focusAfterRestore && preferredHome === stock[0] ? options.focusAfterRestore : home();
+      return result(focused ? `mFocusedApp=ActivityRecord{abc u0 ${focused}/.Main t12}` : 'mFocusedApp=null');
     }
     if (args.slice(3, 6).join(' ') === 'cmd package set-home-activity') {
       if (options.setHomeFailure) return { stdout: '', stderr: 'unsupported', code: 1 };
@@ -56,6 +69,7 @@ async function fixture(t, options = {}) {
       if (disable && options.throwOn === pkg && !options.throwAfterEffect) throw new CleanTvError('TIMEOUT');
       if (!disable && options.enableFailure === pkg) return result('Failure');
       if (disable) disabled.add(pkg); else disabled.delete(pkg);
+      if (disable && options.dropPreferenceOnDisable) preferredHome = undefined;
       if (disable && options.throwOn === pkg) throw new CleanTvError('TIMEOUT');
       if (disable && options.falseOn === pkg) return result('Failure');
       return result(`Package ${pkg} new state: ${disable ? 'disabled-user' : 'enabled'}`);
@@ -103,6 +117,36 @@ test('every swap precondition refuses before any journal intent or mutation', as
   }
 });
 
+test('swap rejects an unverifiable current HOME before journal or stock changes', async t => {
+  for (const focusBefore of ['com.example.other', 'android']) {
+    const { engine, journal, changes } = await fixture(t, { focusBefore });
+    await assert.rejects(engine.swapLauncher(serial, replacement), error => error.code === 'LAUNCHER_NOT_READY'
+      && error.details.condition === 'actualHome');
+    assert.deepEqual(changes('disable-user'), []);
+    assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+  }
+});
+
+test('unsupported platforms reject swap with source-specific reason before any mutation', async t => {
+  const cases = [
+    [{ props: { 'ro.product.manufacturer': 'Amazon' } }, /Fire OS/],
+    [{ props: { 'ro.product.model': 'AFTDCT31' } }, /Fire OS/],
+    [{ extraInstalled: ['com.amazon.tv.launcher'] }, /Fire OS/],
+    [{ props: { 'ro.product.manufacturer': 'CVTE' } }, /CVTE/],
+    [{ extraInstalled: ['com.cvte.tv.hkcfac'] }, /CVTE/],
+    [{ props: { 'ro.product.manufacturer': 'Xiaomi' }, extraInstalled: ['com.mitv.tvhome'] }, /Xiaomi/],
+    [{ props: { 'ro.product.manufacturer': 'Xiaomi', 'ro.build.display.id': 'OS2.0.cn' } }, /Xiaomi/],
+    [{ props: { 'ro.product.manufacturer': 'Xiaomi' }, noStock: true }, /Xiaomi/],
+  ];
+  for (const [options, reason] of cases) {
+    const { engine, journal, changes } = await fixture(t, options);
+    await assert.rejects(engine.swapLauncher(serial, replacement), error => error.code === 'LAUNCHER_UNSUPPORTED'
+      && reason.test(error.message));
+    assert.deepEqual(changes('disable-user'), []);
+    assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+  }
+});
+
 test('happy swap journals first, disables only enabled installed stock, verifies HOME', async t => {
   const { engine, journal, changes } = await fixture(t);
   const progress = [];
@@ -124,13 +168,74 @@ test('happy swap journals first, disables only enabled installed stock, verifies
   assert.equal(progress.at(-1).done, 2);
 });
 
+test('global Xiaomi remains supported after Projectivy becomes HOME', async t => {
+  const { engine, client } = await fixture(t, { props: { 'ro.product.manufacturer': 'Xiaomi' } });
+  assert.equal((await engine.swapLauncher(serial, replacement)).failed, 0);
+  assert.equal(await client.resolveHomeActivity(serial), replacement);
+  assert.equal((await engine.swapLauncher(serial, replacement)).failed, 0);
+});
+
+test('Xiaomi China and unverified stock remain unsupported with Projectivy HOME', async t => {
+  for (const options of [{ noStock: true }, { extraInstalled: ['com.mitv.tvhome'] },
+    { extraInstalled: ['com.xiaomi.mitv.settings'] }, { props: { 'ro.build.display.id': 'OS2.0.cn' } }]) {
+    const { engine, journal, changes } = await fixture(t, { ...options, home: replacement,
+      props: { 'ro.product.manufacturer': 'Xiaomi', ...options.props } });
+    await assert.rejects(engine.swapLauncher(serial, replacement), { code: 'LAUNCHER_UNSUPPORTED' });
+    assert.deepEqual(changes('disable-user'), []);
+    assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+  }
+});
+
+test('swap sets Projectivy HOME after stock candidate changes clear the prior preference', async t => {
+  const competingHome = 'com.example.otherhome';
+  const { engine, calls, client } = await fixture(t, { competingHome, extraInstalled: [competingHome],
+    dropPreferenceOnDisable: true });
+  const result = await engine.swapLauncher(serial, replacement);
+  assert.equal(result.results[0].result, 'switched');
+  const lastDisable = calls.findLastIndex(args => args[4] === 'disable-user');
+  const setHome = calls.findIndex(args => args.includes('set-home-activity'));
+  assert.ok(setHome > lastDisable);
+  assert.equal(await client.resolveHomeActivity(serial), replacement);
+});
+
+test('HOME focus settling accepts stale and null early reads once Projectivy stays focused', async t => {
+  const { engine, calls } = await fixture(t, { focusByPress: {
+    1: [null, stock[0], stock[0], stock[0], stock[0]],
+    2: [stock[0], null, replacement, replacement, replacement],
+  } });
+  const result = await engine.swapLauncher(serial, replacement);
+  assert.equal(result.results[0].result, 'switched');
+  assert.equal(calls.filter(args => args.slice(3).join(' ') === 'dumpsys activity activities').length, 10);
+});
+
+test('HOME focus settling rejects an initially matching stale Projectivy focus', async t => {
+  const competingHome = 'com.example.otherhome';
+  const { engine, changes } = await fixture(t, { extraInstalled: [competingHome], focusByPress: {
+    2: [replacement, replacement, competingHome, competingHome, competingHome],
+  } });
+  const result = await engine.swapLauncher(serial, replacement);
+  assert.equal(result.results[0].reason, 'LAUNCHER_SWAP_ROLLED_BACK');
+  assert.deepEqual(changes('enable'), stock.slice(0, 2));
+});
+
 test('verification failure rolls back exactly the stock launchers disabled this run', async t => {
-  const { engine, changes, disabled } = await fixture(t, { badFinalHome: true });
+  const { engine, changes, disabled } = await fixture(t, { badFinalHome: true, ignoreSetHome: true });
   const result = await engine.swapLauncher(serial, replacement);
   assert.equal(result.failed, 1);
   assert.equal(result.results[0].reason, 'LAUNCHER_SWAP_ROLLED_BACK');
   assert.deepEqual(changes('enable'), stock.slice(0, 2));
   assert.deepEqual([...disabled], [stock[2]]);
+});
+
+test('set-home Success and resolved HOME success with wrong focused app trigger rollback', async t => {
+  const { engine, changes, disabled, client, calls } = await fixture(t, { ignoreSetHome: true, focusAfterSwap: stock[0] });
+  const result = await engine.swapLauncher(serial, replacement);
+  assert.equal(result.results[0].reason, 'LAUNCHER_SWAP_ROLLED_BACK');
+  assert.deepEqual(changes('enable'), stock.slice(0, 2));
+  assert.deepEqual([...disabled], [stock[2]]);
+  assert.equal(await client.resolveHomeActivity(serial), stock[0]);
+  assert.ok(calls.some(args => args.includes('set-home-activity')));
+  assert.ok(calls.some(args => args.slice(3).join(' ') === 'input keyevent KEYCODE_HOME'));
 });
 
 test('mid-swap exceptions recover completed changes and commands that threw after taking effect', async t => {
@@ -152,7 +257,7 @@ test('a missing success marker also rolls back actual device changes', async t =
 });
 
 test('failed rollback keeps trying the remaining stock and reports unverified recovery', async t => {
-  const { engine, changes, disabled } = await fixture(t, { badFinalHome: true, enableFailure: stock[0] });
+  const { engine, changes, disabled } = await fixture(t, { badFinalHome: true, ignoreSetHome: true, enableFailure: stock[0] });
   const result = await engine.swapLauncher(serial, replacement);
   assert.equal(result.results[0].reason, 'LAUNCHER_ROLLBACK_FAILED');
   assert.deepEqual(changes('enable'), stock.slice(0, 2));
@@ -197,11 +302,27 @@ test('restoreLauncher reports remote guidance when HOME selection fails', async 
   assert.equal(result.manualHomePackage, stock[0]);
 });
 
-test('restoreLauncher selects a stock candidate component when replacement remains preferred', async t => {
+test('restoreLauncher does not report success when HOME still focuses Projectivy', async t => {
+  const { engine } = await fixture(t, { alwaysReplacement: true, focusAfterRestore: replacement });
+  const result = await engine.restoreLauncher(serial);
+  assert.equal(result.results.at(-1).reason, 'LAUNCHER_RESTORE_FAILED');
+  assert.equal(result.manualHomePackage, stock[0]);
+});
+
+test('restoreLauncher settles stale focus before verifying stock HOME', async t => {
+  const { engine } = await fixture(t, { alwaysReplacement: true, focusByPress: {
+    2: [null, replacement, stock[0], stock[0], stock[0]],
+  } });
+  const result = await engine.restoreLauncher(serial);
+  assert.equal(result.failed, 0);
+});
+
+test('restoreLauncher selects a stock candidate and verifies actual focused HOME', async t => {
   for (const chooser of [false, true]) {
     const { engine, calls } = await fixture(t, { alwaysReplacement: true, chooser });
     const result = await engine.restoreLauncher(serial);
-    assert.equal(result.failed, 0);
+    assert.equal(result.failed, chooser ? 1 : 0);
+    if (chooser) assert.equal(result.results.at(-1).reason, 'LAUNCHER_RESTORE_FAILED');
     assert.deepEqual(calls.find(args => args.includes('set-home-activity')),
       ['-s', serial, 'shell', 'cmd', 'package', 'set-home-activity', `${stock[0]}/.Main`]);
   }
@@ -215,13 +336,30 @@ test('restore all verifies stock HOME even when Projectivy remains preferred', a
     const result = await engine.restore(serial, 'all');
     if (!options.noStock) assert.ok(calls.some(args => args.includes('set-home-activity')));
     const home = await client.resolveHomeActivity(serial);
-    if (home === replacement) {
+    if (home === replacement || home === 'android') {
       assert.equal(result.failed, 1);
       assert.equal(result.results.at(-1).reason, options.noStock ? 'LAUNCHER_STOCK_MISSING' : 'LAUNCHER_RESTORE_FAILED');
       assert.equal(result.manualHomePackage, options.noStock ? undefined : stock[0]);
     } else {
       assert.ok(stock.includes(home) || home === 'android');
       assert.equal(result.failed, 0);
+    }
+  }
+});
+
+test('restore all repairs resolver and focused HOME disagreement and reports failed recovery', async t => {
+  for (const focusAfterRestore of [undefined, replacement]) {
+    const { engine, client, calls, disabled } = await fixture(t, { focusAfterRestore,
+      focusByPress: { 1: [replacement], 2: [replacement] } });
+    assert.equal(await client.resolveHomeActivity(serial), stock[0]);
+    const result = await engine.restore(serial, 'all');
+    assert.ok(calls.some(args => args.includes('set-home-activity')));
+    assert.ok(calls.filter(args => args.slice(3).join(' ') === 'input keyevent KEYCODE_HOME').length >= 3);
+    assert.deepEqual([...disabled], []);
+    assert.equal(result.failed, focusAfterRestore ? 1 : 0);
+    if (focusAfterRestore) {
+      assert.equal(result.results.at(-1).reason, 'LAUNCHER_RESTORE_FAILED');
+      assert.equal(result.manualHomePackage, stock[0]);
     }
   }
 });
@@ -258,9 +396,7 @@ test('unusable HOME recovers disabled stock with missing history, including jour
     assert.equal((await engine.inspect(serial)).needsRecovery, true);
     assert.deepEqual(changes('enable'), []);
     const result = await engine.recoverLauncher(serial);
-    // An unverifiable HOME is guidance for the remote, not a successful recovery.
-    if (home === 'com.example.missing') assert.deepEqual([result.recovered, result.manualHomePackage], [undefined, stock[0]]);
-    else assert.equal(result.recovered, true);
+    assert.equal(result.recovered, true);
     assert.equal(result.journalWarning, true);
     assert.deepEqual(changes('enable'), stock);
   }
