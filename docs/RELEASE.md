@@ -13,6 +13,7 @@
 4. Muat naik zip release itu ke VirusTotal. Tampal pautan laporan sebenar dalam
    nota release; jangan dakwa imbasan bersih sebelum membaca hasilnya. Attestation
    membuktikan asal build, bukan jaminan keselamatan.
-5. Kemas kini `[PAUTAN MUAT TURUN]` dalam
-   `docs/marketing/posting-media-sosial.md` kepada pautan release sebenar.
+5. Templat dalam `docs/marketing/posting-media-sosial.md` memaut ke
+   https://github.com/sepulse/cleantv/releases, jadi ia tidak perlu ditukar untuk
+   setiap versi. Semak sahaja bahawa kenyataannya masih tepat untuk versi baharu.
 

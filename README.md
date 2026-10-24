@@ -4,61 +4,34 @@
 
 ## Bahasa Melayu
 
-CleanTV ialah aplikasi yang berjalan di komputer anda untuk membantu TV Android /
-Google TV anda menjadi lebih laju dan kurang iklan. Anda sambungkan ke TV melalui
-rangkaian Wi-Fi yang sama, pilih aplikasi yang tidak diperlukan, dan CleanTV
-mematikannya untuk anda.
+CleanTV ialah aplikasi pada komputer yang membantu Android TV / Google TV anda menjadi lebih laju dan kurang iklan. Anda hanya perlu sambungkan komputer ke TV melalui rangkaian Wi-Fi yang sama, pilih aplikasi yang tidak diperlukan, dan CleanTV akan matikannya untuk anda.
 
 ### Janji keselamatan
 
-- **Matikan, bukan padam.** CleanTV hanya mematikan aplikasi. Ia tidak
-  menyahpasang atau memadam apa-apa.
-- **Pulihkan dengan satu klik.** Butang "Pulihkan semua" sentiasa ada selepas
-  anda bersambung ke TV.
-- **Factory reset memulihkan semuanya.** Jika berlaku sesuatu yang aneh, set semula
-  kilang TV mengembalikan semua aplikasi.
-- **Hanya aplikasi dalam senarai.** Aplikasi teras TV dilindungi dan tidak boleh
-  disentuh. Anda tidak boleh tersilap mematikan sesuatu yang kritikal.
-- **Hanya pada komputer anda.** Aplikasi ini hanya boleh dicapai daripada komputer
-  anda sendiri (127.0.0.1) dan tidak menghantar data ke mana-mana.
+- **Matikan, bukan padam.** CleanTV hanya mematikan aplikasi. Ia tidak memadam atau menyahpasang apa-apa.
+- **Pulihkan dengan satu klik.** Butang "Pulihkan semua" sentiasa ada sebaik sahaja anda bersambung ke TV.
+- **Factory reset memulihkan semuanya.** Jika berlaku apa-apa masalah yang pelik, factory reset (set semula kilang) pada TV akan mengembalikan semula semua aplikasi asal.
+- **Hanya aplikasi dalam senarai.** Aplikasi sistem TV dilindungi dan tidak boleh disentuh. Anda tidak akan tersilap mematikan aplikasi yang penting.
+- **Hanya pada komputer anda.** Aplikasi ini hanya boleh diakses dari komputer anda sendiri (127.0.0.1) dan tidak menghantar data ke mana-mana.
 
 ### Perkara yang perlu diketahui
 
-- Senarai aplikasi untuk Google TV, Xiaomi, TCL, Sony dan Hisense **belum diuji
-  pada TV sebenar** (`verified: false`). Ia disusun daripada sumber awam. Aplikasi
-  ini menandakannya sebagai "belum diuji". Cuba pada satu TV dahulu, dan ingat
-  bahawa anda boleh memulihkannya.
-- Anda boleh menukar skrin utama (launcher) kepada Projectivy secara pilihan.
-  CleanTV menyemak Projectivy sudah dipasang, dihidupkan dan tersedia sebagai
-  home app sebelum menukar launcher. Kemudian CleanTV mematikan home app asal,
-  menyemak butang Home dan cuba kembali ke skrin utama asal secara automatik
-  jika semakan gagal. Jika sambungan terputus semasa penukaran, CleanTV
-  memulihkannya apabila anda bersambung semula, atau anda boleh pilih
-  "Pulihkan skrin utama asal" / "Pulihkan semua". Factory reset sentiasa
-  memulihkan semuanya.
-- Ada **mod demo** untuk mencuba aplikasi tanpa TV.
+- Senarai aplikasi untuk Google TV, Xiaomi, TCL, Sony dan Hisense **belum diuji pada TV sebenar** (`verified: false`). Senarai ini disusun daripada sumber awam, jadi aplikasi ini melabelkannya sebagai "belum diuji". Cuba pada satu TV dahulu, dan ingat bahawa anda sentiasa boleh memulihkannya semula.
+- Anda boleh menukar skrin utama (launcher) kepada Projectivy jika mahu. CleanTV akan menyemak sama ada Projectivy sudah dipasang, dihidupkan dan sedia digunakan sebagai home app sebelum menukar launcher. Kemudian, CleanTV mematikan home app asal, menyemak fungsi butang Home, dan cuba kembali ke skrin utama asal secara automatik jika semakan gagal. Jika sambungan terputus semasa pertukaran, CleanTV akan memulihkannya sebaik sahaja anda bersambung semula, atau anda boleh pilih "Pulihkan skrin utama asal" / "Pulihkan semua". Factory reset juga sentiasa memulihkan semuanya.
+- Ada **mod demo** untuk mencuba aplikasi ini tanpa perlukan TV.
 
 ### Mula pantas (pengguna)
 
-1. Muat turun `CleanTV-win-x64.zip` dan nyahzip (klik kanan > Extract All).
-2. Pada TV, hidupkan **Pilihan pembangun** dan **Penyahpepijatan USB / rangkaian**
-   (aplikasi menunjukkan langkah mengikut jenama TV).
-3. Sambung ke internet dan klik dua kali **`CleanTV.cmd`**. Kali pertama, ia memuat
-   turun Android platform-tools rasmi Google dan menyemak tandatangan Google pada
-   `adb.exe`. Pelayar akan terbuka. Mod demo tidak memuat turun apa-apa.
-4. Ikut langkah di skrin. Tekan **Benarkan** pada skrin TV apabila diminta.
+1. Muat turun `CleanTV-win-x64.zip` dan unzip fail (klik kanan > Extract All).
+2. Pada TV, hidupkan **Developer options** (Pilihan pembangun) dan **USB debugging** atau **Network debugging** (aplikasi ada menunjukkan panduan langkah mengikut jenama TV anda).
+3. Sambungkan komputer ke internet dan klik dua kali **`CleanTV.cmd`**. Untuk kali pertama, ia akan memuat turun Android platform-tools rasmi Google dan menyemak tandatangan Google pada `adb.exe`. Pelayar web akan dibuka secara automatik. Mod demo tidak memuat turun apa-apa.
+4. Ikut arahan pada skrin. Tekan **Benarkan** pada skrin TV apabila diminta.
 
-Jangan tutup tetingkap hitam semasa menggunakan CleanTV. Klik dua kali
-**`CleanTV-Demo.cmd`** untuk mencuba tanpa TV. Windows mungkin memberi amaran kerana
-CleanTV masih baharu dan tiada code signing. Jika anda memilih untuk teruskan,
-pilih **More info → Run anyway**, atau sebelum nyahzip: klik kanan zip →
-**Properties → Unblock → OK**. `node.exe` ditandatangani oleh OpenJS Foundation;
-`adb.exe` yang dimuat turun pada kali pertama ditandatangani oleh Google. Fail
-selebihnya ialah teks JavaScript/HTML dan data yang boleh dibaca.
+Jangan tutup tetingkap hitam semasa menggunakan CleanTV. Klik dua kali **`CleanTV-Demo.cmd`** untuk mencuba tanpa TV. Windows mungkin memaparkan amaran kerana CleanTV masih baharu dan belum ada code signing. Jika anda mahu teruskan, pilih **More info → Run anyway**, atau sebelum unzip: klik kanan fail zip → **Properties → Unblock → OK**. Fail `node.exe` ditandatangani oleh OpenJS Foundation; `adb.exe` yang dimuat turun kali pertama ditandatangani oleh Google. Fail selebihnya ialah teks JavaScript/HTML dan data biasa yang boleh dibaca.
 
 ### Pembangun
 
-Perlu Node.js 22 atau lebih baharu. Tiada kebergantungan npm.
+Perlu Node.js 22 atau lebih baharu. Tiada dependency npm.
 
 ```
 npm test          # jalankan ujian (tiada TV diperlukan)
@@ -68,18 +41,11 @@ npm run fetch-adb # muat turun platform-tools rasmi ke vendor/platform-tools
 npm run build:win # bina dist/CleanTV-win-x64/ dan dist/CleanTV-win-x64.zip
 ```
 
-`npm run build:win` menyalin `node.exe` semasa (hanya pada Windows x64; di tempat lain
-guna `--node <laluan>`), `app/`, dan skrip muat turun ke dalam folder mudah alih, kemudian
-memampatkannya tanpa adb (zip hanya dibuat pada Windows) dan menghasilkan
-`dist/SHA256SUMS.txt`. Lihat [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-dan [docs/PLAN.md](docs/PLAN.md).
+`npm run build:win` menyalin `node.exe` semasa (hanya pada Windows x64; di tempat lain guna `--node <laluan>`), `app/`, dan skrip muat turun ke dalam folder portable, kemudian memampatkannya tanpa adb (zip hanya dibuat pada Windows) dan menghasilkan `dist/SHA256SUMS.txt`. Lihat [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) dan [docs/PLAN.md](docs/PLAN.md).
 
 ### Lesen platform-tools
 
-Binaan lite tidak menyertakan adb. `CleanTV.cmd` memuat turun binari rasmi Android
-platform-tools (termasuk `adb`) terus daripada Google (`dl.google.com`) apabila adb
-belum ada. Ia perisian Google di bawah [terma Google](https://developer.android.com/studio/releases/platform-tools)
-dan bukan sebahagian daripada kod CleanTV. Binari itu tidak disimpan dalam repositori.
+Build lite tidak menyertakan adb. `CleanTV.cmd` memuat turun fail binari rasmi Android platform-tools (termasuk `adb`) terus daripada Google (`dl.google.com`) jika adb belum ada. Ia perisian Google di bawah [terma Google](https://developer.android.com/studio/releases/platform-tools) dan bukan sebahagian daripada kod CleanTV. Fail binari itu tidak disimpan dalam repositori.
 
 ---
 
@@ -160,15 +126,9 @@ and is not part of the CleanTV code. The binaries are not stored in this reposit
 
 ## Keselamatan & privasi / Security & privacy
 
-**Bahasa Melayu.** Kod CleanTV terbuka (lesen MIT) dan boleh dibaca di https://github.com/sepulse/cleantv. Aplikasi
-berjalan hanya pada komputer anda, dengan server di `127.0.0.1`. Tiada akaun atau
-telemetry. CleanTV tidak menghantar data ke perkhidmatan luar; ia berhubung dengan
-TV anda melalui rangkaian tempatan. Satu-satunya muat turun internet oleh CleanTV
-ialah adb daripada Google pada kali pertama. Ia hanya mematikan aplikasi yang
-dipilih; setiap tindakan boleh dipulihkan, termasuk pertukaran launcher pilihan.
+**Bahasa Melayu.** Kod CleanTV ialah sumber terbuka (lesen MIT) dan boleh dibaca di https://github.com/sepulse/cleantv. Aplikasi ini berjalan hanya pada komputer anda, dengan server di `127.0.0.1`. Tiada pendaftaran akaun atau telemetry. CleanTV tidak menghantar data ke perkhidmatan luar; ia berhubung dengan TV anda melalui rangkaian tempatan sahaja. Satu-satunya muat turun internet oleh CleanTV ialah adb daripada Google pada kali pertama. Ia hanya mematikan aplikasi yang dipilih; setiap tindakan boleh dipulihkan semula, termasuk penukaran launcher pilihan.
 
-Semak muat turun dengan membandingkan hasil arahan ini dengan `SHA256SUMS.txt`
-daripada release yang sama:
+Semak muat turun anda dengan membandingkan hasil arahan ini dengan `SHA256SUMS.txt` daripada release yang sama:
 
 ```powershell
 certutil -hashfile CleanTV-win-x64.zip SHA256
@@ -181,8 +141,8 @@ gh attestation verify CleanTV-win-x64.zip --repo sepulse/cleantv
 ```
 
 Laporan VirusTotal dipautkan dalam nota setiap release.
-Checksum mengesan fail yang berbeza; attestation mengaitkannya dengan build GitHub.
-Kedua-duanya dan laporan antivirus bukan jaminan bahawa perisian bebas risiko.
+Checksum mengesan jika fail berbeza; attestation mengaitkannya terus dengan build GitHub.
+Kedua-dua semakan ini serta laporan antivirus bukan jaminan bahawa perisian bebas risiko.
 
 **English.** CleanTV is open source (MIT licence); read the code at https://github.com/sepulse/cleantv. The app runs only on this
 computer, with its server on `127.0.0.1`. There is no account or telemetry.
