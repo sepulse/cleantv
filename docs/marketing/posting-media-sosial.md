@@ -102,3 +102,46 @@ Salam! Kalau TV Android/Google TV kat rumah dah lambat atau banyak iklan, boleh 
 ## 6. WhatsApp message — English
 
 Hi! If your Android TV / Google TV at home is running slow or full of ads, you can try CleanTV (beta, free). It turns off apps you don't need over Wi-Fi from a Windows laptop. Nothing is deleted, and there's a "Restore all" button if you change your mind. The guide is inside the app. Link: https://github.com/sepulse/cleantv/releases
+
+---
+
+## 7. Posting ringkas & padat (Facebook) — BM / EN
+
+**BM**
+
+📺 **Android TV anda lambat & penuh iklan? Cuba CleanTV — percuma (beta).**
+
+Matikan aplikasi yang tak perlu pada Android TV / Google TV anda melalui Wi-Fi, terus dari laptop Windows.
+✅ Tiada apa yang dipadam ✅ **Pulihkan semua** satu klik ✅ Aplikasi sistem penting dilindungi
+
+**4 langkah:**
+1️⃣ Muat turun & extract zip.
+2️⃣ Di TV: hidupkan **Developer options** → **USB debugging** / **Network debugging**.
+3️⃣ Klik dua kali **CleanTV.cmd** (keluar amaran Windows? **More info → Run anyway**).
+4️⃣ **Cari TV saya** → **Benarkan** di TV → **Bersihkan**.
+
+Nak cuba dulu tanpa TV? Buka **CleanTV-Demo.cmd**.
+⚠️ Beta: senarai belum diuji pada semua model TV. Windows sahaja.
+
+👉 https://github.com/sepulse/cleantv/releases
+#AndroidTV #GoogleTV #TipsTV #CleanTV
+
+**EN**
+
+📺 **Android TV slow & full of ads? Try CleanTV — free (beta).**
+
+Turn off apps you don't need on Android TV / Google TV over Wi-Fi, straight from your Windows laptop.
+✅ Nothing is deleted ✅ One-click **Restore all** ✅ Important system apps protected
+
+**4 steps:**
+1️⃣ Download & extract the zip.
+2️⃣ On your TV: turn on **Developer options** → **USB debugging** / **Network debugging**.
+3️⃣ Double-click **CleanTV.cmd** (Windows warning? **More info → Run anyway**).
+4️⃣ **Find my TV** → **Allow** on the TV → **Clean**.
+
+Want to try it without a TV first? Open **CleanTV-Demo.cmd**.
+⚠️ Beta: lists aren't tested on all TV models yet. Windows only.
+
+👉 https://github.com/sepulse/cleantv/releases
+#AndroidTV #GoogleTV #TVTips #CleanTV
+
