@@ -42,7 +42,7 @@ main { padding-top: 12px; padding-bottom: 48px; }
 .pill .icon { width: 16px; height: 16px; flex-basis: 16px; }
 .hero-icon { width: 72px; height: 72px; color: var(--primary); margin-bottom: 12px; }
 .steps { display: grid; grid-template-columns: repeat(5, 1fr); list-style: none; margin: 0 0 28px; padding: 0; gap: 8px; }
-.steps li { font-size: 14px; color: var(--ink-muted); border-top: 3px solid var(--line); padding-top: 8px; overflow-wrap: anywhere; }
+.steps li { font-size: 14px; color: var(--ink-muted); border-top: 3px solid var(--line); padding-top: 8px; overflow-wrap: break-word; }
 .steps li[aria-current=step] { color: var(--primary); border-color: var(--primary); font-weight: 700; }
 .steps li.complete { border-color: var(--primary); }
 .brand-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -112,6 +112,7 @@ dialog .actions { margin-top: 12px; justify-content: flex-end; }
   .site-header, main { padding-left: 16px; padding-right: 16px; }
   .header-actions { width: 100%; justify-content: space-between; }
   .steps { gap: 6px; }
+  .steps li { font-size: 12px; }
   .bottom-bar { padding: 16px; }
   .bottom-bar .button { width: 100%; }
   .app-list { padding-left: 16px; padding-right: 16px; }
