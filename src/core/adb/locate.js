@@ -1,4 +1,4 @@
-import { access } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { resolve, win32, posix } from 'node:path';
 import { createRunner } from './runner.js';
 import { CleanTvError, ErrorCode } from '../errors.js';
@@ -10,7 +10,7 @@ import { CleanTvError, ErrorCode } from '../errors.js';
 export async function locateAdb({
   env = process.env,
   platform: osName = process.platform,
-  exists = async path => { try { await access(path); return true; } catch { return false; } },
+  exists = async path => { try { return (await stat(path)).isFile(); } catch { return false; } },
   run,
 } = {}) {
   const paths = osName === 'win32' ? win32 : posix;

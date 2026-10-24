@@ -7,7 +7,7 @@ Aplikasi web tempatan untuk *debloat* Android TV / Google TV melalui Wi-Fi ADB
 
 | # | Keputusan | Sebab |
 |---|-----------|-------|
-| D1 | **Local web app**: Node.js ≥ 22 (ESM JavaScript + JSDoc, tiada build step), Express 5, frontend Vanilla JS + CSS dihidang statik. | Paling sedikit kebergantungan; boleh dibungkus jadi satu `.exe` (Node SEA) pada Fasa 6. Tauri ditangguh — perlu Rust toolchain dan sidecar Node, tiada manfaat untuk v1. |
+| D1 | **Local web app**: Node.js ≥ 22 (ESM JavaScript + JSDoc, tiada build step), `node:http`, frontend Vanilla JS + CSS dihidang statik. | Tiada kebergantungan runtime; boleh dibungkus jadi satu `.exe` (Node SEA) pada Fasa 6 tanpa bundler. Tauri ditangguh — perlu Rust toolchain dan sidecar Node, tiada manfaat untuk v1. |
 | D2 | **ADB = binari rasmi `adb` dipanggil melalui `execFile`** (tanpa shell). Tiada `@devicefarmer/adbkit`. | adbkit tetap perlukan adb server yang sama; pembalut nipis lebih mudah diuji (runner boleh disuntik) dan tiada lapisan tambahan. ADB pure-JS (Tango) kurang terbukti untuk auth TCP. |
 | D3 | Cari `adb` ikut tertib: env `CLEANTV_ADB` → `vendor/platform-tools/adb(.exe)` → `PATH`. Muat turun platform-tools rasmi dari `dl.google.com` ialah skrip berasingan (Fasa 6). | Pengguna tidak perlu pasang Android SDK. |
 | D4 | **Hanya `pm disable-user --user 0` dan `pm enable --user 0`.** Tiada `uninstall`, `pm clear`, `rm`, `settings put` di mana-mana kod. Diuji secara automatik. | Setiap tindakan boleh diundur; factory reset sentiasa memulihkan semua. |

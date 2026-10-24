@@ -11,6 +11,7 @@ export const ErrorCode = Object.freeze({
   COMMAND_FAILED: 'COMMAND_FAILED',
   TIMEOUT: 'TIMEOUT',
   FORBIDDEN: 'FORBIDDEN',
+  INTERNAL: 'INTERNAL',
 });
 
 export class CleanTvError extends Error {

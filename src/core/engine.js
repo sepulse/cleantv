@@ -10,6 +10,11 @@ import { CleanTvError, ErrorCode } from './errors.js';
 export function createEngine({ client, journal, presets }) {
   async function context(serial) {
     if (!isValidSerial(serial)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
+    const device = (await client.devices()).find(item => item.serial === serial);
+    if (!device) throw new CleanTvError(ErrorCode.DEVICE_UNREACHABLE);
+    if (device.state === 'unauthorized') throw new CleanTvError(ErrorCode.DEVICE_UNAUTHORIZED);
+    if (device.state === 'offline') throw new CleanTvError(ErrorCode.DEVICE_OFFLINE);
+    if (device.state !== 'device') throw new CleanTvError(ErrorCode.DEVICE_UNREACHABLE);
     const installed = await client.listPackages(serial);
     const info = await getDeviceInfo(client, serial, installed);
     const matched = matchPresets(presets, info);
@@ -82,5 +87,16 @@ export function createEngine({ client, journal, presets }) {
     },
     /** @param {string} serial @param {string[] | 'all'} pkgs @param {(progress: { done: number, total: number, package: string, result: string, reason?: string }) => void} [onProgress] */
     restore(serial, pkgs, onProgress) { return act(serial, pkgs, 'enable', onProgress); },
+    /** @param {string} serial */
+    async history(serial) {
+      const { info } = await context(serial);
+      try {
+        const records = await journal.read(info.deviceId);
+        return records.slice().reverse().map(record => ({
+          at: record.at, action: record.action, package: record.package,
+          result: record.status === 'ok' ? (record.action === 'disable' ? 'disabled' : 'enabled') : record.status,
+        }));
+      } catch { return []; }
+    },
   };
 }

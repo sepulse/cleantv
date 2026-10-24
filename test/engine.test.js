@@ -21,6 +21,7 @@ async function setup(t, { disabled = [], installed = entries.map(e => e.package)
   const commands = [];
   const disabledSet = new Set(disabled);
   const client = {
+    devices: async () => [{ serial, state: 'device' }],
     getprops: async () => ({ 'ro.serialno': 'TV123', 'ro.product.brand': 'Example', 'ro.product.model': 'TV' }),
     resolveHomeActivity: async () => 'com.example.home',
     listPackages: async (s, options) => {
@@ -52,6 +53,7 @@ async function setup(t, { disabled = [], installed = entries.map(e => e.package)
 test('inspect composes real client parsers, device info, matching and states without duplicate reads', async () => {
   const prefix = `-s ${serial} shell`;
   const run = fakeRunner({
+    'devices -l': { stdout: `List of devices attached\r\n${serial} device\r\n` },
     [`${prefix} getprop`]: { stdout: '[ro.serialno]: [TV123]\r\n[ro.product.brand]: [Brand]\r\n' },
     [`${prefix} cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME`]: { stdout: 'com.example.home/.Main\r\n' },
     [`${prefix} pm list packages --user 0`]: { stdout: 'package:com.example.good\r\npackage:com.google.android.apps.tv.launcherx\r\n' },

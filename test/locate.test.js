@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolve, win32, posix } from 'node:path';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { locateAdb } from '../src/core/adb/locate.js';
 import { createRunner } from '../src/core/adb/runner.js';
 import { fakeRunner } from './helpers/fake-runner.js';
@@ -62,4 +65,11 @@ test('a missing explicit ADB path fails without falling through and includes the
     exists: async value => { seen.push(value); return false; }, run: async () => assert.fail('must not probe PATH') }),
   error => error.code === 'ADB_NOT_FOUND' && error.details.adbPath === 'missing-adb');
   assert.deepEqual(seen, ['missing-adb']);
+});
+
+test('an explicit ADB directory is rejected', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'cleantv-adb-dir-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await assert.rejects(locateAdb({ env: { CLEANTV_ADB: directory }, run: async () => assert.fail('must not run a directory') }),
+    { code: 'ADB_NOT_FOUND' });
 });
