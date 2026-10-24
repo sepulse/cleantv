@@ -160,7 +160,7 @@ and is not part of the CleanTV code. The binaries are not stored in this reposit
 
 ## Keselamatan & privasi / Security & privacy
 
-**Bahasa Melayu.** Kod CleanTV terbuka untuk dibaca: [PAUTAN REPO]. Aplikasi
+**Bahasa Melayu.** Kod CleanTV terbuka (lesen MIT) dan boleh dibaca di https://github.com/sepulse/cleantv. Aplikasi
 berjalan hanya pada komputer anda, dengan server di `127.0.0.1`. Tiada akaun atau
 telemetry. CleanTV tidak menghantar data ke perkhidmatan luar; ia berhubung dengan
 TV anda melalui rangkaian tempatan. Satu-satunya muat turun internet oleh CleanTV
@@ -174,18 +174,17 @@ daripada release yang sama:
 certutil -hashfile CleanTV-win-x64.zip SHA256
 ```
 
-Semak juga build attestation GitHub (gantikan `<owner>/<repo>` dengan repositori
-sebenar):
+Semak juga build attestation GitHub:
 
 ```powershell
-gh attestation verify CleanTV-win-x64.zip --repo <owner>/<repo>
+gh attestation verify CleanTV-win-x64.zip --repo sepulse/cleantv
 ```
 
-Lihat laporan VirusTotal dalam nota setiap release: [PAUTAN LAPORAN VIRUSTOTAL].
+Laporan VirusTotal dipautkan dalam nota setiap release.
 Checksum mengesan fail yang berbeza; attestation mengaitkannya dengan build GitHub.
 Kedua-duanya dan laporan antivirus bukan jaminan bahawa perisian bebas risiko.
 
-**English.** CleanTV's source code is available to read: [PAUTAN REPO]. The app runs only on this
+**English.** CleanTV is open source (MIT licence); read the code at https://github.com/sepulse/cleantv. The app runs only on this
 computer, with its server on `127.0.0.1`. There is no account or telemetry.
 CleanTV sends no data to outside services; it communicates with your TV over your
 local network. Its only internet download is the first-run adb download from Google.
@@ -194,9 +193,8 @@ optional launcher switch.
 
 Compare the output of `certutil -hashfile CleanTV-win-x64.zip SHA256` with
 `SHA256SUMS.txt` from the same release. Check the GitHub build attestation with
-`gh attestation verify CleanTV-win-x64.zip --repo <owner>/<repo>` (replace
-`<owner>/<repo>` with the actual repository). See the VirusTotal report linked in
-each release's notes: [PAUTAN LAPORAN VIRUSTOTAL]. A checksum detects a different
+`gh attestation verify CleanTV-win-x64.zip --repo sepulse/cleantv`. The VirusTotal report is linked in
+each release's notes. A checksum detects a different
 file; an attestation links it to the GitHub build. Neither these checks nor an
 antivirus report guarantees that software is risk-free. Release steps:
 [docs/RELEASE.md](docs/RELEASE.md).

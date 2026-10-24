@@ -8,7 +8,7 @@
 3. Muat turun kedua-dua fail daripada release. Jalankan
    `certutil -hashfile CleanTV-win-x64.zip SHA256` dan bandingkan dengan
    `SHA256SUMS.txt`. Semak juga
-   `gh attestation verify CleanTV-win-x64.zip --repo <owner>/<repo>`
+   `gh attestation verify CleanTV-win-x64.zip --repo sepulse/cleantv`
    dengan nama repositori sebenar.
 4. Muat naik zip release itu ke VirusTotal. Tampal pautan laporan sebenar dalam
    nota release; jangan dakwa imbasan bersih sebelum membaca hasilnya. Attestation
@@ -16,5 +16,3 @@
 5. Kemas kini `[PAUTAN MUAT TURUN]` dalam
    `docs/marketing/posting-media-sosial.md` kepada pautan release sebenar.
 
-Sebelum release pertama, gantikan `[PAUTAN REPO]` dan
-`[PAUTAN LAPORAN VIRUSTOTAL]` dalam README dengan pautan sebenar.
