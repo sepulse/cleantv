@@ -1,0 +1,56 @@
+{
+  "id": "common-android-tv",
+  "match": { "any": true },
+  "packages": [
+    {
+      "package": "com.google.android.youtube.tv",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": { "en": "YouTube", "ms": "" },
+      "description": { "en": "YouTube app for Android TV.", "ms": "" },
+      "effect": { "en": "YouTube playback through this app and its remote shortcuts becomes unavailable until restored.", "ms": "" },
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.youtube.tv"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.youtube.tvmusic",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": { "en": "YouTube Music", "ms": "" },
+      "description": { "en": "YouTube Music app for TVs.", "ms": "" },
+      "effect": { "en": "The YouTube Music TV app becomes unavailable until restored.", "ms": "" },
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.youtube.tvmusic"],
+      "verified": false
+    },
+    {
+      "package": "com.google.android.play.games",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": { "en": "Google Play Games", "ms": "" },
+      "description": { "en": "Google Play Games app for game profiles and supported game features.", "ms": "" },
+      "effect": { "en": "The Play Games app becomes unavailable; games that depend on it may lose features until restored.", "ms": "" },
+      "sources": ["https://play.google.com/store/apps/details?id=com.google.android.play.games"],
+      "verified": false
+    },
+    {
+      "package": "com.netflix.ninja",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": { "en": "Netflix", "ms": "" },
+      "description": { "en": "Netflix streaming app for TVs.", "ms": "" },
+      "effect": { "en": "Netflix playback and its remote shortcuts become unavailable until restored.", "ms": "" },
+      "sources": ["https://play.google.com/store/apps/details?id=com.netflix.ninja"],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.amazonvideo.livingroom",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": { "en": "Prime Video", "ms": "" },
+      "description": { "en": "Amazon Prime Video streaming app for TVs.", "ms": "" },
+      "effect": { "en": "Prime Video playback and its remote shortcuts become unavailable until restored.", "ms": "" },
+      "sources": ["https://play.google.com/store/apps/details?id=com.amazon.amazonvideo.livingroom"],
+      "verified": false
+    }
+  ]
+}

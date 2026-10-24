@@ -1,0 +1,10 @@
+{
+  "name": "cleantv-web",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "smoke": "node src/cli/smoke.js"
+  }
+}
