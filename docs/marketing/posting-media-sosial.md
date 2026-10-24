@@ -1,6 +1,6 @@
 # Templat posting media sosial — CleanTV
 
-Gantikan `[PAUTAN MUAT TURUN]` dengan pautan sebenar sebelum membuat hantaran.
+Pautan muat turun: https://github.com/sepulse/cleantv/releases (sentiasa menunjukkan versi terkini, termasuk beta).
 Semua kenyataan di bawah bertepatan dengan fungsi aplikasi ini sekarang (versi beta).
 
 ---
@@ -35,7 +35,7 @@ Tidak berpuas hati dengan hasilnya? Tekan **Pulihkan semua**. Factory reset pada
 
 ⚠️ Ini ialah versi beta. Senarai aplikasi belum diuji pada semua model TV, jadi baca kesan setiap aplikasi sebelum memilih yang bertanda **Pilihan**. Buat masa ini, aplikasi ini hanya untuk Windows.
 
-👉 Muat turun: [PAUTAN MUAT TURUN]
+👉 Muat turun: https://github.com/sepulse/cleantv/releases
 
 #AndroidTV #GoogleTV #SmartTV #TVLambat #TipsTV #CleanTV
 
@@ -71,7 +71,7 @@ Don't like the results? Click **Restore all**. A factory reset on the TV will al
 
 ⚠️ This is a beta version. The app lists have not been tested on every TV model yet, so read the effect of each app before choosing ones marked **Optional**. Windows only for now.
 
-👉 Download: [DOWNLOAD LINK]
+👉 Download: https://github.com/sepulse/cleantv/releases
 
 #AndroidTV #GoogleTV #SmartTV #SlowTV #TVTips #CleanTV
 
@@ -82,7 +82,7 @@ Don't like the results? Click **Restore all**. A factory reset on the TV will al
 TV Android lambat & penuh iklan? 📺
 CleanTV (beta, percuma) mematikan aplikasi yang tidak diperlukan melalui Wi-Fi — tiada apa yang dipadam, "Pulihkan semua" dengan satu klik. Untuk Windows sahaja.
 Cara guna: hidupkan Pilihan pembangun di TV → buka CleanTV.cmd → Cari TV saya → Bersihkan.
-Pautan: [PAUTAN MUAT TURUN]
+Pautan: https://github.com/sepulse/cleantv/releases
 #AndroidTV #GoogleTV #TipsTV
 
 ## 4. Short version — English
@@ -90,15 +90,15 @@ Pautan: [PAUTAN MUAT TURUN]
 Is your Android TV slow and full of ads? 📺
 CleanTV (beta, free) turns off apps you don't need over Wi-Fi — nothing is deleted, one-click "Restore all". Windows only.
 How to use: turn on Developer options on the TV → open CleanTV.cmd → Find my TV → Clean.
-Link: [DOWNLOAD LINK]
+Link: https://github.com/sepulse/cleantv/releases
 #AndroidTV #GoogleTV #TVTips
 
 ---
 
 ## 5. Mesej WhatsApp — BM
 
-Salam! Kalau TV Android/Google TV kat rumah dah lambat atau banyak iklan, boleh cuba CleanTV (beta, percuma). Ia mematikan aplikasi yang tak perlu melalui Wi-Fi dari laptop Windows. Tiada apa-apa yang dipadam, dan ada butang "Pulihkan semua" kalau nak patah balik. Panduan ada dalam aplikasi. Pautan: [PAUTAN MUAT TURUN]
+Salam! Kalau TV Android/Google TV kat rumah dah lambat atau banyak iklan, boleh cuba CleanTV (beta, percuma). Ia mematikan aplikasi yang tak perlu melalui Wi-Fi dari laptop Windows. Tiada apa-apa yang dipadam, dan ada butang "Pulihkan semua" kalau nak patah balik. Panduan ada dalam aplikasi. Pautan: https://github.com/sepulse/cleantv/releases
 
 ## 6. WhatsApp message — English
 
-Hi! If your Android TV / Google TV at home is running slow or full of ads, you can try CleanTV (beta, free). It turns off apps you don't need over Wi-Fi from a Windows laptop. Nothing is deleted, and there's a "Restore all" button if you change your mind. The guide is inside the app. Link: [DOWNLOAD LINK]
+Hi! If your Android TV / Google TV at home is running slow or full of ads, you can try CleanTV (beta, free). It turns off apps you don't need over Wi-Fi from a Windows laptop. Nothing is deleted, and there's a "Restore all" button if you change your mind. The guide is inside the app. Link: https://github.com/sepulse/cleantv/releases
