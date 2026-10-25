@@ -153,6 +153,175 @@
         "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-tv-a-pro-2026/debloat.txt"
       ],
       "verified": false
+    },
+    {
+      "package": "com.xiaomi.gamecenter.sdk.service.mibox",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Xiaomi game centre SDK","ms":"SDK pusat permainan Xiaomi"},
+      "description": {"en":"Provides the Xiaomi game centre SDK service.","ms":"Menyediakan perkhidmatan SDK pusat permainan Xiaomi."},
+      "effect": {"en":"Game centre features using this service stop working until restored.","ms":"Ciri pusat permainan yang menggunakan perkhidmatan ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.mitv.shoplugin",
+      "risk": "yellow",
+      "category": "store",
+      "label": {"en":"Xiaomi TV shopping plugin","ms":"Plugin membeli-belah TV Xiaomi"},
+      "description": {"en":"Provides the TV Taobao shopping plugin.","ms":"Menyediakan plugin membeli-belah TV Taobao."},
+      "effect": {"en":"TV shopping through this plugin becomes unavailable until restored.","ms":"Membeli-belah TV melalui plugin ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.tvqs",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Xiaomi quality reports","ms":"Laporan kualiti Xiaomi"},
+      "description": {"en":"Uploads Xiaomi crash and performance reports.","ms":"Memuat naik laporan ranap dan prestasi Xiaomi."},
+      "effect": {"en":"Crash and performance uploads from this service stop until restored.","ms":"Muat naik laporan ranap dan prestasi daripada perkhidmatan ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-antl0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.mitv.handbook",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Xiaomi user handbook","ms":"Buku panduan pengguna Xiaomi"},
+      "description": {"en":"Provides the on-screen Xiaomi user handbook.","ms":"Menyediakan buku panduan pengguna Xiaomi pada skrin."},
+      "effect": {"en":"The on-screen handbook becomes unavailable until restored.","ms":"Buku panduan pada skrin tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.screenrecorder",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Xiaomi screen recorder","ms":"Perakam skrin Xiaomi"},
+      "description": {"en":"Provides the Xiaomi screen recording app.","ms":"Menyediakan aplikasi rakaman skrin Xiaomi."},
+      "effect": {"en":"Screen recording through this app becomes unavailable until restored.","ms":"Rakaman skrin melalui aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.mitv.tvhome.oemtab",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Xiaomi home advertising row","ms":"Baris iklan skrin utama Xiaomi"},
+      "description": {"en":"Adds the Xiaomi advertising row to Google TV home.","ms":"Menambah baris pengiklanan Xiaomi pada skrin utama Google TV."},
+      "effect": {"en":"The Xiaomi advertising row stops appearing until restored.","ms":"Baris iklan Xiaomi berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-box-s-2nd-gen/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.miui.analytics",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Xiaomi OneTrack analytics","ms":"Analitis Xiaomi OneTrack"},
+      "description": {"en":"Hosts the Xiaomi OneTrack analytics SDK.","ms":"Menempatkan SDK analitis Xiaomi OneTrack."},
+      "effect": {"en":"Analytics collected through this SDK host stop until restored.","ms":"Analitis yang dikumpul melalui SDK ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.mitv.shop",
+      "risk": "yellow",
+      "category": "store",
+      "label": {"en":"Xiaomi TV shop","ms":"Kedai TV Xiaomi"},
+      "description": {"en":"Provides the preinstalled Xiaomi TV shopping app.","ms":"Menyediakan aplikasi membeli-belah Xiaomi TV yang diprapasang."},
+      "effect": {"en":"Shopping through this app becomes unavailable until restored.","ms":"Membeli-belah melalui aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.mitv.calendar",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Xiaomi calendar","ms":"Kalendar Xiaomi"},
+      "description": {"en":"Provides the preinstalled Xiaomi calendar app.","ms":"Menyediakan aplikasi kalendar Xiaomi yang diprapasang."},
+      "effect": {"en":"The Xiaomi calendar app becomes unavailable until restored.","ms":"Aplikasi kalendar Xiaomi tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.tv.gallery",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Xiaomi Pictorial wallpapers","ms":"Kertas dinding Xiaomi Pictorial"},
+      "description": {"en":"Provides the Xiaomi \"Pictorial\" wallpaper app, which contains advertising code.","ms":"Menyediakan aplikasi kertas dinding Xiaomi \"Pictorial\", yang mengandungi kod pengiklanan."},
+      "effect": {"en":"Pictorial wallpapers stop appearing until restored.","ms":"Kertas dinding Pictorial berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mitv-ansp0/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mitv-mffu0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.mitv.healthdiagnosis",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Xiaomi TV self-diagnosis","ms":"Diagnosis kendiri TV Xiaomi"},
+      "description": {"en":"Provides Xiaomi TV self-diagnosis.","ms":"Menyediakan diagnosis kendiri Xiaomi TV."},
+      "effect": {"en":"Self-diagnosis through this app becomes unavailable until restored.","ms":"Diagnosis kendiri melalui aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mitv-astp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.mitv.csi",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Xiaomi satisfaction survey reporter","ms":"Pelapor tinjauan kepuasan Xiaomi"},
+      "description": {"en":"Uploads Xiaomi after-sales satisfaction surveys.","ms":"Memuat naik tinjauan kepuasan selepas jualan Xiaomi."},
+      "effect": {"en":"Satisfaction survey uploads from this app stop until restored.","ms":"Muat naik tinjauan kepuasan daripada aplikasi ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/redmi-mitv-mftp0/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.xiaomi.amazon.alexa",
+      "risk": "yellow",
+      "category": "assistant",
+      "label": {"en":"Xiaomi Alexa bridge","ms":"Jambatan Alexa Xiaomi"},
+      "description": {"en":"Provides the Xiaomi Alexa integration bridge.","ms":"Menyediakan jambatan integrasi Alexa Xiaomi."},
+      "effect": {"en":"Alexa features using this bridge stop working until restored.","ms":"Ciri Alexa yang menggunakan jambatan ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mi-tv-4a/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "android.autoinstalls.config.xiaomi.amelie",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Xiaomi partner auto-installs","ms":"Pemasangan automatik rakan kongsi Xiaomi"},
+      "description": {"en":"Configures automatic installation of Xiaomi partner apps.","ms":"Mengonfigurasi pemasangan automatik aplikasi rakan kongsi Xiaomi."},
+      "effect": {"en":"Partner app auto-installs configured by this package stop until restored.","ms":"Pemasangan automatik aplikasi rakan kongsi yang dikonfigurasi oleh pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/xiaomi-mitv-axso2/debloat.txt"
+      ],
+      "verified": false
     }
   ]
 }

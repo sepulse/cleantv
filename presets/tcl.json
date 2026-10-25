@@ -154,6 +154,138 @@
         "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43s5400a/debloat.txt"
       ],
       "verified": false
+    },
+    {
+      "package": "com.tcl.bi",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"TCL BI analytics","ms":"Analitis BI TCL"},
+      "description": {"en":"Collects TCL analytics and network monitoring data.","ms":"Mengumpul data analitis dan pemantauan rangkaian TCL."},
+      "effect": {"en":"Analytics collected by this service stop until restored.","ms":"Analitis yang dikumpul oleh perkhidmatan ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43ep660/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.ocean.instructions",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"TCL electronic manual","ms":"Manual elektronik TCL"},
+      "description": {"en":"Provides the on-screen TCL user manual.","ms":"Menyediakan manual pengguna TCL pada skrin."},
+      "effect": {"en":"The on-screen manual becomes unavailable until restored.","ms":"Manual pada skrin tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-43c645/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.repairguide",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"TCL repair guide","ms":"Panduan pembaikan TCL"},
+      "description": {"en":"Provides TCL self-diagnosis and repair guidance.","ms":"Menyediakan diagnosis kendiri dan panduan pembaikan TCL."},
+      "effect": {"en":"Self-diagnosis and guidance from this app become unavailable until restored.","ms":"Diagnosis kendiri dan panduan daripada aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-55c745/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.exhibit",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"TCL retail demo","ms":"Demo kedai TCL"},
+      "description": {"en":"Provides TCL store demonstration mode.","ms":"Menyediakan mod demonstrasi kedai TCL."},
+      "effect": {"en":"This store demonstration mode stops working until restored.","ms":"Mod demonstrasi kedai ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-55c745/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.ffkaraoke",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"TCL karaoke","ms":"Karaoke TCL"},
+      "description": {"en":"Provides the preinstalled TCL karaoke app.","ms":"Menyediakan aplikasi karaoke TCL yang diprapasang."},
+      "effect": {"en":"Karaoke through this app becomes unavailable until restored.","ms":"Karaoke melalui aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-ak30a5/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.ffeducation",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"TCL education content","ms":"Kandungan pendidikan TCL"},
+      "description": {"en":"Provides preinstalled TCL children's education content.","ms":"Menyediakan kandungan pendidikan kanak-kanak TCL yang diprapasang."},
+      "effect": {"en":"Education content provided by this app becomes unavailable until restored.","ms":"Kandungan pendidikan yang disediakan oleh aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-ak30a5/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.playskill",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"TCL usage tips","ms":"Petua penggunaan TCL"},
+      "description": {"en":"Provides TCL usage tips and promotional tips.","ms":"Menyediakan petua penggunaan dan petua promosi TCL."},
+      "effect": {"en":"Tips provided by this app stop appearing until restored.","ms":"Petua yang disediakan oleh aplikasi ini berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-ak30a5/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.appreciate.art",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"TCL art screensaver content","ms":"Kandungan screensaver seni TCL"},
+      "description": {"en":"Provides art wallpaper and screensaver content.","ms":"Menyediakan kertas dinding seni dan kandungan screensaver."},
+      "effect": {"en":"Art wallpaper and screensaver content from this app become unavailable until restored.","ms":"Kertas dinding seni dan kandungan screensaver daripada aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-ak30a5/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.wholenetsearch",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"TCL content search","ms":"Carian kandungan TCL"},
+      "description": {"en":"Provides TCL content search with video-on-demand promotions.","ms":"Menyediakan carian kandungan TCL bersama promosi video atas permintaan."},
+      "effect": {"en":"Content search and promotions provided by this app become unavailable until restored.","ms":"Carian kandungan dan promosi yang disediakan oleh aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-ak30a5/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.tcl.common.weather",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"TCL weather widget","ms":"Widget cuaca TCL"},
+      "description": {"en":"Provides the TCL weather widget and its background service.","ms":"Menyediakan widget cuaca TCL dan perkhidmatan latar belakangnya."},
+      "effect": {"en":"The TCL weather widget stops working until restored.","ms":"Widget cuaca TCL berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-ak30a5/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "android.autoinstalls.config.tcl.device",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"TCL partner auto-installs","ms":"Pemasangan automatik rakan kongsi TCL"},
+      "description": {"en":"Configures automatic installation of TCL partner apps.","ms":"Mengonfigurasi pemasangan automatik aplikasi rakan kongsi TCL."},
+      "effect": {"en":"Partner app auto-installs configured by this package stop until restored.","ms":"Pemasangan automatik aplikasi rakan kongsi yang dikonfigurasi oleh pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/ffalcon-65s585c-pro/debloat.txt"
+      ],
+      "verified": false
     }
   ]
 }

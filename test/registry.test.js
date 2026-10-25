@@ -101,6 +101,36 @@ test('real common preset validates, contains 5–10 unverified entries with Mala
   }
 });
 
+test('community imports stay unverified and introduce no protected or cross-brand duplicate packages', async () => {
+  const presets = await loadPresets(resolve(import.meta.dirname, '../presets'));
+  const protectedPrefixes = ['com.android.providers.', 'com.google.android.overlay.modules',
+    'com.mediatek.', 'com.at.factory.', 'com.jamdeo.tv.'];
+  // These display-only entries predate the import; the brief requires preserving them.
+  const existingProtected = new Set([
+    'google-tv:com.google.android.apps.tv.launcherx',
+    'google-tv:com.google.android.tungsten.setupwraith',
+    'google-tv:com.google.android.tv.remote.service',
+  ]);
+  const brandPackages = new Map();
+  for (const preset of presets) {
+    for (const entry of preset.packages) {
+      const context = `${preset.id}:${entry.package}`;
+      if (entry.sources.some(source => source.includes('Gathin23/cleanyourtv'))) {
+        assert.equal(entry.verified, false, context);
+        if (existingProtected.has(context)) assert.equal(entry.risk, 'red', context);
+        else {
+          assert.equal(NEVER_TOUCH.has(entry.package), false, context);
+          assert.equal(protectedPrefixes.some(prefix => entry.package.startsWith(prefix)), false, context);
+        }
+      }
+      if (preset.match.brand || preset.match.manufacturer) {
+        assert.ok(!brandPackages.has(entry.package), `${context} also occurs in ${brandPackages.get(entry.package)}`);
+        brandPackages.set(entry.package, preset.id);
+      }
+    }
+  }
+});
+
 test('all real presets validate and keep protected, launcher and setup packages red with HTTPS sources', async () => {
   const presets = await loadPresets(resolve(import.meta.dirname, '../presets'));
   assert.deepEqual(presets.map(preset => preset.id).sort(), [

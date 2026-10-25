@@ -106,6 +106,18 @@
         "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/google-chromecast-gtv-4k/debloat.txt"
       ],
       "verified": false
+    },
+    {
+      "package": "android.autoinstalls.config.google.gtvpai",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Google TV partner auto-installs","ms":"Pemasangan automatik rakan kongsi Google TV"},
+      "description": {"en":"Configures automatic installation of Google TV partner apps.","ms":"Mengonfigurasi pemasangan automatik aplikasi rakan kongsi Google TV."},
+      "effect": {"en":"Partner app auto-installs configured by this package stop until restored.","ms":"Pemasangan automatik aplikasi rakan kongsi yang dikonfigurasi oleh pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/chiq-gtvu65/debloat.txt"
+      ],
+      "verified": false
     }
   ]
 }

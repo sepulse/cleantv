@@ -153,6 +153,198 @@
         "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm/debloat.txt"
       ],
       "verified": false
+    },
+    {
+      "package": "com.hisense.platformreport",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Hisense usage reporter","ms":"Pelapor penggunaan Hisense"},
+      "description": {"en":"Reports Hisense usage and telemetry data.","ms":"Melaporkan data penggunaan dan telemetry Hisense."},
+      "effect": {"en":"Usage and telemetry reports from this service stop until restored.","ms":"Laporan penggunaan dan telemetry daripada perkhidmatan ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.logupload",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Hisense log uploader","ms":"Pemuat naik log Hisense"},
+      "description": {"en":"Uploads Hisense device logs.","ms":"Memuat naik log peranti Hisense."},
+      "effect": {"en":"Log uploads from this service stop until restored.","ms":"Muat naik log daripada perkhidmatan ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.business.ad",
+      "risk": "green",
+      "category": "ads",
+      "label": {"en":"Hisense advertising SDK","ms":"SDK pengiklanan Hisense"},
+      "description": {"en":"Provides the Hisense advertising SDK with shopping SDKs.","ms":"Menyediakan SDK pengiklanan Hisense bersama SDK membeli-belah."},
+      "effect": {"en":"Advertising delivered through this SDK stops until restored.","ms":"Pengiklanan yang dihantar melalui SDK ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.tv.weather",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense weather card","ms":"Kad cuaca Hisense"},
+      "description": {"en":"Provides the Hisense weather card and its content feed.","ms":"Menyediakan kad cuaca Hisense dan suapan kandungannya."},
+      "effect": {"en":"The Hisense weather card stops working until restored.","ms":"Kad cuaca Hisense berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.demonstrate",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Hisense sound demo","ms":"Demo audio Hisense"},
+      "description": {"en":"Provides multi-channel sound demonstration reels.","ms":"Menyediakan klip demonstrasi audio pelbagai saluran."},
+      "effect": {"en":"These store sound demonstration reels stop playing until restored.","ms":"Klip demonstrasi audio kedai ini berhenti dimainkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.electronictutorial",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense electronic manual","ms":"Manual elektronik Hisense"},
+      "description": {"en":"Provides the on-screen Hisense electronic manual.","ms":"Menyediakan manual elektronik Hisense pada skrin."},
+      "effect": {"en":"The electronic manual becomes unavailable until restored.","ms":"Manual elektronik tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.ar.baike",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense AR encyclopedia","ms":"Ensiklopedia AR Hisense"},
+      "description": {"en":"Provides the preinstalled Hisense AR encyclopedia.","ms":"Menyediakan ensiklopedia AR Hisense yang diprapasang."},
+      "effect": {"en":"The AR encyclopedia becomes unavailable until restored.","ms":"Ensiklopedia AR tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.tv.videoconference",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense video conferencing","ms":"Persidangan video Hisense"},
+      "description": {"en":"Provides the preinstalled Hisense video conferencing app.","ms":"Menyediakan aplikasi persidangan video Hisense yang diprapasang."},
+      "effect": {"en":"Video conferencing through this app becomes unavailable until restored.","ms":"Persidangan video melalui aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.tv.videochat.social",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense video chat","ms":"Sembang video Hisense"},
+      "description": {"en":"Provides the preinstalled Hisense video chat app.","ms":"Menyediakan aplikasi sembang video Hisense yang diprapasang."},
+      "effect": {"en":"Video chat through this app becomes unavailable until restored.","ms":"Sembang video melalui aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.tv.fitmirror",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense fitness mirror","ms":"Cermin kecergasan Hisense"},
+      "description": {"en":"Provides the preinstalled Hisense fitness mirror app.","ms":"Menyediakan aplikasi cermin kecergasan Hisense yang diprapasang."},
+      "effect": {"en":"Fitness mirror features from this app become unavailable until restored.","ms":"Ciri cermin kecergasan daripada aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.tv.foodmanage",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense recipes","ms":"Resipi Hisense"},
+      "description": {"en":"Provides the preinstalled Hisense recipe app.","ms":"Menyediakan aplikasi resipi Hisense yang diprapasang."},
+      "effect": {"en":"Recipes provided by this app become unavailable until restored.","ms":"Resipi yang disediakan oleh aplikasi ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-65d62qh/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.hisense.app.logreport",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Hisense log report manager","ms":"Pengurus laporan log Hisense"},
+      "description": {"en":"Provides the Hisense background log report manager.","ms":"Menyediakan pengurus laporan log latar belakang Hisense."},
+      "effect": {"en":"Log reporting by this manager stops until restored.","ms":"Pelaporan log oleh pengurus ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-hg9/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.vt.tv.evservice",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Hisense viewing-data collector","ms":"Pengumpul data tontonan Hisense"},
+      "description": {"en":"Collects viewing data using automatic content recognition.","ms":"Mengumpul data tontonan menggunakan pengecaman kandungan automatik."},
+      "effect": {"en":"Viewing-data collection by this service stops until restored.","ms":"Pengumpulan data tontonan oleh perkhidmatan ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm-lushan/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.vt.hishow",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Hisense Family Moment","ms":"Hisense Family Moment"},
+      "description": {"en":"Provides Family Moment photo content and its screensaver.","ms":"Menyediakan kandungan foto Family Moment dan screensaver-nya."},
+      "effect": {"en":"Family Moment photo content and its screensaver become unavailable until restored.","ms":"Kandungan foto Family Moment dan screensaver-nya tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm-lushan/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.vt.storemode",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Hisense store mode","ms":"Mod kedai Hisense"},
+      "description": {"en":"Provides Hisense store demonstration mode.","ms":"Menyediakan mod demonstrasi kedai Hisense."},
+      "effect": {"en":"Store demonstrations using this app stop working until restored.","ms":"Demonstrasi kedai yang menggunakan aplikasi ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm-lushan/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.vt.alexa",
+      "risk": "yellow",
+      "category": "assistant",
+      "label": {"en":"Hisense Alexa","ms":"Hisense Alexa"},
+      "description": {"en":"Provides the Hisense Alexa app.","ms":"Menyediakan aplikasi Hisense Alexa."},
+      "effect": {"en":"Alexa features provided by this app stop working until restored.","ms":"Ciri Alexa yang disediakan oleh aplikasi ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-smarttv-4k-ffm-lushan/debloat.txt"
+      ],
+      "verified": false
     }
   ]
 }

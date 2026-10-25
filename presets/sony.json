@@ -132,6 +132,198 @@
         "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"
       ],
       "verified": false
+    },
+    {
+      "package": "com.sony.dtv.da.service",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Sony remote support agent","ms":"Ejen sokongan jarak jauh Sony"},
+      "description": {"en":"Provides Sony device-agent remote support sessions.","ms":"Menyediakan sesi sokongan jarak jauh ejen peranti Sony."},
+      "effect": {"en":"Sony remote support sessions provided by this agent become unavailable until restored.","ms":"Sesi sokongan jarak jauh Sony yang disediakan oleh ejen ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-gb/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.multiscreendemo",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Sony multi-screen retail demo","ms":"Demo kedai berbilang skrin Sony"},
+      "description": {"en":"Provides Sony multi-screen store demonstrations.","ms":"Menyediakan demonstrasi kedai berbilang skrin Sony."},
+      "effect": {"en":"Multi-screen store demonstrations stop working until restored.","ms":"Demonstrasi kedai berbilang skrin berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-gb/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.customersupport",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Sony customer support","ms":"Sokongan pelanggan Sony"},
+      "description": {"en":"Provides the Sony Help and Support tile.","ms":"Menyediakan jubin Sony Help and Support."},
+      "effect": {"en":"The Sony Help and Support tile becomes unavailable until restored.","ms":"Jubin Sony Help and Support tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-gb/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.demosystemsupport",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Sony retail demo support","ms":"Komponen sokongan demo kedai Sony"},
+      "description": {"en":"Supports Sony retail demonstration mode.","ms":"Menyokong mod demonstrasi jualan Sony."},
+      "effect": {"en":"Retail demonstrations using this component stop working until restored.","ms":"Demonstrasi kedai yang menggunakan komponen ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-ur2/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sonyericsson.idd.agent",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Sony IDD usage-data agent","ms":"Ejen data penggunaan IDD Sony"},
+      "description": {"en":"Collects Sony usage data through the IDD agent.","ms":"Mengumpul data penggunaan Sony melalui ejen IDD."},
+      "effect": {"en":"Usage-data collection by this Android agent stops; separate native IDD daemons may continue until restored.","ms":"Pengumpulan data penggunaan oleh ejen Android ini berhenti; daemon IDD asli yang berasingan mungkin terus berjalan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-ur2/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.discovery",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Sony Discover content bar","ms":"Bar kandungan Sony Discover"},
+      "description": {"en":"Provides the Sony Discover content bar.","ms":"Menyediakan bar kandungan Sony Discover."},
+      "effect": {"en":"The Sony Discover content bar becomes unavailable until restored.","ms":"Bar kandungan Sony Discover tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-gb/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.bivlinfo",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Sony Discover content feed","ms":"Suapan kandungan Sony Discover"},
+      "description": {"en":"Supplies the BIVL content service list used by Sony Discover.","ms":"Membekalkan senarai perkhidmatan kandungan BIVL yang digunakan oleh Sony Discover."},
+      "effect": {"en":"Discover content supplied by this service becomes unavailable until restored.","ms":"Kandungan Discover yang dibekalkan oleh perkhidmatan ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-gb/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.sonytab",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Sony content tab","ms":"Tab kandungan Sony"},
+      "description": {"en":"Adds the Sony content tab and partner rows to the stock home screen.","ms":"Menambah tab kandungan Sony dan baris rakan kongsi pada skrin utama asal."},
+      "effect": {"en":"The Sony content tab and its partner rows stop appearing until restored.","ms":"Tab kandungan Sony dan baris rakan kongsinya berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.demomode",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Sony shop demo mode","ms":"Mod demo kedai Sony"},
+      "description": {"en":"Provides Sony shop demonstration mode.","ms":"Menyediakan mod demonstrasi kedai Sony."},
+      "effect": {"en":"Shop demonstrations provided by this app stop working until restored.","ms":"Demonstrasi kedai yang disediakan oleh aplikasi ini berhenti berfungsi sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-kd-49x8307c/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.helpguidecontents",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Sony help guide content","ms":"Kandungan panduan bantuan Sony"},
+      "description": {"en":"Provides the built-in Sony help guide content.","ms":"Menyediakan kandungan panduan bantuan terbina dalam Sony."},
+      "effect": {"en":"The built-in help guide content becomes unavailable until restored.","ms":"Kandungan panduan bantuan terbina dalam tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-vh2/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.touchpad.tutorial",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Sony touchpad tutorial","ms":"Tutorial touchpad Sony"},
+      "description": {"en":"Provides the Sony touchpad remote tutorial.","ms":"Menyediakan tutorial alat kawalan jauh touchpad Sony."},
+      "effect": {"en":"The touchpad remote tutorial becomes unavailable until restored.","ms":"Tutorial alat kawalan jauh touchpad tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-kd-65x9300d/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.recommendationservice",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Sony recommendations","ms":"Syor Sony"},
+      "description": {"en":"Provides Sony content recommendations.","ms":"Menyediakan syor kandungan Sony."},
+      "effect": {"en":"Recommendations provided by this service stop appearing until restored.","ms":"Syor yang disediakan oleh perkhidmatan ini berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-kd-49x8307c/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.irbrecommendation",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Sony IRB recommendations","ms":"Syor IRB Sony"},
+      "description": {"en":"Provides Sony IRB content recommendations.","ms":"Menyediakan syor kandungan IRB Sony."},
+      "effect": {"en":"IRB recommendations stop appearing until restored.","ms":"Syor IRB berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-kd-49x8307c/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.networkrecommendation",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Sony network recommendations","ms":"Syor rangkaian Sony"},
+      "description": {"en":"Provides Sony network content recommendations.","ms":"Menyediakan syor kandungan rangkaian Sony."},
+      "effect": {"en":"Network recommendations provided by this service stop appearing until restored.","ms":"Syor rangkaian yang disediakan oleh perkhidmatan ini berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-kd-49x8307c/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.sony.dtv.watchtvrecommendation",
+      "risk": "yellow",
+      "category": "ads",
+      "label": {"en":"Sony Watch TV recommendations","ms":"Syor Watch TV Sony"},
+      "description": {"en":"Provides Sony Watch TV recommendations.","ms":"Menyediakan syor Watch TV Sony."},
+      "effect": {"en":"Watch TV recommendations provided by this service stop appearing until restored.","ms":"Syor Watch TV yang disediakan oleh perkhidmatan ini berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-kd-49x8307c/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "android.autoinstalls.config.sony.bravia",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Sony BRAVIA partner auto-installs","ms":"Pemasangan automatik rakan kongsi Sony BRAVIA"},
+      "description": {"en":"Configures automatic installation of Sony BRAVIA partner apps.","ms":"Mengonfigurasi pemasangan automatik aplikasi rakan kongsi Sony BRAVIA."},
+      "effect": {"en":"Partner app auto-installs configured by this package stop until restored.","ms":"Pemasangan automatik aplikasi rakan kongsi yang dikonfigurasi oleh pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/sony-bravia-4k-gb/debloat.txt"
+      ],
+      "verified": false
     }
   ]
 }
