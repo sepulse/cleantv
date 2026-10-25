@@ -16,7 +16,7 @@ CleanTV ialah aplikasi pada komputer yang membantu Android TV / Google TV anda m
 
 ### Perkara yang perlu diketahui
 
-- Senarai aplikasi untuk Google TV, Xiaomi, TCL, Sony dan Hisense **belum diuji pada TV sebenar** (`verified: false`). Senarai ini disusun daripada sumber awam, jadi aplikasi ini melabelkannya sebagai "belum diuji". Cuba pada satu TV dahulu, dan ingat bahawa anda sentiasa boleh memulihkannya semula.
+- Senarai aplikasi untuk Google TV, Xiaomi, TCL, Sony, Hisense dan Amazon Fire TV **belum diuji pada TV sebenar** (`verified: false`). Senarai ini disusun daripada sumber awam, jadi aplikasi ini melabelkannya sebagai "belum diuji". Cuba pada satu TV dahulu, dan ingat bahawa anda sentiasa boleh memulihkannya semula.
 - Lihat [notis pihak ketiga](THIRD_PARTY_NOTICES.md) untuk sumber data dan lesen.
 - Anda boleh menukar skrin utama (launcher) kepada Projectivy jika mahu. CleanTV akan menyemak sama ada Projectivy sudah dipasang, dihidupkan dan sedia digunakan sebagai home app sebelum menukar launcher. Kemudian, CleanTV mematikan home app asal, menyemak fungsi butang Home, dan cuba kembali ke skrin utama asal secara automatik jika semakan gagal. Jika sambungan terputus semasa pertukaran, CleanTV akan memulihkannya sebaik sahaja anda bersambung semula, atau anda boleh pilih "Pulihkan skrin utama asal" / "Pulihkan semua". Factory reset juga sentiasa memulihkan semuanya.
 - Ada **mod demo** untuk mencuba aplikasi ini tanpa perlukan TV.
@@ -71,7 +71,7 @@ choose the apps you do not need, and CleanTV turns them off for you.
 
 ### Good to know
 
-- The app lists for Google TV, Xiaomi, TCL, Sony and Hisense are **not yet tested on
+- The app lists for Google TV, Xiaomi, TCL, Sony, Hisense and Amazon Fire TV are **not yet tested on
   a real TV** (`verified: false`). They were compiled from public sources, and the
   app labels them "not tested yet". Try one TV first, and remember you can restore.
 - See [third-party notices](THIRD_PARTY_NOTICES.md) for data sources and licensing.

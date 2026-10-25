@@ -14,4 +14,12 @@
 | Semakan akhir keseluruhan repo | Codex Sol (2 pusingan) + Sonnet | master | done (RELEASE-OK selepas pembaikan) | — |
 | Pakej portable | build-portable | — | dist/CleanTV-win-x64.zip | uji pada Windows bersih |
 | Ujian TV sebenar, `verified: true` | Pemilik | — | blocked (perlu TV) | jalankan `npm run smoke -- <ip>` dahulu (baca sahaja) |
-| Fasa 8 guard launcher + NEVER_TOUCH + pemilih launcher | Codex (bina) + semakan Sol (A+B, 2 pusingan) + Sonnet (C) + Gemini (BM) | main | done, belum push | Wolf Launcher tidak ditambah (tiada di Play Store, pakej tidak dapat disahkan); ujian TV sebenar: guard HOME / pengesanan Xiaomi |
+| Fasa 8 guard launcher + NEVER_TOUCH + pemilih launcher | Codex (bina) + semakan Sol (A+B, 2 pusingan) + Sonnet (C) + Gemini (BM) | main | done | Wolf Launcher tidak ditambah (tiada di Play Store, pakej tidak dapat disahkan); ujian TV sebenar: guard HOME / pengesanan Xiaomi |
+| Fasa 9 import preset cleanyourtv (+58 pakej) | Codex + semakan Claude/Sol + Gemini (BM) | main | done (b4a759b) | — |
+| Fasa 9b preset Amazon Fire TV | Codex + Sol + Gemini | main | done (e5dff8a) | Fire TV jenama lain (Hisense/TCL/Toshiba) belum diliputi |
+| Fasa 11 keadaan asal TV (baseline) | Codex + Sol (3 pusingan) | main | done (8862052) | — |
+| Fasa 12 semakan selepas reboot | Codex + Sol | main | done (34ed503) | — |
+| Fasa 13a Private DNS (AdGuard, pilihan) | Codex + Sol (2) + Gemini | main | done (cc6df64) | — |
+| Fasa 13b tutup ADB rangkaian | Codex + Sol (3) + Gemini | main | done (1710345) | — |
+| Fasa 13c audit privasi (baca sahaja) | Codex + Sonnet + Gemini | main | done (d9bcf4b) | — |
+| Fasa 10 launcher CleanTV Home | Codex | — | dibatalkan oleh pemilik | patch WIP disimpan di luar repo (`D:\Project\Deep\_cytasa10-launcher-wip.patch`) |
