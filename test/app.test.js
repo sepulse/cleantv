@@ -103,6 +103,81 @@ test('language-file failure renders a plain bilingual fallback', async t => {
   assert.match(app.document.root.textContent, /Muat semula/);
 });
 
+test('privacy audit is collapsed, lists localized active apps with risk pills, and never changes selection or sends requests', async t => {
+  const packages = [
+    { package: 'com.example.ads', category: 'ads', risk: 'green', label: { en: 'Ad service', ms: 'Iklan ujian' } },
+    { package: 'com.example.telemetry', category: 'telemetry', risk: 'yellow', label: { en: 'Usage reporter' } },
+    { package: 'com.example.protected', category: 'telemetry', risk: 'red', label: { en: 'Protected reporter' }, canDisable: false },
+    { package: 'com.example.disabled', category: 'ads', risk: 'green', label: { en: 'Disabled ads' }, enabled: false },
+    { package: 'com.example.absent', category: 'telemetry', risk: 'green', label: { en: 'Absent reporter' }, installed: false, canDisable: false },
+    { package: 'com.example.other', category: 'bloat', risk: 'yellow', label: { en: 'Other app' } },
+  ].map(entry => ({ installed: true, enabled: true, canDisable: true, ...entry }));
+  const app = await application(t, { packages });
+  await connect(app);
+  const before = app.requests.length;
+  const card = app.byId('privacy-audit');
+  assert.equal(card.tagName, 'details');
+  assert.equal(card.open, false);
+  assert.match(card.querySelector('summary').textContent, /Privacy audit.*3 ad or telemetry apps/);
+  const rows = card.querySelector('ul').children;
+  assert.equal(rows.length, 3);
+  for (const [index, risk] of ['safe', 'optional', 'protected'].entries()) {
+    assert.ok(rows[index].textContent.includes(packages[index].label.en));
+    assert.ok(rows[index].find(node => node.className === `pill ${risk}`));
+  }
+  assert.match(card.textContent, /review their effects and select available apps in the list below/);
+  assert.equal(card.find(node => ['button', 'input'].includes(node.tagName)), null);
+  assert.doesNotMatch(card.textContent, /Disabled ads|Absent reporter|Other app/);
+  const checks = () => packages.map((_, index) => app.document.getElementById(`app-${index}`)?.checked);
+  const selected = checks();
+  card.open = true;
+  card.listeners.toggle({ target: card });
+  await app.click('language-ms');
+  assert.equal(app.byId('privacy-audit').open, true, 'disclosure survives a rerender');
+  assert.match(app.byId('privacy-audit').textContent, /Iklan ujian/);
+  assert.doesNotMatch(app.byId('privacy-audit').textContent, /Ad service/);
+  assert.deepEqual(checks(), selected);
+  const showAbsent = app.byId('show-absent');
+  showAbsent.listeners.change({ target: { checked: true } });
+  assert.doesNotMatch(app.byId('privacy-audit').textContent, /Absent reporter/);
+  assert.equal(app.requests.length, before);
+});
+
+for (const result of ['disabled', 'failed', 'skipped']) test(`Done privacy summary reflects ${result} results and restoration without extra requests`, async t => {
+  const app = await application(t, { packages: [{ package: 'com.example.ads', label: { en: 'Ad service' },
+    category: 'ads', risk: 'green', installed: true, enabled: true, canDisable: true }] });
+  await connect(app);
+  assert.match(app.byId('privacy-audit').textContent, /1 ad or telemetry app is still active/);
+  await app.click('clean');
+  await app.click('modal-confirm');
+  const before = app.requests.length;
+  await app.emit('complete', { succeeded: result === 'disabled' ? 1 : 0, failed: result === 'failed' ? 1 : 0,
+    results: [{ package: 'com.example.ads', result }] });
+  const card = app.byId('privacy-audit');
+  assert.equal(card.tagName, 'section');
+  assert.match(card.textContent, result === 'disabled' ? /No ad or telemetry apps in the supported list are active/
+    : /1 ad or telemetry app is still active/);
+  assert.equal(card.find(node => ['button', 'input'].includes(node.tagName)), null);
+  assert.equal(app.requests.length, before);
+  if (result === 'disabled') {
+    await app.click('restore-done');
+    await app.click('modal-confirm');
+    const beforeRestore = app.requests.length;
+    await app.emit('complete', { succeeded: 1, failed: 0, results: [{ package: 'com.example.ads', result: 'enabled' }] });
+    assert.match(app.byId('privacy-audit').textContent, /1 ad or telemetry app is still active/);
+    assert.equal(app.requests.length, beforeRestore);
+  }
+});
+
+test('privacy audit shows a short positive message when no supported ad or telemetry apps are active', async t => {
+  const app = await application(t);
+  await connect(app);
+  const card = app.byId('privacy-audit');
+  assert.match(card.textContent, /No ad or telemetry apps in the supported list are active/);
+  assert.equal(card.querySelector('ul'), null);
+  assert.equal(card.find(node => ['button', 'input'].includes(node.tagName)), null);
+});
+
 test('DNS defaults off, selection and cancellation never write, and applying uses the confirmation and job flow', async t => {
   const app = await application(t);
   await connect(app);

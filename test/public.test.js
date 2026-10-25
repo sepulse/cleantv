@@ -11,6 +11,7 @@ import { loadPresets } from '../src/core/registry.js';
 import { NEVER_TOUCH } from '../src/core/safety.js';
 import { createAppServer } from '../src/server/index.js';
 import { REPLACEMENT_LAUNCHERS } from '../src/core/launchers.js';
+import { privacyAudit } from '../public/js/screens/privacy.js';
 
 const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
 const read = path => readFile(join(publicDir, path), 'utf8');
@@ -26,11 +27,29 @@ test('language catalogs have identical keys and placeholder sets', async () => {
   const ms = JSON.parse(await read('i18n/ms.json'));
   assert.deepEqual(keys(en).sort(), keys(ms).sort());
   const placeholders = value => [...new Set([...value.matchAll(/\{(\w+)\}/g)].map(match => match[1]))].sort();
-  for (const key of keys(en)) assert.deepEqual(placeholders(en[key]), placeholders(ms[key]), key);
+  for (const key of keys(en)) if (ms[key] !== '') assert.deepEqual(placeholders(en[key]), placeholders(ms[key]), key);
   assert.ok(Object.values(en).every(value => typeof value === 'string' && value.trim()));
   const pendingMalay = new Set(['choose.reenabledTitle', 'choose.disableAgain',
-    ...keys(en).filter(key => key.startsWith('dns.') || key.startsWith('closeAdb.')), 'result.configured', 'result.restored']);
+    ...keys(en).filter(key => key.startsWith('dns.') || key.startsWith('closeAdb.') || key.startsWith('privacy.')), 'result.configured', 'result.restored']);
   assert.ok(Object.entries(ms).every(([key, value]) => typeof value === 'string' && (value.trim() || pendingMalay.has(key))));
+});
+
+test('privacy audit returns only installed, enabled ads and telemetry with their registry risk, without mutation', () => {
+  const packages = ['ads', 'telemetry', 'bloat', 'store', 'assistant', 'system', 'launcher'].flatMap(category =>
+    [true, false].flatMap(installed => [true, false].flatMap(enabled => ['green', 'yellow', 'red'].map(risk =>
+      Object.freeze({ package: `${category}.${installed}.${enabled}.${risk}`, category, installed, enabled, risk,
+        canDisable: risk !== 'red' })))));
+  Object.freeze(packages);
+  const before = structuredClone(packages);
+  const entries = privacyAudit(packages);
+  assert.deepEqual(entries.map(entry => entry.package), [
+    'ads.true.true.green', 'ads.true.true.yellow', 'ads.true.true.red',
+    'telemetry.true.true.green', 'telemetry.true.true.yellow', 'telemetry.true.true.red',
+  ]);
+  assert.ok(entries.every(entry => packages.includes(entry)));
+  assert.deepEqual(packages, before);
+  assert.deepEqual(privacyAudit([]), []);
+  assert.deepEqual(privacyAudit(packages.filter(entry => !entry.enabled)), []);
 });
 
 test('all literal translation keys and dynamic key families exist', async () => {
@@ -58,6 +77,11 @@ test('translation selects singular centrally for numeric one, including progress
   const { initI18n, t: translate, setLanguage } = await import('../public/js/i18n.js');
   await initI18n();
   setLanguage('ms');
+  assert.equal(translate('privacy.count', { n: 2 }), catalogs.ms['privacy.count'].replace('{n}', '2'));
+  catalogs.ms['privacy.count'] = '';
+  catalogs.ms['privacy.count.one'] = '';
+  assert.equal(translate('privacy.count', { n: 1 }), '1 ad or telemetry app is still active.');
+  assert.equal(translate('privacy.count', { n: 2 }), '2 ad or telemetry apps are still active.');
   assert.equal(translate('choose.clean', { n: 1 }), catalogs.ms['choose.clean.one'].replace('{n}', '1'));
   assert.equal(translate('choose.reenabledTitle'), catalogs.ms['choose.reenabledTitle']);
   assert.equal(translate('dns.warning'), catalogs.ms['dns.warning']);

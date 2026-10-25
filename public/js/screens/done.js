@@ -2,6 +2,7 @@ import { h, heading, button } from '../dom.js';
 import { t, registryText } from '../i18n.js';
 import { icon } from '../icons.js';
 import { appName, resultRow } from './progress.js';
+import { privacyCard } from './privacy.js';
 
 export function doneScreen(state, actions) {
   const summary = state.summary;
@@ -21,6 +22,7 @@ export function doneScreen(state, actions) {
       h('p', {}, t('launcher.manualHome', { stock: stock ? registryText(stock) : t('launcher.stockName') })),
       button(t('launcher.check'), () => actions.startJob('launcherRestore'), { id: 'launcher-check-restore', disabled: state.busy })),
     h('ul', { className: 'results' }, summary.results.map(item => resultRow(state, item))),
+    privacyCard(state, true),
     h('div', { className: 'actions' }, button(t('done.back'), actions.backToList, { primary: true, id: 'back-list' }),
       button(t('common.restore'), actions.confirmRestore, { id: 'restore-done', disabled: state.busy }),
       button(t('closeAdb.button'), actions.confirmCloseAdb, { id: 'close-adb', disabled: state.busy })),

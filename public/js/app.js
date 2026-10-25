@@ -12,7 +12,7 @@ import { confirmScreen } from './screens/confirm.js';
 const state = {
   screen: 'start', health: null, brand: 'google', prepared: false, connection: 'idle',
   candidates: null, manualIP: '', candidate: null, serial: null, info: null, packages: [], reenabled: [],
-  selected: new Set(), collapsed: new Set(), showAbsent: false, busy: false, error: null,
+  selected: new Set(), collapsed: new Set(['privacy']), showAbsent: false, busy: false, error: null,
   modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, processed: 0, current: null, summary: null,
   launcher: null, launcherPackage: '', launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
   dnsProvider: 'off', closeAdbResult: null,
@@ -316,6 +316,11 @@ const actions = {
         },
         complete(summary) {
           state.busy = false;
+          for (const item of summary.results) {
+            if (!['disabled', 'enabled'].includes(item.result)) continue;
+            const entry = state.packages.find(entry => entry.package === item.package);
+            if (entry) entry.enabled = item.result === 'enabled';
+          }
           state.summary = summary;
           state.results = summary.results;
           state.screen = 'done';

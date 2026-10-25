@@ -3,6 +3,7 @@ import { t, registryText, errorText } from '../i18n.js';
 import { icon } from '../icons.js';
 import { launcherCard } from './launcher.js';
 import { dnsCard } from './dns.js';
+import { privacyCard } from './privacy.js';
 
 export const protectedApp = entry => Boolean(entry.blockedReason) || entry.risk === 'red';
 const categories = ['ads', 'telemetry', 'bloat', 'store', 'assistant', 'system'];
@@ -51,6 +52,7 @@ export function chooseScreen(state, actions) {
         state.selected = new Set(selectable.map(entry => entry.package));
         actions.confirmClean();
       }, { id: 'disable-again', disabled: state.busy || !selectable.length })),
+    privacyCard(state),
     categories.map(category => {
       // Launchers stay in the approved System group, including their protection reason.
       const entries = state.packages.filter(entry => (entry.category === 'launcher' ? 'system' : entry.category) === category

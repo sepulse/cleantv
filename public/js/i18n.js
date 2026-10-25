@@ -16,7 +16,7 @@ export async function initI18n() {
 }
 export function t(key, vars = {}) {
   const n = vars.n ?? vars.total;
-  const selected = n === 1 && (messages[language]?.[`${key}.one`] ?? messages.en?.[`${key}.one`]) ? `${key}.one` : key;
+  const selected = n === 1 && (messages[language]?.[`${key}.one`] || messages.en?.[`${key}.one`]) ? `${key}.one` : key;
   const message = messages[language]?.[selected] || messages.en?.[selected]
     || (key === 'error.I18N_UNAVAILABLE' ? unavailable : key);
   return message.replace(/\{(\w+)\}/g, (match, name) => vars[name] === undefined ? match : String(vars[name]));
