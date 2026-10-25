@@ -1,0 +1,259 @@
+{
+  "id": "amazon-fire-tv",
+  "match": {
+    "manufacturer": [
+      "amazon"
+    ]
+  },
+  "packages": [
+    {
+      "package": "com.amazon.dp.logger",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon device log upload","ms":"Muat naik log peranti Amazon"},
+      "description": {"en":"Uploads device logs to Amazon.","ms":"Memuat naik log peranti ke Amazon."},
+      "effect": {"en":"Device log uploads from this package stop until restored.","ms":"Muat naik log peranti daripada pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-fire-tv-aftcibfbd1/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-58s571f-fire-tv/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tmm.tutorial",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Fire TV remote tutorial","ms":"Tutorial alat kawalan jauh Fire TV"},
+      "description": {"en":"Provides the Fire TV remote tutorial.","ms":"Menyediakan tutorial alat kawalan jauh Fire TV."},
+      "effect": {"en":"The remote tutorial becomes unavailable until restored.","ms":"Tutorial alat kawalan jauh tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afteu014/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.wirelessmetrics.service",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon Wi-Fi metrics","ms":"Metrics Wi-Fi Amazon"},
+      "description": {"en":"Uploads Wi-Fi metrics to Amazon.","ms":"Memuat naik metrics Wi-Fi ke Amazon."},
+      "effect": {"en":"Wi-Fi metrics uploads from this service stop until restored.","ms":"Muat naik metrics Wi-Fi daripada perkhidmatan ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-fire-tv-aftcibfbd1/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-58s571f-fire-tv/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.perfcollection",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon performance collection","ms":"Pengumpulan prestasi Amazon"},
+      "description": {"en":"Collects performance telemetry for Amazon.","ms":"Mengumpul telemetry prestasi untuk Amazon."},
+      "effect": {"en":"Performance telemetry collection from this package stops until restored.","ms":"Pengumpulan telemetry prestasi daripada pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-fire-tv-aftcibfbd1/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-58s571f-fire-tv/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.perfc",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon performance telemetry","ms":"Telemetry prestasi Amazon"},
+      "description": {"en":"Provides Amazon performance telemetry.","ms":"Menyediakan telemetry prestasi Amazon."},
+      "effect": {"en":"Performance telemetry from this package stops until restored.","ms":"Telemetry prestasi daripada pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-fire-tv-aftcibfbd1/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-58s571f-fire-tv/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afttiff43/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.hybridadidservice",
+      "risk": "green",
+      "category": "ads",
+      "label": {"en":"Amazon advertising ID","ms":"ID pengiklanan Amazon"},
+      "description": {"en":"Provides the Amazon advertising ID service.","ms":"Menyediakan perkhidmatan ID pengiklanan Amazon."},
+      "effect": {"en":"The advertising ID service becomes unavailable until restored.","ms":"Perkhidmatan ID pengiklanan tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-fire-tv-aftcibfbd1/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.client.metrics.api",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon metrics client API","ms":"API klien metrics Amazon"},
+      "description": {"en":"Provides the Amazon metrics client API.","ms":"Menyediakan API klien metrics Amazon."},
+      "effect": {"en":"Metrics reporting through this API stops until restored.","ms":"Pelaporan metrics melalui API ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-fire-tv-aftcibfbd1/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tv.democontent.provider",
+      "risk": "green",
+      "category": "bloat",
+      "label": {"en":"Fire TV retail demo content","ms":"Kandungan demo kedai Fire TV"},
+      "description": {"en":"Provides content for retail demonstrations.","ms":"Menyediakan kandungan untuk demonstrasi kedai."},
+      "effect": {"en":"Retail demo content from this package becomes unavailable until restored.","ms":"Kandungan demo kedai daripada pakej ini tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/hisense-fire-tv-aftcibfbd1/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-58s571f-fire-tv/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-aftdec012e/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.neo.minerva",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon Minerva telemetry","ms":"Telemetry Minerva Amazon"},
+      "description": {"en":"Provides Amazon telemetry and metrics collection.","ms":"Menyediakan pengumpulan telemetry dan metrics Amazon."},
+      "effect": {"en":"Telemetry and metrics collection from this package stop until restored.","ms":"Pengumpulan telemetry dan metrics daripada pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-aftdec012e/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afttiff43/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.neo.minerva.logcat",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon Minerva log collection","ms":"Pengumpulan log Minerva Amazon"},
+      "description": {"en":"Provides log collection in the Amazon telemetry group.","ms":"Menyediakan pengumpulan log dalam kumpulan telemetry Amazon."},
+      "effect": {"en":"Log collection from this package stops until restored.","ms":"Pengumpulan log daripada pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-aftdec012e/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afttiff43/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.ceviche",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Amazon data collection pipelines","ms":"Saluran paip pengumpulan data Amazon"},
+      "description": {"en":"Provides Amazon data collection pipelines.","ms":"Menyediakan saluran paip pengumpulan data Amazon."},
+      "effect": {"en":"Data collection through these pipelines stops until restored.","ms":"Pengumpulan data melalui saluran paip ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afteu014/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tv.developer.dataservice",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Fire TV content personalization data","ms":"Data pemperibadian kandungan Fire TV"},
+      "description": {"en":"Supplies content personalization data to third-party apps.","ms":"Membekalkan data pemperibadian kandungan kepada aplikasi pihak ketiga."},
+      "effect": {"en":"Content personalization supplied through this service stops until restored.","ms":"Pemperibadian kandungan yang dibekalkan melalui perkhidmatan ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afteu014/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tv.releasenotes",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Fire TV release notes","ms":"Nota keluaran Fire TV"},
+      "description": {"en":"Shows Fire TV release notes and what is new.","ms":"Memaparkan nota keluaran Fire TV dan perkara baharu."},
+      "effect": {"en":"Fire TV release notes from this package stop appearing until restored.","ms":"Nota keluaran Fire TV daripada pakej ini berhenti dipaparkan sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afteu014/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tv.fw.metrics",
+      "risk": "green",
+      "category": "telemetry",
+      "label": {"en":"Fire TV metrics","ms":"Metrics Fire TV"},
+      "description": {"en":"Provides Fire TV telemetry and metrics.","ms":"Menyediakan telemetry dan metrics Fire TV."},
+      "effect": {"en":"Metrics reporting from this package stops until restored.","ms":"Pelaporan metrics daripada pakej ini berhenti sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afttiff43/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-max-2021/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tv.localgallery",
+      "risk": "yellow",
+      "category": "bloat",
+      "label": {"en":"Fire TV USB gallery","ms":"Galeri USB Fire TV"},
+      "description": {"en":"Provides the USB photo and video viewer.","ms":"Menyediakan pemapar foto dan video USB."},
+      "effect": {"en":"The USB photo and video viewer becomes unavailable until restored.","ms":"Pemapar foto dan video USB tidak lagi tersedia sehingga dipulihkan."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afteu014/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-afttiff43/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-58s571f-fire-tv/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tv.launcher",
+      "risk": "red",
+      "category": "launcher",
+      "label": {"en":"Fire OS Home launcher","ms":"Launcher Home Fire OS"},
+      "description": {"en":"Essential Fire OS Home launcher; some builds also use it for Settings.","ms":"Launcher Home Fire OS penting; sesetengah binaan juga menggunakannya untuk Settings."},
+      "effect": {"en":"Display only. Must stay enabled for Fire OS Home and Settings.","ms":"Papar sahaja. Mesti kekal dihidupkan untuk Home dan Settings Fire OS."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/tcl-58s571f-fire-tv/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.imp",
+      "risk": "red",
+      "category": "system",
+      "label": {"en":"Fire OS app sign-in service","ms":"Perkhidmatan log masuk aplikasi Fire OS"},
+      "description": {"en":"Essential Fire OS app sign-in component; disabling it has caused a black Home screen.","ms":"Komponen penting log masuk aplikasi Fire OS; mematikannya telah menyebabkan skrin Home menjadi hitam."},
+      "effect": {"en":"Display only. Must stay enabled for Fire OS Home and app sign-in.","ms":"Papar sahaja. Mesti kekal dihidupkan untuk Home dan log masuk aplikasi Fire OS."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt"
+      ],
+      "verified": false
+    },
+    {
+      "package": "com.amazon.tv.oobe",
+      "risk": "red",
+      "category": "system",
+      "label": {"en":"Fire OS out-of-box setup","ms":"Persediaan awal Fire OS"},
+      "description": {"en":"Essential Fire OS out-of-box setup component, also needed for a factory reset.","ms":"Komponen penting persediaan awal Fire OS, juga diperlukan untuk menetapkan semula ke tetapan kilang."},
+      "effect": {"en":"Display only. Must stay enabled for Fire OS setup and factory reset.","ms":"Papar sahaja. Mesti kekal dihidupkan untuk persediaan dan tetapan semula kilang Fire OS."},
+      "sources": [
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2023/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-lite-2020/debloat.txt",
+        "https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/examples/amazon-fire-tv-stick-4k-2018/debloat.txt"
+      ],
+      "verified": false
+    }
+  ]
+}

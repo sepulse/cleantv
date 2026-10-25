@@ -85,11 +85,12 @@ async function fixture(t, options = {}) {
   return { engine, client, journal, presets, disabled, installed, options, calls, changes };
 }
 
-test('stock allowlist covers every preset launcher, both Google homes and PatchWall', async () => {
+test('stock allowlist covers supported preset launchers and excludes Fire OS', async () => {
   const presets = await loadPresets(fileURLToPath(new URL('../presets/', import.meta.url)));
   for (const entry of presets.flatMap(preset => preset.packages).filter(entry => entry.category === 'launcher')) {
     assert.equal(entry.risk, 'red');
-    assert.ok(STOCK_LAUNCHERS.includes(entry.package), entry.package);
+    if (entry.package === 'com.amazon.tv.launcher') assert.equal(STOCK_LAUNCHERS.includes(entry.package), false);
+    else assert.ok(STOCK_LAUNCHERS.includes(entry.package), entry.package);
   }
   for (const pkg of ['com.google.android.apps.tv.launcherx', 'com.google.android.tvlauncher', 'com.mitv.tvhome.atv']) assert.ok(STOCK_LAUNCHERS.includes(pkg));
   assert.deepEqual(REPLACEMENT_LAUNCHERS, [

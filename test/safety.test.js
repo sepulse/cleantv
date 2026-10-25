@@ -83,10 +83,15 @@ test('new upstream protected packages and prefixes override a green registry ent
   }
 });
 
-test('new protected names do not collide with any preset entry', async () => {
+test('new protected names stay absent except required Fire OS display-only entries', async () => {
   const presets = await loadPresets(fileURLToPath(new URL('../presets/', import.meta.url)));
-  const entries = presets.flatMap(preset => preset.packages.map(entry => entry.package));
-  for (const pkg of entries) {
+  for (const preset of presets) for (const entry of preset.packages) {
+    const pkg = entry.package;
+    if (preset.id === 'amazon-fire-tv' && ['com.amazon.imp', 'com.amazon.tv.oobe'].includes(pkg)) {
+      assert.equal(entry.risk, 'red', pkg);
+      assert.deepEqual(canDisable(pkg, { entry }), { ok: false, reason: 'PACKAGE_PROTECTED' });
+      continue;
+    }
     assert.ok(!addedProtected.includes(pkg) && !addedPrefixes.some(prefix => pkg.startsWith(prefix)), pkg);
   }
 });

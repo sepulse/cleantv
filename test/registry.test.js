@@ -105,11 +105,14 @@ test('community imports stay unverified and introduce no protected or cross-bran
   const presets = await loadPresets(resolve(import.meta.dirname, '../presets'));
   const protectedPrefixes = ['com.android.providers.', 'com.google.android.overlay.modules',
     'com.mediatek.', 'com.at.factory.', 'com.jamdeo.tv.'];
-  // These display-only entries predate the import; the brief requires preserving them.
+  // Display-only entries preserved or explicitly required by the import briefs.
   const existingProtected = new Set([
     'google-tv:com.google.android.apps.tv.launcherx',
     'google-tv:com.google.android.tungsten.setupwraith',
     'google-tv:com.google.android.tv.remote.service',
+    'amazon-fire-tv:com.amazon.tv.launcher',
+    'amazon-fire-tv:com.amazon.imp',
+    'amazon-fire-tv:com.amazon.tv.oobe',
   ]);
   const brandPackages = new Map();
   for (const preset of presets) {
@@ -134,7 +137,7 @@ test('community imports stay unverified and introduce no protected or cross-bran
 test('all real presets validate and keep protected, launcher and setup packages red with HTTPS sources', async () => {
   const presets = await loadPresets(resolve(import.meta.dirname, '../presets'));
   assert.deepEqual(presets.map(preset => preset.id).sort(), [
-    'android-tv', 'common-android-tv', 'google-tv', 'hisense', 'sony', 'tcl', 'xiaomi',
+    'amazon-fire-tv', 'android-tv', 'common-android-tv', 'google-tv', 'hisense', 'sony', 'tcl', 'xiaomi',
   ]);
   for (const preset of presets) {
     assert.deepEqual(validatePreset(preset), { ok: true, errors: [] }, preset.id);
