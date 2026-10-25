@@ -100,7 +100,7 @@ test('portable build excludes even existing vendor tools, copies fetcher and has
   const root = await mkdtemp(join(tmpdir(), 'cleantv-build-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const dir of ['src/server', 'scripts', 'public', 'presets', 'vendor/platform-tools']) await mkdir(join(root, dir), { recursive: true });
-  for (const file of ['package.json', 'scripts/fetch-adb.js', 'src/server/index.js', 'vendor/platform-tools/adb.exe', 'runtime.exe']) await writeFile(join(root, file), 'fixture');
+  for (const file of ['package.json', 'scripts/fetch-adb.js', 'src/server/index.js', 'vendor/platform-tools/adb.exe', 'runtime.exe', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) await writeFile(join(root, file), 'fixture');
   // A previous first run must not leak its adb back into the next build.
   const paths = layout(root);
   await mkdir(join(paths.app, 'vendor/platform-tools'), { recursive: true });
@@ -109,6 +109,7 @@ test('portable build excludes even existing vendor tools, copies fetcher and has
   const { folder, zip } = await buildPortable({ root, nodePath: join(root, 'runtime.exe'), log: line => logs.push(line) });
   assert.equal(await readFile(paths.fetchScript, 'utf8'), 'fixture');
   await assert.rejects(access(join(paths.app, 'vendor')), { code: 'ENOENT' });
+  for (const file of ['LICENSE', 'THIRD_PARTY_NOTICES.md']) assert.equal(await readFile(join(folder, file), 'utf8'), 'fixture');
   for (const [file, expected] of [['CleanTV.cmd', NORMAL_CMD], ['CleanTV-Demo.cmd', DEMO_CMD]]) {
     const text = await readFile(join(folder, file), 'utf8');
     assert.equal(text, expected);

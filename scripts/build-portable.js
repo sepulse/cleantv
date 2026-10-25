@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile);
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const NAME = 'CleanTV-win-x64';
 const COPIED = ['package.json', 'src', 'public', 'presets'];
+const LEGAL = ['LICENSE', 'THIRD_PARTY_NOTICES.md'];
 
 /**
  * @param {string} root repository root
@@ -72,6 +73,21 @@ export function quickStartText() {
     '"Pulihkan skrin utama asal" / "Pulihkan semua". Factory reset sentiasa',
     'memulihkan semuanya.',
     '',
+    'Juga dalam versi ini (setiap satu pilihan dan bertanya dahulu sebelum mengubah',
+    'apa-apa):',
+    '- Senarai aplikasi Google TV, Xiaomi, TCL, Sony, Hisense dan Amazon Fire TV.',
+    '  Senarai ini belum lagi diuji pada TV sebenar.',
+    '- Sebelum perubahan pertama, CleanTV menyimpan keadaan asal TV, supaya',
+    '  "Pulihkan semua" hanya menghidupkan semula apa yang dimatikan oleh CleanTV.',
+    '- Selepas TV dimulakan semula, CleanTV menyemak sama ada sebarang aplikasi',
+    '  yang dimatikannya hidup semula, dan membolehkan anda mematikannya lagi.',
+    '- Private DNS: sekat iklan bagi seluruh TV dengan AdGuard DNS, atau matikannya.',
+    '- Audit privasi: memaparkan aplikasi iklan dan telemetry yang masih aktif',
+    '  (baca sahaja).',
+    '- Apabila selesai, anda boleh menutup network debugging pada TV.',
+    '',
+    'Lesen: lihat LICENSE (CleanTV) dan THIRD_PARTY_NOTICES.md (sumber data, MIT).',
+    '',
     'Cara mula:',
     '1. Nyahzip folder ini (klik kanan > Extract All).',
     '2. Pada TV, hidupkan "Pilihan pembangun" dan "Penyahpepijatan USB/rangkaian".',
@@ -103,6 +119,19 @@ export function quickStartText() {
     'connection drops mid-switch, CleanTV repairs it the next time it connects,',
     'or you can choose "Restore the original home screen" / "Restore all".',
     'A factory reset always restores everything.',
+    '',
+    'Also in this version (each is optional and asks before it changes anything):',
+    '- App lists for Google TV, Xiaomi, TCL, Sony, Hisense and Amazon Fire TV.',
+    '  These lists are not yet tested on a real TV.',
+    '- Before the first change, CleanTV saves the original state of the TV, so',
+    '  "Restore all" only turns back on what CleanTV turned off.',
+    '- After the TV restarts, CleanTV checks whether any app it turned off came',
+    '  back on, and lets you turn it off again.',
+    '- Private DNS: block ads for the whole TV with AdGuard DNS, or switch it off.',
+    '- Privacy audit: shows ad and telemetry apps that are still on (read only).',
+    '- When you are done, you can close network debugging on the TV.',
+    '',
+    'Licence: see LICENSE (CleanTV) and THIRD_PARTY_NOTICES.md (data sources, MIT).',
     '',
     'How to start:',
     '1. Unzip this folder (right-click > Extract All).',
@@ -157,6 +186,7 @@ export async function buildPortable({ root = ROOT, nodePath, log = console.log }
   await writeFile(join(paths.folder, 'CleanTV.cmd'), launcherCmd(false));
   await writeFile(join(paths.folder, 'CleanTV-Demo.cmd'), launcherCmd(true));
   for (const file of ['BACA-SAYA.txt', 'README.txt']) await writeFile(join(paths.folder, file), quickStartText());
+  for (const file of LEGAL) await copyFile(join(root, file), join(paths.folder, file));
   log(`Built ${paths.folder}`);
 
   await rm(paths.zip, { force: true });
