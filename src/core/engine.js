@@ -23,6 +23,25 @@ export function createEngine({ client, journal, presets }) {
     return { info, matched, index: buildEntryIndex(matched), installed };
   }
 
+  async function ensureBaseline(serial, info, outcome) {
+    try {
+      if (await journal.readBaseline(info.deviceId) !== null) return;
+      // A late baseline must not record packages CleanTV already touched as original state.
+      const touched = new Set((await journal.read(info.deviceId)).flatMap(record =>
+        record.action === 'disable' ? [record.package] : record.action === 'swap' ? record.disabled ?? [] : []));
+      const disabledBefore = (await client.listPackages(serial, { disabledOnly: true }))
+        .filter(pkg => !touched.has(pkg));
+      const props = await client.getprops(serial);
+      await journal.saveBaseline(info.deviceId, {
+        at: new Date().toISOString(), disabledBefore,
+        props: Object.fromEntries(['ro.product.brand', 'ro.product.manufacturer', 'ro.product.model',
+          'ro.build.version.release', 'ro.build.fingerprint'].map(key => [key, props[key] ?? ''])),
+        settings: await client.getSettings(serial),
+        homeComponent: await client.resolveHomeComponent(serial),
+      });
+    } catch (error) { warnJournal(error, outcome); }
+  }
+
   async function act(serial, pkgs, action, onProgress = () => {}) {
     if (pkgs !== 'all' && !Array.isArray(pkgs)) throw new CleanTvError(ErrorCode.INVALID_INPUT);
     const { info, index, installed } = await context(serial);
@@ -37,12 +56,18 @@ export function createEngine({ client, journal, presets }) {
       let disabledByUs = [];
       try { disabledByUs = await journal.disabledByUs(info.deviceId); }
       catch (error) { journalAvailable = false; warnJournal(error, outcome); }
+      let baseline;
+      try { baseline = await journal.readBaseline(info.deviceId); }
+      catch (error) { warnJournal(error, outcome); }
+      const disabledBefore = new Set(baseline?.disabledBefore ?? []);
       pkgs = [...new Set([
         ...disabledByUs,
-        ...(await client.listPackages(serial, { disabledOnly: true })).filter(pkg => index.has(pkg) || STOCK_LAUNCHERS.includes(pkg)),
+        ...(await client.listPackages(serial, { disabledOnly: true }))
+          .filter(pkg => (index.has(pkg) || STOCK_LAUNCHERS.includes(pkg)) && !disabledBefore.has(pkg)),
       ])];
     }
     const results = [];
+    let baselineChecked = false;
     for (const pkg of pkgs) {
       const permission = action === 'disable'
         ? canDisable(pkg, { entry: index.get(pkg), homePackage: info.homePackage })
@@ -51,6 +76,10 @@ export function createEngine({ client, journal, presets }) {
       if (!permission.ok) {
         result = { package: pkg, result: 'skipped', reason: permission.reason };
       } else {
+        if (action === 'disable' && !baselineChecked) {
+          await ensureBaseline(serial, info, outcome);
+          baselineChecked = true;
+        }
         const record = status => ({ at: new Date().toISOString(), action, package: pkg, status });
         if (recovering) await appendRecovery(journal, info.deviceId, record('pending'), outcome);
         else if (journalAvailable) await journal.append(info.deviceId, record('pending'));
@@ -98,7 +127,7 @@ export function createEngine({ client, journal, presets }) {
     };
   }
 
-  const { checkLauncherHealth, restoreHome, actualHome, ...launcherActions } = createLauncherActions({ client, journal, context });
+  const { checkLauncherHealth, restoreHome, actualHome, ...launcherActions } = createLauncherActions({ client, journal, context, ensureBaseline });
   return {
     ...launcherActions,
     /** @param {string} serial */

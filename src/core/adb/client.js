@@ -77,6 +77,20 @@ export function createAdbClient(run) {
         return match ? [[match[1], match[2]]] : [];
       }));
     },
+    /** @param {string} serial @returns {Promise<Record<string, string | null>>} */
+    async getSettings(serial) {
+      validate(serial);
+      const settings = {};
+      for (const [namespace, key] of [
+        ['global', 'private_dns_mode'], ['global', 'private_dns_specifier'],
+        ['secure', 'screensaver_components'], ['global', 'window_animation_scale'],
+        ['global', 'transition_animation_scale'], ['global', 'animator_duration_scale'],
+      ]) {
+        const value = (await checked(['-s', serial, 'shell', 'settings', 'get', namespace, key])).trim();
+        settings[`${namespace}/${key}`] = value === 'null' ? null : value;
+      }
+      return settings;
+    },
     /** @param {string} serial @param {{ disabledOnly?: boolean }} [options] @returns {Promise<string[]>} */
     async listPackages(serial, { disabledOnly = false } = {}) {
       validate(serial);

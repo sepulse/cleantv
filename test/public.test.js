@@ -158,6 +158,11 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   const pkg = packages.find(entry => entry.canDisable && entry.enabled).package;
   const clean = await (await request(`${device}/disable`, { packages: [pkg] })).json();
   assert.match(await (await request(`/api/jobs/${clean.jobId}/events`)).text(), /"result":"disabled"/);
+  const baseline = await journal.readBaseline('CLEANTV_DEMO');
+  assert.deepEqual(baseline.disabledBefore, []);
+  assert.deepEqual(baseline.settings, await client.getSettings(serial));
+  assert.equal(Object.keys(baseline.settings).length, 6);
+  assert.equal(baseline.homeComponent, `${info.homePackage}/.HomeActivity`);
   assert.ok((await client.listPackages(serial, { disabledOnly: true })).includes(pkg));
   const { entries } = await (await request(`${device}/history`)).json();
   assert.equal(entries.length, 1);

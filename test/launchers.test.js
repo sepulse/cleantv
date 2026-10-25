@@ -36,6 +36,9 @@ async function fixture(t, options = {}) {
     const command = args.slice(3).join(' ');
     if (command === 'getprop') return result(['[ro.serialno]: [LAUNCHER_TEST]', ...Object.entries(options.props ?? {})
       .map(([key, value]) => `[${key}]: [${value}]`)].join('\n'));
+    if (['settings get global private_dns_mode', 'settings get global private_dns_specifier',
+      'settings get secure screensaver_components', 'settings get global window_animation_scale',
+      'settings get global transition_animation_scale', 'settings get global animator_duration_scale'].includes(command)) return result('null\n');
     if (command === 'pm list packages --user 0') return result([...installed].map(pkg => `package:${pkg}`).join('\n'));
     if (command === 'pm list packages --user 0 -d') return result([...disabled].map(pkg => `package:${pkg}`).join('\n'));
     if (command === 'cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME') {
@@ -180,6 +183,36 @@ test('global Xiaomi remains supported after Projectivy becomes HOME', async t =>
   assert.equal((await engine.swapLauncher(serial, replacement)).failed, 0);
   assert.equal(await client.resolveHomeActivity(serial), replacement);
   assert.equal((await engine.swapLauncher(serial, replacement)).failed, 0);
+});
+
+test('swap saves the original baseline before mutation and preserves it across launcher switches', async t => {
+  const { engine, client, journal } = await fixture(t, { extraInstalled: REPLACEMENT_LAUNCHERS.map(entry => entry.package) });
+  const disable = client.disableUser;
+  client.disableUser = async (s, pkg) => {
+    const baseline = await journal.readBaseline('LAUNCHER_TEST');
+    assert.deepEqual(baseline.disabledBefore, [stock[2]]);
+    assert.equal(baseline.homeComponent, `${stock[0]}/.Main`);
+    assert.equal(Object.keys(baseline.settings).length, 6);
+    return disable(s, pkg);
+  };
+  assert.equal((await engine.swapLauncher(serial, replacement)).failed, 0);
+  const baseline = await journal.readBaseline('LAUNCHER_TEST');
+  client.getSettings = async () => { assert.fail('must preserve the first baseline'); };
+  assert.equal((await engine.swapLauncher(serial, REPLACEMENT_LAUNCHERS[1].package)).failed, 0);
+  assert.deepEqual(await journal.readBaseline('LAUNCHER_TEST'), baseline);
+  const result = await engine.restore(serial, 'all');
+  assert.equal(result.failed, 0);
+  assert.deepEqual(result.results.map(item => item.package).sort(), stock.slice(0, 2).sort());
+});
+
+test('baseline write failure warns while launcher switching and recovery remain available', async t => {
+  const { engine, journal } = await fixture(t);
+  journal.saveBaseline = async () => { throw new Error('baseline disk full'); };
+  const result = await engine.swapLauncher(serial, replacement);
+  assert.equal(result.failed, 0);
+  assert.equal(result.journalWarning, true);
+  assert.equal(await journal.readBaseline('LAUNCHER_TEST'), null);
+  assert.equal((await engine.restore(serial, 'all')).failed, 0);
 });
 
 test('Xiaomi China and unverified stock remain unsupported with Projectivy HOME', async t => {
@@ -443,7 +476,7 @@ test('restoreLauncher continues after an individual enable failure', async t => 
 test('restore all includes swap launchers even without matching presets or history', async t => {
   const { engine, client, journal, disabled } = await fixture(t);
   await engine.swapLauncher(serial, replacement);
-  const withoutHistory = createEngine({ client, presets: [], journal: { ...journal, disabledByUs: async () => [] } });
+  const withoutHistory = createEngine({ client, presets: [], journal: { ...journal, disabledByUs: async () => [], readBaseline: async () => null } });
   const result = await withoutHistory.restore(serial, 'all');
   assert.equal(result.failed, 0);
   assert.deepEqual(result.results.map(item => item.package).sort(), stock.toSorted());

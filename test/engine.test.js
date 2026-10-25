@@ -23,7 +23,9 @@ async function setup(t, { disabled = [], installed = entries.map(e => e.package)
   const client = {
     devices: async () => [{ serial, state: 'device' }],
     getprops: async () => ({ 'ro.serialno': 'TV123', 'ro.product.brand': 'Example', 'ro.product.model': 'TV' }),
+    getSettings: async () => ({ 'global/private_dns_mode': null }),
     resolveHomeActivity: async () => 'com.example.home',
+    resolveHomeComponent: async () => 'com.example.home/.Main',
     pressHome: async () => {},
     focusedPackage: async () => client.resolveHomeActivity(serial),
     listPackages: async (s, options) => {
@@ -116,6 +118,105 @@ test('restore all works with an empty journal', async t => {
   const result = await engine.restore(serial, 'all');
   assert.equal(result.succeeded, 1);
   assert.equal(result.results[0].package, 'com.example.good');
+});
+
+test('baseline captures the selected original state before the first disable and is never recaptured', async t => {
+  const { engine, client, journal } = await setup(t, { disabled: ['com.example.red'] });
+  client.getprops = async () => ({ 'ro.serialno': 'TV123', 'ro.product.brand': 'Brand',
+    'ro.product.manufacturer': 'Maker', 'ro.product.model': 'TV', 'ro.build.version.release': '14',
+    'ro.build.fingerprint': 'original/fingerprint', 'unrelated.prop': 'excluded' });
+  let settingsReads = 0;
+  client.getSettings = async () => { settingsReads++; return { 'global/private_dns_mode': 'hostname' }; };
+  const disable = client.disableUser;
+  client.disableUser = async (s, pkg) => {
+    const baseline = await journal.readBaseline('TV123');
+    assert.ok(!Number.isNaN(Date.parse(baseline.at)));
+    assert.deepEqual(baseline.disabledBefore, ['com.example.red']);
+    assert.deepEqual(baseline.props, { 'ro.product.brand': 'Brand', 'ro.product.manufacturer': 'Maker',
+      'ro.product.model': 'TV', 'ro.build.version.release': '14', 'ro.build.fingerprint': 'original/fingerprint' });
+    assert.deepEqual(baseline.settings, { 'global/private_dns_mode': 'hostname' });
+    assert.equal(baseline.homeComponent, 'com.example.home/.Main');
+    return disable(s, pkg);
+  };
+  await engine.inspect(serial);
+  await engine.history(serial);
+  await engine.disable(serial, ['com.android.systemui']);
+  assert.equal(await journal.readBaseline('TV123'), null);
+  assert.equal((await engine.disable(serial, ['com.example.good', 'com.example.bad'])).succeeded, 2);
+  const baseline = await journal.readBaseline('TV123');
+  client.getSettings = async () => { assert.fail('existing baseline must not read settings again'); };
+  client.resolveHomeComponent = async () => { assert.fail('existing baseline must not read HOME again'); };
+  assert.equal((await engine.disable(serial, ['com.example.mismatch'])).succeeded, 1);
+  assert.deepEqual(await journal.readBaseline('TV123'), baseline);
+  assert.equal(settingsReads, 1);
+});
+
+test('restore all excludes baseline-disabled packages but journal-proven disables still win', async t => {
+  const stock = 'com.google.android.tvlauncher';
+  const { engine, journal, commands, disabledSet } = await setup(t, {
+    disabled: ['com.example.red', 'com.example.bad', stock], installed: [...entries.map(entry => entry.package), stock],
+  });
+  assert.equal((await engine.disable(serial, ['com.example.good', 'com.example.bad'])).succeeded, 2);
+  const result = await engine.restore(serial, 'all');
+  assert.deepEqual(result.results.map(item => item.package).sort(), ['com.example.good', 'com.example.bad'].sort());
+  assert.equal(result.failed, 0);
+  assert.deepEqual([...disabledSet].sort(), ['com.example.red', stock].sort());
+  assert.ok(!commands.includes(`enable:${stock}`));
+  assert.ok(!commands.includes('enable:com.example.red'));
+});
+
+test('baseline capture failures warn without preventing disable or later recovery', async t => {
+  for (const method of ['getSettings', 'saveBaseline']) {
+    const { engine, client, journal } = await setup(t);
+    (method === 'getSettings' ? client : journal)[method] = async () => { throw new Error('baseline unavailable'); };
+    const result = await engine.disable(serial, ['com.example.good']);
+    assert.equal(result.succeeded, 1);
+    assert.equal(result.journalWarning, true);
+    assert.equal(await journal.readBaseline('TV123'), null);
+    assert.equal((await engine.restore(serial, 'all')).succeeded, 1);
+    assert.equal(await journal.readBaseline('TV123'), null);
+  }
+});
+
+test('a late baseline never records packages CleanTV already touched as original state', async t => {
+  const { engine, journal, disabledSet } = await setup(t, { disabled: ['com.example.red'] });
+  const save = journal.saveBaseline;
+  const append = journal.append;
+  journal.saveBaseline = async () => { throw new Error('baseline unavailable'); };
+  journal.append = async (id, record) => {
+    if (record.status !== 'pending') throw new Error('journal unavailable');
+    return append(id, record);
+  };
+  await assert.rejects(engine.disable(serial, ['com.example.good']), /journal unavailable/);
+  assert.ok(disabledSet.has('com.example.good'));
+  journal.saveBaseline = save;
+  journal.append = append;
+  assert.equal((await engine.disable(serial, ['com.example.bad'])).succeeded, 1);
+  assert.deepEqual((await journal.readBaseline('TV123')).disabledBefore, ['com.example.red']);
+  const restored = await engine.restore(serial, 'all');
+  assert.deepEqual(restored.results.map(item => item.package).sort(), ['com.example.bad', 'com.example.good']);
+  assert.deepEqual([...disabledSet], ['com.example.red']);
+});
+
+test('enable-only history does not remove a package from a late baseline', async t => {
+  const { engine, journal, commands } = await setup(t, { disabled: ['com.example.red'], failure: 'com.example.red' });
+  assert.equal((await engine.restore(serial, ['com.example.red'])).failed, 1);
+  assert.equal((await engine.disable(serial, ['com.example.good'])).succeeded, 1);
+  assert.deepEqual((await journal.readBaseline('TV123')).disabledBefore, ['com.example.red']);
+  const before = commands.filter(command => command === 'enable:com.example.red').length;
+  await engine.restore(serial, 'all');
+  assert.equal(commands.filter(command => command === 'enable:com.example.red').length, before);
+});
+
+test('unreadable baseline warns and does not block restore all', async t => {
+  for (const contents of ['invalid JSON', 'null', '[]', '{}', '{"disabledBefore":1}', '{"disabledBefore":[null]}']) {
+    const { engine, dir } = await setup(t, { disabled: ['com.example.good'] });
+    await writeFile(join(dir, 'TV123.baseline.json'), contents);
+    const result = await engine.restore(serial, 'all');
+    assert.equal(result.succeeded, 1);
+    assert.equal(result.journalWarning, true);
+    assert.equal(await readFile(join(dir, 'TV123.baseline.json'), 'utf8'), contents);
+  }
 });
 
 test('restore all checks HOME after restoring packages even without a recognised launcher', async t => {

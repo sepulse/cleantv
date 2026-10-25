@@ -50,6 +50,26 @@ test('disabledByUs uses latest ok action, ignoring failed and pending outcomes',
   assert.deepEqual(await journal.disabledByUs('TV'), []);
 });
 
+test('baseline persists separately and the first record survives retries and concurrent writers', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'cleantv-baseline-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const journal = createJournal(join(dir, 'data'));
+  const baseline = { at: new Date().toISOString(), disabledBefore: ['com.example.original'],
+    props: { 'ro.product.model': 'TV' }, settings: { 'global/private_dns_mode': null }, homeComponent: 'com.example.home/.Main' };
+  assert.equal(await journal.readBaseline('TV'), null);
+  await journal.saveBaseline('TV', baseline);
+  const entry = record();
+  await journal.append('TV', entry);
+  const later = { ...baseline, disabledBefore: ['com.example.changed'] };
+  await Promise.all([journal.saveBaseline('TV', later), createJournal(join(dir, 'data')).saveBaseline('TV', later)]);
+  assert.deepEqual(await createJournal(join(dir, 'data')).readBaseline('TV'), baseline);
+  assert.deepEqual(await journal.read('TV'), [entry]);
+  assert.deepEqual((await readdir(join(dir, 'data'))).sort(), ['TV.baseline.json', 'TV.json']);
+  await Promise.all([journal.saveBaseline('OTHER', baseline), createJournal(join(dir, 'data')).saveBaseline('OTHER', later)]);
+  const awaitedBaseline = await journal.readBaseline('OTHER');
+  assert.ok([baseline, later].some(value => JSON.stringify(value) === JSON.stringify(awaitedBaseline)));
+});
+
 test('atomic replacement tolerates a briefly open Windows reader', { skip: process.platform !== 'win32' }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'cleantv-sharing-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
@@ -81,10 +101,16 @@ test('unsafe IDs are rejected and corrupted history is never silently overwritte
   for (const id of ['', '../escape', 'a/b', 'a\\b', 'a:device']) {
     await assert.rejects(journal.read(id), { code: 'INVALID_INPUT' });
     await assert.rejects(journal.append(id, record()), { code: 'INVALID_INPUT' });
+    await assert.rejects(journal.readBaseline(id), { code: 'INVALID_INPUT' });
+    await assert.rejects(journal.saveBaseline(id, {}), { code: 'INVALID_INPUT' });
   }
   await writeFile(join(dir, 'TV.json'), 'invalid JSON');
   await assert.rejects(journal.append('TV', record()), SyntaxError);
   assert.equal(await readFile(join(dir, 'TV.json'), 'utf8'), 'invalid JSON');
+  await writeFile(join(dir, 'TV.baseline.json'), 'invalid JSON');
+  await assert.rejects(journal.readBaseline('TV'), SyntaxError);
+  await journal.saveBaseline('TV', {});
+  assert.equal(await readFile(join(dir, 'TV.baseline.json'), 'utf8'), 'invalid JSON');
 });
 
 test('default directory follows the host OS convention', () => {

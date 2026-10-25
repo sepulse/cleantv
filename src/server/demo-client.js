@@ -34,6 +34,13 @@ export function createDemoClient(presets) {
         'ro.product.manufacturer': 'Google', 'ro.product.model': 'Chromecast',
         'ro.build.version.release': '14', 'ro.build.version.sdk': '34' };
     },
+    async getSettings(value) {
+      validate(value);
+      return { 'global/private_dns_mode': 'opportunistic', 'global/private_dns_specifier': null,
+        'secure/screensaver_components': 'com.google.android.backdrop/.Backdrop',
+        'global/window_animation_scale': '1.0', 'global/transition_animation_scale': '1.0',
+        'global/animator_duration_scale': '1.0' };
+    },
     async listPackages(value, { disabledOnly = false } = {}) {
       validate(value);
       return [...(disabledOnly ? disabled : installed)];

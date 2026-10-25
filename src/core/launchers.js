@@ -39,7 +39,7 @@ function unsupportedPlatform({ info, installed }, props) {
 }
 
 /** Dedicated launcher operations; ordinary package cleanup never uses this path. */
-export function createLauncherActions({ client, journal, context }) {
+export function createLauncherActions({ client, journal, context, ensureBaseline }) {
   const swapping = new Set();
   const checks = new Map();
   async function status(serial, ctx, pkg = REPLACEMENT_LAUNCHERS[0].package) {
@@ -199,6 +199,7 @@ export function createLauncherActions({ client, journal, context }) {
       const outcome = {};
       swapping.add(serial);
       try {
+        await ensureBaseline(serial, ctx.info, outcome);
         await journal.append(ctx.info.deviceId, swapRecord(replacement, [], 'pending'));
         for (const [i, pkg] of targets.entries()) {
           await journal.append(ctx.info.deviceId, record('disable', pkg, 'pending'));
@@ -225,7 +226,7 @@ export function createLauncherActions({ client, journal, context }) {
           throw new CleanTvError(ErrorCode.COMMAND_FAILED);
         }
         await journal.append(ctx.info.deviceId, swapRecord(replacement, disabledBySwap, 'ok'));
-        return summary([{ package: replacement, result: 'switched' }]);
+        return { ...summary([{ package: replacement, result: 'switched' }]), ...outcome };
       } catch (error) {
         // A previous replacement swap may already have disabled every stock HOME.
         let toEnable = targets.length ? attempted : before.stock.filter(item => item.installed).map(item => item.package);

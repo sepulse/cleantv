@@ -11,7 +11,7 @@ const prefix = `-s ${serial} shell`;
 
 test('client exposes only the named methods', () => {
   assert.deepEqual(Object.keys(createAdbClient(fakeRunner({}))).sort(), [
-    'connect', 'disconnect', 'devices', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+    'connect', 'disconnect', 'devices', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
     'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage',
   ].sort());
 });
@@ -72,6 +72,22 @@ test('package lists use user 0 and optional disabled flag', async () => {
   assert.deepEqual(await client.listPackages(serial, { disabledOnly: true }), [pkg]);
 });
 
+test('getSettings reads only the fixed keys, trims values and preserves null and empty values', async () => {
+  const entries = [
+    ['global', 'private_dns_mode', 'hostname'], ['global', 'private_dns_specifier', 'dns.example.com'],
+    ['secure', 'screensaver_components', null], ['global', 'window_animation_scale', '0.5'],
+    ['global', 'transition_animation_scale', ''], ['global', 'animator_duration_scale', '1.0'],
+  ];
+  const run = fakeRunner(Object.fromEntries(entries.map(([namespace, key, value]) =>
+    [`${prefix} settings get ${namespace} ${key}`, { stdout: `  ${value}\r\n` }])));
+  const client = createAdbClient(run);
+  assert.deepEqual(await client.getSettings(serial, ['untrusted;input']),
+    Object.fromEntries(entries.map(([namespace, key, value]) => [`${namespace}/${key}`, value])));
+  assert.deepEqual(run.calls, entries.map(([namespace, key]) => ['-s', serial, 'shell', 'settings', 'get', namespace, key]));
+  await assert.rejects(createAdbClient(fakeRunner({ [`${prefix} settings get global private_dns_mode`]:
+    { code: 1, stdout: 'hostname' } })).getSettings(serial), { code: 'COMMAND_FAILED' });
+});
+
 test('state changes require the expected marker as well as successful command exit', async () => {
   for (const [method, command, marker] of [['disableUser', 'disable-user', 'disabled-user'], ['enableUser', 'enable', 'enabled']]) {
     const args = `${prefix} pm ${command} --user 0 ${pkg}`;
@@ -128,7 +144,7 @@ test('focused activity preserves android and rejects conflicting focus and resum
 test('all argument-taking methods reject unsafe inputs before any runner call', async () => {
   const run = fakeRunner({});
   const client = createAdbClient(run);
-  for (const method of ['disconnect', 'getprops', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+  for (const method of ['disconnect', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
     'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage']) {
     await assert.rejects(client[method]('host;id:5555', pkg), { code: 'INVALID_INPUT' });
   }
