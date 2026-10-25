@@ -5,6 +5,8 @@ import { icon } from '../icons.js';
 export function startScreen(state, actions) {
   const ready = state.health?.adb.found;
   return h('section', { className: 'screen' },
+    state.closeAdbResult && h('p', { id: 'close-adb-result', role: 'status' }, t(state.closeAdbResult.portClosed === true
+      ? 'closeAdb.closed' : state.closeAdbResult.portClosed === false ? 'closeAdb.open' : 'closeAdb.unknown')),
     h('div', { className: 'card stack' }, icon('tv', 'hero-icon'), heading(t('start.title'), t('app.promise')),
       !state.health ? h('p', { role: 'status' }, t('start.checking')) : ready
         ? button(t('start.begin'), () => actions.go('setup'), { primary: true, id: 'begin' })

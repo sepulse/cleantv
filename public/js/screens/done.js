@@ -22,7 +22,8 @@ export function doneScreen(state, actions) {
       button(t('launcher.check'), () => actions.startJob('launcherRestore'), { id: 'launcher-check-restore', disabled: state.busy })),
     h('ul', { className: 'results' }, summary.results.map(item => resultRow(state, item))),
     h('div', { className: 'actions' }, button(t('done.back'), actions.backToList, { primary: true, id: 'back-list' }),
-      button(t('common.restore'), actions.confirmRestore, { id: 'restore-done', disabled: state.busy })),
+      button(t('common.restore'), actions.confirmRestore, { id: 'restore-done', disabled: state.busy }),
+      button(t('closeAdb.button'), actions.confirmCloseAdb, { id: 'close-adb', disabled: state.busy })),
     launcher && button(t('launcher.restore'), actions.confirmLauncherRestore, { id: 'launcher-restore-done', disabled: state.busy }),
     button(t('done.history'), actions.history, { className: 'link', id: 'history' }));
 }

@@ -53,22 +53,28 @@ export function createAdbClient(run) {
     async connect(ip, port = 5555) {
       const serial = `${ip}:${port}`;
       validate(serial);
-      try {
-        const response = await run(['connect', serial]);
-        if (response.code !== 0 || /(?:failed|cannot)\s+connect|failed to connect/i.test(`${response.stdout}\n${response.stderr}`)) {
-          return { serial, state: 'unreachable' };
-        }
-        const device = (await client.devices()).find(item => item.serial === serial);
-        return { serial, state: device?.state ?? 'unreachable' };
-      } catch (error) {
+      let response;
+      try { response = await run(['connect', serial]); }
+      catch (error) {
         if (error.code === ErrorCode.TIMEOUT) return { serial, state: 'unreachable' };
         throw error;
       }
+      if (response.code !== 0 || /(?:failed|cannot)\s+connect|failed to connect/i.test(`${response.stdout}\n${response.stderr}`)) {
+        return { serial, state: 'unreachable' };
+      }
+      // A failed device check after a successful connect is not proof that the port is closed.
+      const device = (await client.devices()).find(item => item.serial === serial);
+      return { serial, state: device?.state ?? 'unreachable' };
     },
     /** @param {string} serial */
     async disconnect(serial) {
       validate(serial);
       await checked(['disconnect', serial]);
+    },
+    /** @param {string} serial */
+    async usbMode(serial) {
+      validate(serial);
+      await checked(['-s', serial, 'usb']);
     },
     /** @returns {Promise<Array<{ serial: string, state: string, model?: string }>>} */
     async devices() {

@@ -232,5 +232,12 @@
   "dns.doneTitle": "Your DNS choice was applied",
   "dns.failedTitle": "The DNS change could not be completed",
   "result.configured": "DNS settings applied",
-  "result.restored": "Original DNS settings restored"
+  "result.restored": "Original DNS settings restored",
+  "closeAdb.button": "Close network debugging",
+  "closeAdb.confirm.title": "Close network debugging?",
+  "closeAdb.confirm.body": "CleanTV will ask your TV to switch ADB to USB mode, disconnect and check whether the network port is closed. To use CleanTV again, repeat the TV setup steps, including enabling Network debugging. If the port stays open, turn off Network debugging in Developer options on your TV.",
+  "closeAdb.confirm.accept": "Yes, close network debugging",
+  "closeAdb.closed": "Your TV's network debugging port is no longer reachable. To use CleanTV again, repeat the TV setup steps, including enabling Network debugging.",
+  "closeAdb.open": "Your TV's network debugging port is still open. Turn off Network debugging in Developer options on your TV. To use CleanTV again, repeat the TV setup steps.",
+  "closeAdb.unknown": "CleanTV could not confirm whether your TV's network debugging port is closed. Turn off Network debugging in Developer options on your TV. To use CleanTV again, repeat the TV setup steps."
 }

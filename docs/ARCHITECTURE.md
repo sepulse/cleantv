@@ -20,7 +20,7 @@ Aplikasi web tempatan untuk *debloat* Android TV / Google TV melalui Wi-Fi ADB
 
 Setiap permintaan "matikan pakej" mesti lulus **semua** lapisan, dalam tertib ini:
 
-1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `devices`, `getprops`, `getSettings` (baca enam kunci tetap sahaja: `global/private_dns_mode`, `global/private_dns_specifier`, `secure/screensaver_components`, `global/window_animation_scale`, `global/transition_animation_scale`, `global/animator_duration_scale`), `setPrivateDns` (mode `off | opportunistic | hostname`, specifier hos penyedia tetap atau hos baseline yang lulus regex ketat; null memadam specifier), `restorePrivateDns` (pemulihan baseline sahaja; mode null memadam mode asal yang tiada; kedua-dua kaedah hanya menulis dua kunci DNS global dan mengesahkan melalui `getSettings`), `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`, `resolveHomeComponent`, `listHomeCandidates`, `listHomeCandidateComponents`, `setHomeActivity` (`cmd package set-home-activity`, komponen disahkan dengan regex ketat), `pressHome` (`input keyevent KEYCODE_HOME`), `focusedPackage` (`dumpsys activity activities`), `openPlayStore` (registry launcher sahaja).
+1. **L1 — Allowlist arahan.** `AdbClient` tidak mengeksport fungsi `shell` generik. Ia hanya ada kaedah bernama: `connect`, `disconnect`, `usbMode` (`adb -s <serial> usb`, tanpa shell; tutup ADB rangkaian), `devices`, `getprops`, `getSettings` (baca enam kunci tetap sahaja: `global/private_dns_mode`, `global/private_dns_specifier`, `secure/screensaver_components`, `global/window_animation_scale`, `global/transition_animation_scale`, `global/animator_duration_scale`), `setPrivateDns` (mode `off | opportunistic | hostname`, specifier hos penyedia tetap atau hos baseline yang lulus regex ketat; null memadam specifier), `restorePrivateDns` (pemulihan baseline sahaja; mode null memadam mode asal yang tiada; kedua-dua kaedah hanya menulis dua kunci DNS global dan mengesahkan melalui `getSettings`), `listPackages`, `disableUser`, `enableUser`, `resolveHomeActivity`, `resolveHomeComponent`, `listHomeCandidates`, `listHomeCandidateComponents`, `setHomeActivity` (`cmd package set-home-activity`, komponen disahkan dengan regex ketat), `pressHome` (`input keyevent KEYCODE_HOME`), `focusedPackage` (`dumpsys activity activities`), `openPlayStore` (registry launcher sahaja).
 2. **L2 — Pengesahan input.** Nama pakej mesti padan `^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+$`; serial mesti `IPv4:port`. (Hujah `adb shell` digabung semula oleh shell pada TV — pengesahan ini menghalang suntikan arahan.)
 3. **L3 — `NEVER_TOUCH` dalam kod.** Senarai keras pakej teras (systemui, settings, gms, vending, packageinstaller, bluetooth, input method, webview, setup wizard, perkhidmatan alat kawalan jauh, provider, dll.) serta awalan provider, overlay modules, MediaTek, kilang dan Jamdeo TV. Menang mengatasi registry.
 4. **L4 — Registry allowlist.** Pakej mesti wujud dalam preset yang padan dengan peranti, dan risikonya bukan `red`.
@@ -142,10 +142,26 @@ Bentuk ralat: `{ "error": { "code": "DEVICE_UNAUTHORIZED", "message": "..." } }`
 | POST | `/devices/:serial/launcher/restore` | `{}` | `202 { jobId }` (enable installed stock launchers, verify stock HOME) |
 | POST | `/devices/:serial/launcher/recover` | `{}` | `202 { jobId }` (repair interrupted/unhealthy launcher switch, verify stock HOME; SSE includes `recovered?`, `manualHomePackage?`) |
 | POST | `/devices/:serial/disconnect` | `{}` | `{ ok: true }` |
+| POST | `/devices/:serial/close-adb` | `{}` | `{ ok: true, portClosed: true \| false \| null }` |
 | GET | `/jobs/:jobId/events` | — | SSE (lihat bawah) |
 
 `:serial` = `ip:port`, di-*URL-encode*. Satu peranti hanya menjalankan satu kerja
 pada satu masa; kerja kedua → `409 DEVICE_BUSY`.
+
+`POST /devices/:serial/close-adb` ialah tindakan pilihan pada skrin Selesai,
+selepas modal pengesahan. Seperti `disconnect`, ia menolak peranti dengan job
+berjalan (`409 DEVICE_BUSY`) sebelum sebarang arahan. Urutan: `usbMode(serial)`
+(`adb -s <serial> usb`, tanpa shell) → `disconnect(serial)` → `connect(ip, port)`
+sekali. `portClosed: true` jika `unreachable`, `false` jika `device` (kemudian
+disconnect semula), `null` jika tidak dapat disahkan (keadaan lain atau ralat
+pemeriksaan). Transport yang masih muncul selepas pemeriksaan juga diputuskan.
+Kegagalan arahan USB atau disconnect pertama memulangkan ralat biasa. Selepas
+respons berjaya, UI kembali ke skrin mula dan memaparkan hasil sebenar; langkah
+persediaan TV termasuk Network debugging perlu diulang untuk guna CleanTV
+semula. Jika port masih terbuka atau tidak dapat disahkan, pengguna diminta
+mematikan Network debugging dalam Developer options. Demo `usbMode` memutuskan
+TV demo dan menjadikan cubaan sambung semula `unreachable` sehingga demo dimuat
+semula.
 
 `GET /devices/:serial` juga memulangkan `dnsProviders: [{ id, name, host }]` daripada
 senarai kod tetap untuk pilihan UI. Penyedia DNS tidak dikenali → `400 INVALID_INPUT`.

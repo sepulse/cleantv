@@ -15,7 +15,7 @@ const state = {
   selected: new Set(), collapsed: new Set(), showAbsent: false, busy: false, error: null,
   modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, processed: 0, current: null, summary: null,
   launcher: null, launcherPackage: '', launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
-  dnsProvider: 'off',
+  dnsProvider: 'off', closeAdbResult: null,
 };
 const screens = { start: startScreen, setup: setupScreen, connect: connectScreen, choose: chooseScreen, progress: progressScreen, done: doneScreen };
 const flow = ['setup', 'connect', 'choose', 'progress', 'done'];
@@ -192,6 +192,7 @@ const actions = {
     state.error = null;
     state.screen = screen;
     state.connection = 'idle';
+    state.closeAdbResult = null;
     render();
   },
   async health() {
@@ -224,6 +225,26 @@ const actions = {
   retryConnect() { if (state.candidate) actions.connect(state.candidate); },
   confirmClean() { if (state.selected.size) openModal('clean'); },
   confirmRestore() { openModal('restore'); },
+  confirmCloseAdb() { openModal('closeAdb'); },
+  async closeAdb() {
+    if (state.busy) return;
+    state.modal = null;
+    state.error = null;
+    state.busy = true;
+    render();
+    try {
+      state.closeAdbResult = await api(devicePath('/close-adb'), {});
+      cancelPolling();
+      source?.close();
+      state.serial = null;
+      state.info = null;
+      state.prepared = false;
+      state.connection = 'idle';
+      state.screen = 'start';
+      state.busy = false;
+      render();
+    } catch (error) { state.busy = false; fail(error); }
+  },
   selectDns(provider) {
     if (state.busy || (provider !== 'off' && !state.info.dnsProviders?.some(entry => entry.id === provider))) return;
     state.dnsProvider = provider;

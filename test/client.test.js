@@ -11,7 +11,7 @@ const prefix = `-s ${serial} shell`;
 
 test('client exposes only the named methods', () => {
   assert.deepEqual(Object.keys(createAdbClient(fakeRunner({}))).sort(), [
-    'connect', 'disconnect', 'devices', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+    'connect', 'disconnect', 'usbMode', 'devices', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
     'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage', 'setPrivateDns', 'restorePrivateDns',
   ].sort());
 });
@@ -42,6 +42,8 @@ test('connect reports failed, cannot connect, nonzero and timeout as unreachable
   }
   const run = fakeRunner({ [`connect ${serial}`]: { stdout: 'connected' }, 'devices -l': { stdout: '' } });
   assert.deepEqual(await createAdbClient(run).connect('192.168.1.20'), { serial, state: 'unreachable' });
+  const slow = fakeRunner({ [`connect ${serial}`]: { stdout: `connected to ${serial}` }, 'devices -l': new CleanTvError('TIMEOUT') });
+  await assert.rejects(createAdbClient(slow).connect('192.168.1.20'), { code: 'TIMEOUT' });
 });
 
 test('connect supports a custom port and preserves missing-binary errors', async () => {
@@ -55,6 +57,13 @@ test('disconnect checks command status', async () => {
   await createAdbClient(run).disconnect(serial);
   assert.deepEqual(run.calls, [['disconnect', serial]]);
   await assert.rejects(createAdbClient(fakeRunner({ [`disconnect ${serial}`]: { code: 1, stderr: 'bad' } })).disconnect(serial), { code: 'COMMAND_FAILED' });
+});
+
+test('usbMode uses a validated serial without a shell and checks command status', async () => {
+  const run = fakeRunner({ [`-s ${serial} usb`]: {} });
+  await createAdbClient(run).usbMode(serial);
+  assert.deepEqual(run.calls, [['-s', serial, 'usb']]);
+  await assert.rejects(createAdbClient(fakeRunner({ [`-s ${serial} usb`]: { code: 1, stderr: 'bad' } })).usbMode(serial), { code: 'COMMAND_FAILED' });
 });
 
 test('getprop parser handles CRLF, empty and bracketed values', async () => {
@@ -144,7 +153,7 @@ test('focused activity preserves android and rejects conflicting focus and resum
 test('all argument-taking methods reject unsafe inputs before any runner call', async () => {
   const run = fakeRunner({});
   const client = createAdbClient(run);
-  for (const method of ['disconnect', 'getprops', 'getSettings', 'setPrivateDns', 'restorePrivateDns', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+  for (const method of ['disconnect', 'usbMode', 'getprops', 'getSettings', 'setPrivateDns', 'restorePrivateDns', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
     'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage']) {
     await assert.rejects(client[method]('host;id:5555', pkg), { code: 'INVALID_INPUT' });
   }

@@ -144,6 +144,66 @@ test('DNS defaults off, selection and cancellation never write, and applying use
   assert.match(app.document.root.textContent, /Original DNS settings restored/);
 });
 
+for (const portClosed of [true, false, null]) test(`closing ADB requires confirmation and returns to start with portClosed=${portClosed}`, async t => {
+  const app = await application(t);
+  await connect(app);
+  await app.click('clean');
+  await app.click('modal-confirm');
+  await app.emit('complete', { succeeded: 1, failed: 0, results: [{ package: 'com.example.app', result: 'disabled' }] });
+  const posts = () => app.requests.filter(request => request.path.endsWith('/close-adb'));
+  assert.equal(posts().length, 0);
+  assert.equal(app.byId('close-adb').className, 'button');
+  await app.click('close-adb');
+  assert.equal(app.byId('confirm-dialog').open, true);
+  assert.match(app.byId('dialog-body').textContent, /repeat the TV setup steps.*Network debugging/);
+  assert.match(app.byId('dialog-body').textContent, /port stays open.*Developer options/);
+  await app.click('modal-cancel');
+  assert.equal(posts().length, 0);
+  let finish;
+  app.post(() => new Promise(resolve => { finish = resolve; }));
+  await app.click('close-adb');
+  const pending = app.byId('modal-confirm').listeners.click();
+  await settle();
+  assert.equal(app.byId('close-adb').disabled, true);
+  assert.equal(app.byId('restore-header').disabled, true);
+  assert.equal(app.document.getElementById('begin'), null);
+  assert.equal(posts().length, 1);
+  assert.equal(posts()[0].path, `/api/devices/${encodeURIComponent(serial)}/close-adb`);
+  assert.equal(posts()[0].options.method, 'POST');
+  assert.equal(posts()[0].options.body, '{}');
+  finish({ ok: true, json: async () => ({ ok: true, portClosed }) });
+  await pending;
+  assert.ok(app.byId('begin'));
+  assert.equal(app.document.getElementById('restore-header'), null);
+  assert.equal(app.byId('close-adb-result').attributes.role, 'status');
+  assert.match(app.byId('close-adb-result').textContent, portClosed === true ? /no longer reachable/
+    : portClosed === false ? /still open/ : /could not confirm/);
+  if (portClosed !== true) assert.match(app.byId('close-adb-result').textContent, /Turn off Network debugging in Developer options/);
+  assert.ok(app.sources.at(-1).closed);
+  await app.click('language-ms');
+  await app.click('language-en');
+  assert.ok(app.byId('close-adb-result'));
+  await app.click('begin');
+  assert.equal(app.byId('setup-next').disabled, true, 'TV preparation must be repeated');
+});
+
+test('a failed close-adb request keeps Done available and allows another confirmed attempt', async t => {
+  const app = await application(t);
+  await connect(app);
+  await app.click('clean');
+  await app.click('modal-confirm');
+  await app.emit('complete', { succeeded: 1, failed: 0, results: [{ package: 'com.example.app', result: 'disabled' }] });
+  app.post(async () => ({ ok: false, json: async () => ({ error: { code: 'DEVICE_BUSY' } }) }));
+  await app.click('close-adb');
+  await app.click('modal-confirm');
+  assert.match(app.document.root.textContent, /still working on another action/);
+  assert.equal(app.byId('close-adb').disabled, false);
+  assert.ok(app.byId('restore-header'));
+  assert.equal(app.document.getElementById('begin'), null);
+  await app.click('close-adb');
+  assert.equal(app.byId('confirm-dialog').open, true);
+});
+
 test('reenabled status lists affected apps and confirms only allowed enabled apps before a normal disable POST', async t => {
   const packages = [
     ['com.example.other', 'Other app', true, true, 'green'],

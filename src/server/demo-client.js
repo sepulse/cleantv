@@ -14,6 +14,7 @@ export function createDemoClient(presets) {
   const disabled = new Set();
   let attempts = 0;
   let connected = false;
+  let networkDebugging = true;
   let preferredHome;
   let dns = { mode: 'opportunistic', specifier: null };
   const homePackages = [...STOCK_LAUNCHERS, ...REPLACEMENT_LAUNCHERS.map(entry => entry.package)];
@@ -23,6 +24,7 @@ export function createDemoClient(presets) {
   return {
     async connect(ip, port = 5555) {
       validate(`${ip}:${port}`);
+      if (!networkDebugging) return { serial, state: 'unreachable' };
       connected = true;
       return { serial, state: ++attempts <= 2 ? 'unauthorized' : 'device' };
     },
@@ -30,6 +32,11 @@ export function createDemoClient(presets) {
       validate(value); connected = false; attempts = 0;
       // Simulate firmware turning non-launcher apps back on after restarting.
       for (const pkg of disabled) if (!homePackages.includes(pkg)) disabled.delete(pkg);
+    },
+    async usbMode(value) {
+      validate(value);
+      networkDebugging = false;
+      connected = false;
     },
     async devices() {
       return connected ? [{ serial, state: attempts <= 2 ? 'unauthorized' : 'device', model: 'Chromecast' }] : [];

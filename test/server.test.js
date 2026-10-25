@@ -118,27 +118,148 @@ test('DNS route validates provider IDs, uses the per-device job lock and streams
   }
 });
 
-test('disconnect refuses a busy serial for every job type and permits it after completion', async t => {
+test('close-adb checks the port once after USB mode and disconnect, then removes any remaining transport', async t => {
+  for (const [state, portClosed] of [['unreachable', true], ['device', false], ['unauthorized', null], ['offline', null], ['error', null]]) {
+    await t.test(state, async t => {
+      const run = fakeRunner({ [`-s ${serial} usb`]: {}, [`disconnect ${serial}`]: {},
+        [`connect ${serial}`]: state === 'error' ? new CleanTvError('COMMAND_FAILED')
+          : state === 'unreachable' ? { code: 1, stderr: 'cannot connect' } : {},
+        'devices -l': { stdout: `${serial} ${state}` } });
+      const { post } = await setup(t, { client: createAdbClient(run) });
+      const response = await post(`/api/devices/${encoded}/close-adb`, {});
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { ok: true, portClosed });
+      assert.deepEqual(run.calls, [['-s', serial, 'usb'], ['disconnect', serial], ['connect', serial],
+        ...(['unreachable', 'error'].includes(state) ? [] : [['devices', '-l']]), ['disconnect', serial]]);
+    });
+  }
+});
+
+test('close-adb preserves custom ports and rejects unsafe serials before any command', async t => {
+  const serial = '192.168.1.5:1234';
+  const run = fakeRunner({ [`-s ${serial} usb`]: {}, [`disconnect ${serial}`]: {}, [`connect ${serial}`]: { code: 1 } });
+  const { post } = await setup(t, { client: createAdbClient(run) });
+  for (const bad of ['bad', '192.168.1.5:0', '192.168.1.5:5555;id']) {
+    assert.equal((await post(`/api/devices/${encodeURIComponent(bad)}/close-adb`, {})).status, 400);
+  }
+  assert.deepEqual(run.calls, []);
+  assert.deepEqual(await (await post(`/api/devices/${encodeURIComponent(serial)}/close-adb`, {})).json(), { ok: true, portClosed: true });
+  assert.deepEqual(run.calls, [['-s', serial, 'usb'], ['disconnect', serial], ['connect', serial], ['disconnect', serial]]);
+});
+
+test('close-adb disconnects after a successful reconnect even if device verification fails', async t => {
+  const run = fakeRunner({ [`-s ${serial} usb`]: {}, [`disconnect ${serial}`]: {},
+    [`connect ${serial}`]: {}, 'devices -l': new CleanTvError('COMMAND_FAILED') });
+  const { post } = await setup(t, { client: createAdbClient(run) });
+  assert.deepEqual(await (await post(`/api/devices/${encoded}/close-adb`, {})).json(), { ok: true, portClosed: null });
+  assert.deepEqual(run.calls, [['-s', serial, 'usb'], ['disconnect', serial], ['connect', serial],
+    ['devices', '-l'], ['disconnect', serial]]);
+});
+
+test('close-adb reports cleanup disconnect failures and releases the device reservation', async t => {
+  for (const state of ['device', 'unreachable', 'error']) {
+    await t.test(state, async t => {
+      const run = fakeRunner({ [`-s ${serial} usb`]: {}, [`disconnect ${serial}`]: {},
+        [`connect ${serial}`]: state === 'unreachable' ? { code: 1 } : {},
+        'devices -l': state === 'error' ? new CleanTvError('COMMAND_FAILED') : { stdout: `${serial} device` } });
+      let disconnects = 0;
+      const client = createAdbClient(async args => {
+        const result = await run(args);
+        return args[0] === 'disconnect' && ++disconnects === 2 ? { ...result, code: 1 } : result;
+      });
+      const { post, get } = await setup(t, { client });
+      const response = await post(`/api/devices/${encoded}/close-adb`, {});
+      assert.equal(response.status, 502);
+      assert.deepEqual(await response.json(), { error: { code: 'COMMAND_FAILED', message: 'The TV could not complete the action.' } });
+      assert.equal(disconnects, 2);
+      const job = await post(`/api/devices/${encoded}/disable`, { packages: ['com.example.foo'] });
+      assert.equal(job.status, 202);
+      await (await get(`/api/jobs/${(await job.json()).jobId}/events`)).text();
+    });
+  }
+});
+
+test('close-adb reserves the device against concurrent jobs and another close-adb through cleanup', async t => {
+  for (const stage of ['usb', 'connect', 'cleanup']) {
+    await t.test(stage, async t => {
+      const entered = Promise.withResolvers();
+      const gate = Promise.withResolvers();
+      const run = fakeRunner({ [`-s ${serial} usb`]: {}, [`disconnect ${serial}`]: {},
+        [`connect ${serial}`]: {}, 'devices -l': { stdout: `${serial} device` } });
+      let disconnects = 0;
+      let paused = false;
+      const client = createAdbClient(async args => {
+        const result = await run(args);
+        if (args[0] === 'disconnect') disconnects++;
+        if (!paused && (stage === 'usb' && args[2] === 'usb' || stage === 'connect' && args[0] === 'connect'
+          || stage === 'cleanup' && args[0] === 'disconnect' && disconnects === 2)) {
+          paused = true;
+          entered.resolve();
+          await gate.promise;
+        }
+        return result;
+      });
+      const { post, get, calls } = await setup(t, { client });
+      const closing = post(`/api/devices/${encoded}/close-adb`, {});
+      await entered.promise;
+      try {
+        const before = run.calls.length;
+        for (const [suffix, body] of [['disable', { packages: ['com.example.foo'] }], ['close-adb', {}]]) {
+          const response = await post(`/api/devices/${encoded}/${suffix}`, body);
+          assert.equal(response.status, 409);
+          assert.equal((await response.json()).error.code, 'DEVICE_BUSY');
+        }
+        assert.deepEqual(calls, []);
+        assert.equal(run.calls.length, before);
+      } finally {
+        gate.resolve();
+        assert.equal((await closing).status, 200);
+      }
+      const job = await post(`/api/devices/${encoded}/disable`, { packages: ['com.example.foo'] });
+      assert.equal(job.status, 202);
+      await (await get(`/api/jobs/${(await job.json()).jobId}/events`)).text();
+    });
+  }
+});
+
+test('close-adb reports USB mode and initial disconnect failures without probing', async t => {
+  for (const failUsb of [true, false]) {
+    const run = fakeRunner({ [`-s ${serial} usb`]: { code: failUsb ? 1 : 0 }, [`disconnect ${serial}`]: { code: 1 } });
+    const { post } = await setup(t, { client: createAdbClient(run) });
+    const response = await post(`/api/devices/${encoded}/close-adb`, {});
+    assert.equal((await response.json()).error.code, 'COMMAND_FAILED');
+    assert.deepEqual(run.calls, [['-s', serial, 'usb'], ...(failUsb ? [] : [['disconnect', serial]])]);
+  }
+});
+
+test('disconnect and close-adb refuse a busy serial for every job type and permit them after completion', async t => {
   const other = '192.168.1.6:5555';
-  const run = fakeRunner({ [`disconnect ${serial}`]: {}, [`disconnect ${other}`]: {} });
+  const run = fakeRunner({ [`disconnect ${serial}`]: {}, [`disconnect ${other}`]: {}, [`-s ${serial} usb`]: {},
+    [`connect ${serial}`]: { code: 1 } });
   const { engine, post, get } = await setup(t, { client: createAdbClient(run) });
   for (const [method, suffix, body] of [
     ['disable', '/disable', { packages: ['com.example.foo'] }],
+    ['restore', '/restore', { all: true }],
+    ['setDns', '/dns', { provider: 'off' }],
     ['swapLauncher', '/launcher/swap', { package: 'com.spocky.projengmenu' }],
     ['restoreLauncher', '/launcher/restore', {}],
+    ['recoverLauncher', '/launcher/recover', {}],
   ]) {
     let finish;
     engine[method] = () => new Promise(resolve => { finish = resolve; });
     const { jobId } = await (await post(`/api/devices/${encoded}${suffix}`, body)).json();
     const before = run.calls.length;
-    const blocked = await post(`/api/devices/${encoded}/disconnect`, {});
-    assert.equal(blocked.status, 409);
-    assert.equal((await blocked.json()).error.code, 'DEVICE_BUSY');
+    for (const action of ['disconnect', 'close-adb']) {
+      const blocked = await post(`/api/devices/${encoded}/${action}`, {});
+      assert.equal(blocked.status, 409);
+      assert.equal((await blocked.json()).error.code, 'DEVICE_BUSY');
+    }
     assert.equal(run.calls.length, before);
     assert.equal((await post(`/api/devices/${encodeURIComponent(other)}/disconnect`, {})).status, 200);
     finish({ succeeded: 0, failed: 0, results: [] });
     await (await get(`/api/jobs/${jobId}/events`)).text();
     assert.equal((await post(`/api/devices/${encoded}/disconnect`, {})).status, 200);
+    assert.equal((await post(`/api/devices/${encoded}/close-adb`, {})).status, 200);
   }
 });
 

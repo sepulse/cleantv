@@ -232,5 +232,12 @@
   "dns.doneTitle": "Pilihan DNS anda telah digunakan",
   "dns.failedTitle": "Perubahan DNS tidak dapat diselesaikan",
   "result.configured": "Tetapan DNS telah digunakan",
-  "result.restored": "Tetapan DNS asal telah dipulihkan"
+  "result.restored": "Tetapan DNS asal telah dipulihkan",
+  "closeAdb.button": "Tutup Network debugging",
+  "closeAdb.confirm.title": "Tutup Network debugging?",
+  "closeAdb.confirm.body": "CleanTV akan meminta TV anda menukar ADB ke mod USB, memutuskan sambungan dan menyemak sama ada port rangkaian ditutup. Untuk menggunakan CleanTV semula, ulangi langkah persediaan TV, termasuk menghidupkan Network debugging. Jika port kekal terbuka, matikan Network debugging dalam Developer options pada TV anda.",
+  "closeAdb.confirm.accept": "Ya, tutup Network debugging",
+  "closeAdb.closed": "Port Network debugging TV anda tidak lagi boleh dihubungi. Untuk menggunakan CleanTV semula, ulangi langkah persediaan TV, termasuk menghidupkan Network debugging.",
+  "closeAdb.open": "Port Network debugging TV anda masih terbuka. Matikan Network debugging dalam Developer options pada TV anda. Untuk menggunakan CleanTV semula, ulangi langkah persediaan TV.",
+  "closeAdb.unknown": "CleanTV tidak dapat mengesahkan sama ada port Network debugging TV anda ditutup. Matikan Network debugging dalam Developer options pada TV anda. Untuk menggunakan CleanTV semula, ulangi langkah persediaan TV."
 }

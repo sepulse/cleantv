@@ -29,7 +29,7 @@ test('language catalogs have identical keys and placeholder sets', async () => {
   for (const key of keys(en)) assert.deepEqual(placeholders(en[key]), placeholders(ms[key]), key);
   assert.ok(Object.values(en).every(value => typeof value === 'string' && value.trim()));
   const pendingMalay = new Set(['choose.reenabledTitle', 'choose.disableAgain',
-    ...keys(en).filter(key => key.startsWith('dns.')), 'result.configured', 'result.restored']);
+    ...keys(en).filter(key => key.startsWith('dns.') || key.startsWith('closeAdb.')), 'result.configured', 'result.restored']);
   assert.ok(Object.entries(ms).every(([key, value]) => typeof value === 'string' && (value.trim() || pendingMalay.has(key))));
 });
 
@@ -252,4 +252,7 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
     const response = await request(path);
     assert.match(response.headers.get('content-type'), /image\/svg\+xml/);
   }
+  assert.deepEqual(await (await request(`${device}/close-adb`, {})).json(), { ok: true, portClosed: true });
+  assert.deepEqual(await client.devices(), []);
+  assert.equal((await (await request('/api/devices/connect', candidates[0])).json()).state, 'unreachable');
 });

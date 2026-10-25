@@ -25,6 +25,11 @@ export function createJobs() {
 
   return {
     isBusy(serial) { return busy.has(serial); },
+    reserve(serial) {
+      if (busy.has(serial)) throw new CleanTvError(ErrorCode.DEVICE_BUSY);
+      busy.add(serial);
+      return () => busy.delete(serial);
+    },
     start(serial, work) {
       if (busy.has(serial)) throw new CleanTvError(ErrorCode.DEVICE_BUSY);
       const job = { id: randomBytes(16).toString('base64url'), serial, events: [], listeners: new Set(), done: false };

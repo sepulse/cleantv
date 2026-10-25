@@ -107,6 +107,23 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       requireAdb();
       json(res, { entries: await engine.history(match.serial) });
     }],
+    ['POST', /^\/api\/devices\/([^/]+)\/close-adb$/, async (_req, res, match) => {
+      requireAdb();
+      const release = jobs.reserve(match.serial);
+      try {
+        await client.usbMode(match.serial);
+        await client.disconnect(match.serial);
+        let portClosed = null;
+        try {
+          const [ip, port] = match.serial.split(':');
+          const { state } = await client.connect(ip, Number(port));
+          if (state === 'unreachable') portClosed = true;
+          else if (state === 'device') portClosed = false;
+        } catch { /* The port check is best effort after switching to USB mode. */ }
+        finally { await client.disconnect(match.serial); }
+        json(res, { ok: true, portClosed });
+      } finally { release(); }
+    }],
     ['POST', /^\/api\/devices\/([^/]+)\/disconnect$/, async (_req, res, match) => {
       requireAdb();
       if (jobs.isBusy(match.serial)) throw new CleanTvError(ErrorCode.DEVICE_BUSY);
