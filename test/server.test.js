@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { createAdbClient } from '../src/core/adb/client.js';
 import { fakeRunner } from './helpers/fake-runner.js';
 import { REPLACEMENT_LAUNCHERS } from '../src/core/launchers.js';
+import { DNS_PROVIDERS } from '../src/core/dns.js';
 
 const serial = '192.168.1.5:5555';
 const encoded = encodeURIComponent(serial);
@@ -74,6 +75,47 @@ test('all API routes return their contracted shapes', async t => {
   assert.match(restoreEvents, /event: complete/);
   assert.ok(calls.some(call => call[0] === 'restore' && call[2] === 'all'));
   assert.equal((await get('/api/jobs/unknown/events')).status, 404);
+});
+
+test('DNS route validates provider IDs, uses the per-device job lock and streams results', async t => {
+  const { engine, get, post } = await setup(t);
+  const path = `/api/devices/${encoded}/dns`;
+  const calls = [];
+  let finish;
+  engine.setDns = (serial, provider, progress) => new Promise(resolve => {
+    calls.push({ serial, provider });
+    finish = () => {
+      const result = { action: 'dns', provider, result: 'configured' };
+      progress({ done: 1, total: 1, ...result });
+      resolve({ succeeded: 1, failed: 0, results: [result] });
+    };
+  });
+  assert.deepEqual((await (await get(`/api/devices/${encoded}`)).json()).dnsProviders, DNS_PROVIDERS);
+  for (const body of [{}, null, { provider: '' }, { provider: 'outside' }, { provider: 'dns.adguard-dns.com' },
+    { provider: 'dns.example.com;id' }, { provider: { id: 'adguard' } }]) {
+    assert.equal((await post(path, body)).status, 400);
+  }
+  assert.deepEqual(calls, []);
+  for (const provider of [...DNS_PROVIDERS.map(entry => entry.id), 'off']) {
+    const response = await post(path, { provider });
+    assert.equal(response.status, 202);
+    const { jobId } = await response.json();
+    assert.equal((await post(path, { provider })).status, 409);
+    assert.equal((await post(`/api/devices/${encoded}/restore`, { all: true })).status, 409);
+    assert.equal((await post(`/api/devices/${encoded}/disconnect`, {})).status, 409);
+    finish();
+    const events = await (await get(`/api/jobs/${jobId}/events`)).text();
+    assert.match(events, /event: progress/);
+    assert.match(events, /event: complete/);
+    assert.match(events, /"action":"dns"/);
+    assert.deepEqual(calls.at(-1), { serial, provider });
+    for (const headers of [
+      { 'Content-Type': 'application/json' },
+      { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'wrong' },
+      { 'X-CleanTV-Token': 'secret' },
+      { 'Content-Type': 'application/json', 'X-CleanTV-Token': 'secret', Origin: 'http://evil.example' },
+    ]) assert.equal((await fetch(response.url, { method: 'POST', headers, body: JSON.stringify({ provider }) })).status, 403);
+  }
 });
 
 test('disconnect refuses a busy serial for every job type and permits it after completion', async t => {

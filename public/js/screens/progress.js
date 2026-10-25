@@ -3,6 +3,7 @@ import { t, registryText, errorText } from '../i18n.js';
 import { icon } from '../icons.js';
 
 export function appName(state, pkg) {
+  if (pkg === 'dns') return t('dns.title');
   const replacement = state.launcher?.replacements.find(entry => entry.package === pkg);
   if (replacement) return replacement.name;
   if (state.launcher?.stock.some(entry => entry.package === pkg)) return t('launcher.stockName');
@@ -12,13 +13,13 @@ export function appName(state, pkg) {
 export function resultRow(state, item) {
   const result = t(`result.${item.result}`);
   return h('li', { className: `result ${item.result}` }, icon(item.result === 'failed' ? 'error' : item.result === 'skipped' ? 'skip' : 'check'),
-    h('div', {}, h('strong', {}, appName(state, item.package)), h('p', { className: 'small' }, item.reason
+    h('div', {}, h('strong', {}, appName(state, item.action === 'dns' ? 'dns' : item.package)), h('p', { className: 'small' }, item.reason
       ? t('result.reason', { result, reason: errorText(item.reason) }) : result)));
 }
 export function progressScreen(state, actions) {
   const percentage = state.total ? Math.round(state.processed / state.total * 100) : 0;
   const launcher = state.operation.startsWith('launcher');
-  return h('section', { className: 'screen' }, heading(t(launcher ? 'launcher.progressTitle' : state.operation === 'restore' ? 'progress.restoreTitle' : 'progress.title')),
+  return h('section', { className: 'screen' }, heading(t(state.operation === 'dns' ? 'dns.progressTitle' : launcher ? 'launcher.progressTitle' : state.operation === 'restore' ? 'progress.restoreTitle' : 'progress.title')),
     h('div', { className: 'card stack' }, h('div', { id: 'percentage', className: 'percentage' }, t('common.percent', { n: percentage })),
       h('progress', { id: 'job-progress', max: state.total || 1, value: state.processed, 'aria-label': t('progress.label') }),
       h('div', { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },

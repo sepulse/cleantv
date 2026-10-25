@@ -5,6 +5,7 @@ import { canDisable, isValidPackageName, isValidSerial } from './safety.js';
 import { CleanTvError, ErrorCode } from './errors.js';
 import { createLauncherActions, STOCK_LAUNCHERS, REPLACEMENT_LAUNCHERS } from './launchers.js';
 import { appendRecovery, warnJournal } from './journal.js';
+import { privateDnsFor, assertPrivateDns } from './dns.js';
 
 /**
  * @param {{ client: ReturnType<typeof import('./adb/client.js').createAdbClient>, journal: ReturnType<typeof import('./journal.js').createJournal>, presets: import('./registry.js').Preset[] }} dependencies
@@ -25,21 +26,48 @@ export function createEngine({ client, journal, presets }) {
 
   async function ensureBaseline(serial, info, outcome) {
     try {
-      if (await journal.readBaseline(info.deviceId) !== null) return;
+      const existing = await journal.readBaseline(info.deviceId);
+      if (existing !== null) return existing;
       // A late baseline must not record packages CleanTV already touched as original state.
-      const touched = new Set((await journal.read(info.deviceId)).flatMap(record =>
+      const records = await journal.read(info.deviceId);
+      const touched = new Set(records.flatMap(record =>
         record.action === 'disable' ? [record.package] : record.action === 'swap' ? record.disabled ?? [] : []));
       const disabledBefore = (await client.listPackages(serial, { disabledOnly: true }))
         .filter(pkg => !touched.has(pkg));
       const props = await client.getprops(serial);
+      const settings = await client.getSettings(serial);
+      // DNS that CleanTV may already have changed is unknown, never original state.
+      if (records.some(record => record.action === 'dns')) {
+        delete settings['global/private_dns_mode'];
+        delete settings['global/private_dns_specifier'];
+      }
       await journal.saveBaseline(info.deviceId, {
         at: new Date().toISOString(), disabledBefore,
         props: Object.fromEntries(['ro.product.brand', 'ro.product.manufacturer', 'ro.product.model',
           'ro.build.version.release', 'ro.build.fingerprint'].map(key => [key, props[key] ?? ''])),
-        settings: await client.getSettings(serial),
+        settings,
         homeComponent: await client.resolveHomeComponent(serial),
       });
+      return await journal.readBaseline(info.deviceId);
     } catch (error) { warnJournal(error, outcome); }
+  }
+
+  const baselineDns = baseline => ({ mode: baseline?.settings?.['global/private_dns_mode'],
+    specifier: baseline?.settings?.['global/private_dns_specifier'] });
+
+  async function changeDns(serial, info, settings, provider, outcome, restoring = false) {
+    const record = status => ({ at: new Date().toISOString(), action: 'dns', provider, status });
+    if (restoring) await appendRecovery(journal, info.deviceId, record('pending'), outcome);
+    else await journal.append(info.deviceId, record('pending'));
+    let reason;
+    try {
+      await (restoring ? client.restorePrivateDns(serial, settings) : client.setPrivateDns(serial, settings));
+    } catch (error) { reason = error.code ?? ErrorCode.COMMAND_FAILED; }
+    const finalRecord = { ...record(reason ? 'failed' : 'ok'), ...(reason ? { error: reason } : {}) };
+    if (restoring) await appendRecovery(journal, info.deviceId, finalRecord, outcome);
+    else await journal.append(info.deviceId, finalRecord);
+    return { action: 'dns', provider, result: reason ? 'failed' : restoring ? 'restored' : 'configured',
+      ...(reason ? { reason } : {}) };
   }
 
   async function act(serial, pkgs, action, onProgress = () => {}) {
@@ -52,12 +80,16 @@ export function createEngine({ client, journal, presets }) {
     let journalAvailable = true;
     const recovering = action === 'enable';
     const outcome = {};
+    let baseline;
+    let restoreDns = false;
     if (pkgs === 'all') {
       let disabledByUs = [];
       try { disabledByUs = await journal.disabledByUs(info.deviceId); }
       catch (error) { journalAvailable = false; warnJournal(error, outcome); }
-      let baseline;
       try { baseline = await journal.readBaseline(info.deviceId); }
+      catch (error) { warnJournal(error, outcome); }
+      // Even a failed/interrupted pair of settings writes may have changed one key.
+      try { restoreDns = (await journal.read(info.deviceId)).some(record => record.action === 'dns'); }
       catch (error) { warnJournal(error, outcome); }
       const disabledBefore = new Set(baseline?.disabledBefore ?? []);
       pkgs = [...new Set([
@@ -100,7 +132,12 @@ export function createEngine({ client, journal, presets }) {
           ...(reason ? { reason } : {}) };
       }
       results.push(result);
-      onProgress({ done: results.length, total: pkgs.length, ...result });
+      onProgress({ done: results.length, total: pkgs.length + Number(restoreDns), ...result });
+    }
+    if (restoreDns) {
+      const result = await changeDns(serial, info, baselineDns(baseline), 'baseline', outcome, true);
+      results.push(result);
+      onProgress({ done: results.length, total: results.length, ...result });
     }
     if (restoreAll) {
       const stocks = STOCK_LAUNCHERS.filter(pkg => installed.includes(pkg));
@@ -119,7 +156,7 @@ export function createEngine({ client, journal, presets }) {
       }
     }
     return {
-      succeeded: results.filter(item => ['disabled', 'enabled'].includes(item.result)).length,
+      succeeded: results.filter(item => ['disabled', 'enabled', 'restored'].includes(item.result)).length,
       failed: results.filter(item => item.result === 'failed').length,
       skipped: results.filter(item => item.result === 'skipped').length,
       results,
@@ -130,6 +167,19 @@ export function createEngine({ client, journal, presets }) {
   const { checkLauncherHealth, restoreHome, actualHome, ...launcherActions } = createLauncherActions({ client, journal, context, ensureBaseline });
   return {
     ...launcherActions,
+    /** @param {string} serial @param {string} provider @param {Function} [onProgress] */
+    async setDns(serial, provider, onProgress = () => {}) {
+      const settings = privateDnsFor(provider);
+      const { info } = await context(serial);
+      const outcome = {};
+      const baseline = await ensureBaseline(serial, info, outcome);
+      if (!baseline) throw new CleanTvError(ErrorCode.COMMAND_FAILED, 'Cannot save the original DNS settings');
+      assertPrivateDns(baselineDns(baseline), true);
+      const result = await changeDns(serial, info, settings, provider, outcome);
+      onProgress({ done: 1, total: 1, ...result });
+      return { succeeded: result.result === 'configured' ? 1 : 0, failed: result.result === 'failed' ? 1 : 0,
+        results: [result], ...outcome };
+    },
     /** @param {string} serial */
     async inspect(serial) {
       const ctx = await context(serial);
@@ -154,7 +204,7 @@ export function createEngine({ client, journal, presets }) {
     async history(serial) {
       const { info } = await context(serial);
       try {
-        const records = (await journal.read(info.deviceId)).filter(record => record.action !== 'swap');
+        const records = (await journal.read(info.deviceId)).filter(record => ['disable', 'enable'].includes(record.action));
         return records.filter((record, i) => record.status !== 'pending'
           || !records.slice(i + 1).some(later => later.package === record.package && later.action === record.action))
           .reverse().map(record => ({

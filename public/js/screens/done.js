@@ -9,13 +9,13 @@ export function doneScreen(state, actions) {
   const skipped = summary.results.filter(item => item.result === 'skipped').length;
   const stock = state.packages.find(entry => entry.package === summary.manualHomePackage);
   return h('section', { className: 'screen' },
-    heading(t(launcher ? summary.failed ? 'launcher.failedTitle' : state.operation === 'launcherSwap' ? 'launcher.doneTitle' : 'launcher.restoredTitle'
+    heading(t(state.operation === 'dns' ? summary.failed ? 'dns.failedTitle' : 'dns.doneTitle' : launcher ? summary.failed ? 'launcher.failedTitle' : state.operation === 'launcherSwap' ? 'launcher.doneTitle' : 'launcher.restoredTitle'
       : summary.failed ? 'done.partialTitle' : state.operation === 'restore' ? 'done.restoreTitle' : 'done.title',
       { name: appName(state, summary.results.find(item => item.result === 'switched')?.package) }), t('done.intro')),
     h('div', { className: 'card stack' }, icon(summary.failed ? 'optional' : 'check', 'hero-icon success-icon'),
       h('div', { className: 'totals' }, [['succeeded', summary.succeeded], ['skipped', skipped], ['failed', summary.failed]].map(([key, value]) =>
         h('div', { className: 'total' }, h('strong', {}, t('common.number', { n: value })), h('span', {}, t(`done.${key}`))))),
-      h('p', {}, t(launcher ? 'launcher.doneTip' : 'done.tip'))),
+      h('p', {}, t(state.operation === 'dns' ? 'dns.warning' : launcher ? 'launcher.doneTip' : 'done.tip'))),
     summary.journalWarning && h('p', { role: 'status' }, t('launcher.journalWarning')),
     summary.manualHomePackage && h('div', { className: 'card stack', role: 'status' },
       h('p', {}, t('launcher.manualHome', { stock: stock ? registryText(stock) : t('launcher.stockName') })),

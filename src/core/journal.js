@@ -11,7 +11,7 @@ export function defaultDataDir() {
     : join(homedir(), '.cleantv');
 }
 
-/** @typedef {{ at: string, action: 'disable' | 'enable' | 'swap', package?: string, replacement?: string, disabled?: string[], status: 'pending' | 'ok' | 'failed' | 'rolled-back', error?: string }} JournalRecord */
+/** @typedef {{ at: string, action: 'disable' | 'enable' | 'swap' | 'dns', package?: string, provider?: string, replacement?: string, disabled?: string[], status: 'pending' | 'ok' | 'failed' | 'rolled-back', error?: string }} JournalRecord */
 /** @typedef {{ at: string, disabledBefore: string[], props: Record<string, string>, settings: Record<string, string | null>, homeComponent: string | null }} Baseline */
 
 export function warnJournal(error, result) {
@@ -103,7 +103,7 @@ export function createJournal(dataDir = defaultDataDir()) {
     async disabledByUs(deviceId) {
       const latest = new Map();
       for (const record of await read(deviceId)) {
-        if (record.status === 'ok' && record.action !== 'swap') latest.set(record.package, record.action);
+        if (record.status === 'ok' && ['disable', 'enable'].includes(record.action)) latest.set(record.package, record.action);
       }
       return [...latest].filter(([, action]) => action === 'disable').map(([pkg]) => pkg);
     },

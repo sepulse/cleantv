@@ -1,6 +1,7 @@
 import { CleanTvError, ErrorCode } from '../core/errors.js';
 import { isValidSerial } from '../core/safety.js';
 import { assertReplacement } from '../core/launchers.js';
+import { DNS_PROVIDERS, privateDnsFor } from '../core/dns.js';
 
 const invalid = () => { throw new CleanTvError(ErrorCode.INVALID_INPUT); };
 const json = (response, value, status = 200) => {
@@ -38,7 +39,7 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
     ['GET', /^\/api\/devices\/([^/]+)$/, async (_req, res, match) => {
       requireAdb();
       const { info, presets, ...inspection } = await engine.inspect(match.serial);
-      json(res, { ...info, presets, ...(inspection.recovered ? { recovered: true } : {}),
+      json(res, { ...info, presets, dnsProviders: DNS_PROVIDERS, ...(inspection.recovered ? { recovered: true } : {}),
         ...(inspection.reenabled?.length ? { reenabled: inspection.reenabled } : {}),
         ...(inspection.needsRecovery ? { needsRecovery: true } : {}),
         ...(inspection.manualHomePackage ? { manualHomePackage: inspection.manualHomePackage } : {}),
@@ -57,6 +58,12 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       if (!packages(body?.packages)) invalid();
       json(res, { jobId: jobs.start(match.serial,
         onProgress => engine.disable(match.serial, body.packages, onProgress)) }, 202);
+    }],
+    ['POST', /^\/api\/devices\/([^/]+)\/dns$/, async (_req, res, match, body) => {
+      requireAdb();
+      privateDnsFor(body?.provider);
+      json(res, { jobId: jobs.start(match.serial,
+        onProgress => engine.setDns(match.serial, body.provider, onProgress)) }, 202);
     }],
     ['POST', /^\/api\/devices\/([^/]+)\/restore$/, async (_req, res, match, body) => {
       requireAdb();

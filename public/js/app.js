@@ -15,6 +15,7 @@ const state = {
   selected: new Set(), collapsed: new Set(), showAbsent: false, busy: false, error: null,
   modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, processed: 0, current: null, summary: null,
   launcher: null, launcherPackage: '', launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
+  dnsProvider: 'off',
 };
 const screens = { start: startScreen, setup: setupScreen, connect: connectScreen, choose: chooseScreen, progress: progressScreen, done: doneScreen };
 const flow = ['setup', 'connect', 'choose', 'progress', 'done'];
@@ -159,7 +160,7 @@ async function connectAttempt(generation) {
       return;
     }
     if (connection.state !== 'device') throw { code: connection.state === 'offline' ? 'DEVICE_OFFLINE' : 'DEVICE_UNREACHABLE' };
-    if (state.serial !== connection.serial) { state.launcherPackage = ''; state.storeOpened = false; }
+    if (state.serial !== connection.serial) { state.launcherPackage = ''; state.storeOpened = false; state.dnsProvider = 'off'; }
     state.serial = connection.serial;
     state.connection = 'connecting';
     render();
@@ -223,6 +224,12 @@ const actions = {
   retryConnect() { if (state.candidate) actions.connect(state.candidate); },
   confirmClean() { if (state.selected.size) openModal('clean'); },
   confirmRestore() { openModal('restore'); },
+  selectDns(provider) {
+    if (state.busy || (provider !== 'off' && !state.info.dnsProviders?.some(entry => entry.id === provider))) return;
+    state.dnsProvider = provider;
+    render();
+  },
+  confirmDns() { openModal('dns'); },
   selectLauncher(pkg) {
     if (state.busy || (pkg && !state.launcher?.replacements.some(entry => entry.package === pkg))) return;
     state.launcherPackage = pkg;
@@ -264,15 +271,15 @@ const actions = {
     state.busy = true;
     render();
     try {
-      const path = { disable: '/disable', restore: '/restore', launcherSwap: '/launcher/swap', launcherRestore: '/launcher/restore' }[operation];
+      const path = { disable: '/disable', restore: '/restore', dns: '/dns', launcherSwap: '/launcher/swap', launcherRestore: '/launcher/restore' }[operation];
       const body = operation === 'disable' ? { packages: [...state.selected] } : operation === 'restore' ? { all: true }
-        : operation === 'launcherSwap' ? { package: state.launcherPackage } : {};
+        : operation === 'dns' ? { provider: state.dnsProvider } : operation === 'launcherSwap' ? { package: state.launcherPackage } : {};
       const data = await api(devicePath(path), body);
       state.operation = operation;
       state.results = [];
       state.processed = 0;
       state.current = null;
-      state.total = operation === 'disable' ? state.selected.size : operation.startsWith('launcher')
+      state.total = operation === 'dns' ? 1 : operation === 'disable' ? state.selected.size : operation.startsWith('launcher')
         ? state.launcher?.stock.filter(entry => entry.installed && (operation === 'launcherRestore' || entry.enabled)).length ?? 0
         : state.packages.filter(entry => entry.installed && !entry.enabled).length;
       state.screen = 'progress';
@@ -282,7 +289,7 @@ const actions = {
         progress(event) {
           state.total = event.total;
           state.processed = Math.min(event.done, event.total);
-          state.current = event.package;
+          state.current = event.action === 'dns' ? 'dns' : event.package;
           state.results.push(event);
           updateProgress(state);
         },

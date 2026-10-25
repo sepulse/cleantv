@@ -2,6 +2,7 @@ import { h, heading, button } from '../dom.js';
 import { t, registryText, errorText } from '../i18n.js';
 import { icon } from '../icons.js';
 import { launcherCard } from './launcher.js';
+import { dnsCard } from './dns.js';
 
 export const protectedApp = entry => Boolean(entry.blockedReason) || entry.risk === 'red';
 const categories = ['ads', 'telemetry', 'bloat', 'store', 'assistant', 'system'];
@@ -63,6 +64,7 @@ export function chooseScreen(state, actions) {
     h('label', { className: 'check-label', for: 'show-absent' }, h('input', { id: 'show-absent', type: 'checkbox', checked: state.showAbsent,
       onchange: event => { state.showAbsent = event.target.checked; actions.render(); } }), t('choose.absent')),
     launcherCard(state, actions),
+    dnsCard(state, actions),
     h('div', { className: 'bottom-bar', id: 'bottom-bar' }, button(t('common.restore'), actions.confirmRestore, { id: 'restore-bottom', disabled: state.busy }),
       button(t('choose.clean', { n: state.selected.size }), actions.confirmClean, { id: 'clean', primary: true, disabled: !state.selected.size || state.busy })));
 }

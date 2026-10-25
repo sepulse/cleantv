@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createDocument } from './helpers/dom.js';
 import { REPLACEMENT_LAUNCHERS } from '../src/core/launchers.js';
+import { DNS_PROVIDERS } from '../src/core/dns.js';
 
 let generation = 0;
 const serial = '192.168.1.50:5555';
@@ -67,7 +68,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
       if (path.endsWith('/packages')) return response({ recovered, needsRecovery, ...(reenabled.length ? { reenabled } : {}), ...(manualHomePackage ? { manualHomePackage } : {}), packages: packages ?? [{ package: 'com.example.app', label: { en: 'Example app' },
         risk: 'green', category: 'bloat', installed: true, enabled: true, canDisable: true }] });
       if (options.body) return jobPost ? jobPost(path, options) : response({ jobId: 'test' });
-      return response({ serial, brand: 'google', model: 'Chromecast', androidVersion: '14' });
+      return response({ serial, brand: 'google', model: 'Chromecast', androidVersion: '14', dnsProviders: DNS_PROVIDERS });
     },
   });
   t.after(() => { pagehide?.(); Object.assign(globalThis, previous); });
@@ -100,6 +101,47 @@ test('language-file failure renders a plain bilingual fallback', async t => {
   const app = await application(t, { missingCatalog: true });
   assert.match(app.document.root.textContent, /could not load its language files/);
   assert.match(app.document.root.textContent, /Muat semula/);
+});
+
+test('DNS defaults off, selection and cancellation never write, and applying uses the confirmation and job flow', async t => {
+  const app = await application(t);
+  await connect(app);
+  assert.equal(app.byId('dns-off').checked, true);
+  assert.match(app.byId('dns-warning').textContent, /Some apps or captive Wi-Fi portals may stop working/);
+  assert.match(app.byId('dns-warning').textContent, /Restore all/);
+  const posts = () => app.requests.filter(request => request.path.endsWith('/dns'));
+  assert.equal(posts().length, 0);
+  app.byId('dns-adguard').listeners.change();
+  assert.equal(app.byId('dns-adguard').checked, true);
+  assert.equal(posts().length, 0);
+  await app.click('dns-apply');
+  assert.equal(app.byId('confirm-dialog').open, true);
+  assert.match(app.byId('dialog-body').textContent, /captive Wi-Fi portals.*Restore all/);
+  await app.click('modal-cancel');
+  assert.equal(posts().length, 0);
+  await app.click('dns-apply');
+  await app.click('modal-confirm');
+  assert.deepEqual(JSON.parse(posts()[0].options.body), { provider: 'adguard' });
+  assert.equal(posts()[0].options.method, 'POST');
+  assert.match(app.document.root.textContent, /Updating Private DNS/);
+  assert.equal(app.byId('restore-header').disabled, true);
+  await app.emit('progress', { done: 1, total: 1, action: 'dns', provider: 'adguard', result: 'configured' });
+  assert.match(app.byId('current-app').textContent, /Ad-block Private DNS/);
+  await app.emit('complete', { succeeded: 1, failed: 0, results: [{ action: 'dns', provider: 'adguard', result: 'configured' }] });
+  assert.match(app.document.root.textContent, /Your DNS choice was applied/);
+  assert.match(app.document.root.textContent, /DNS settings applied/);
+  await app.click('back-list');
+  app.byId('dns-off').listeners.change();
+  await app.click('dns-apply');
+  await app.click('modal-confirm');
+  assert.deepEqual(JSON.parse(posts().at(-1).options.body), { provider: 'off' });
+  await app.emit('complete', { succeeded: 0, failed: 1, results: [{ action: 'dns', result: 'failed', reason: 'COMMAND_FAILED' }] });
+  assert.match(app.document.root.textContent, /The DNS change could not be completed/);
+  assert.equal(app.byId('restore-done').disabled, false);
+  await app.click('restore-done');
+  await app.click('modal-confirm');
+  await app.emit('complete', { succeeded: 1, failed: 0, results: [{ action: 'dns', result: 'restored' }] });
+  assert.match(app.document.root.textContent, /Original DNS settings restored/);
 });
 
 test('reenabled status lists affected apps and confirms only allowed enabled apps before a normal disable POST', async t => {

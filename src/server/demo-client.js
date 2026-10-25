@@ -1,6 +1,7 @@
 import { NEVER_TOUCH } from '../core/safety.js';
 import { CleanTvError, ErrorCode } from '../core/errors.js';
 import { assertReplacement, REPLACEMENT_LAUNCHERS, STOCK_LAUNCHERS } from '../core/launchers.js';
+import { assertPrivateDns } from '../core/dns.js';
 
 const serial = '192.168.1.50:5555';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -14,6 +15,7 @@ export function createDemoClient(presets) {
   let attempts = 0;
   let connected = false;
   let preferredHome;
+  let dns = { mode: 'opportunistic', specifier: null };
   const homePackages = [...STOCK_LAUNCHERS, ...REPLACEMENT_LAUNCHERS.map(entry => entry.package)];
   const validate = value => {
     if (value !== serial) throw new CleanTvError(ErrorCode.DEVICE_UNREACHABLE);
@@ -40,10 +42,20 @@ export function createDemoClient(presets) {
     },
     async getSettings(value) {
       validate(value);
-      return { 'global/private_dns_mode': 'opportunistic', 'global/private_dns_specifier': null,
+      return { 'global/private_dns_mode': dns.mode, 'global/private_dns_specifier': dns.specifier,
         'secure/screensaver_components': 'com.google.android.backdrop/.Backdrop',
         'global/window_animation_scale': '1.0', 'global/transition_animation_scale': '1.0',
         'global/animator_duration_scale': '1.0' };
+    },
+    async setPrivateDns(value, settings) {
+      validate(value);
+      assertPrivateDns(settings);
+      dns = { mode: settings.mode, specifier: settings.specifier };
+    },
+    async restorePrivateDns(value, settings) {
+      validate(value);
+      assertPrivateDns(settings, true);
+      dns = { mode: settings.mode, specifier: settings.specifier };
     },
     async listPackages(value, { disabledOnly = false } = {}) {
       validate(value);

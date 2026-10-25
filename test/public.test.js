@@ -28,7 +28,8 @@ test('language catalogs have identical keys and placeholder sets', async () => {
   const placeholders = value => [...new Set([...value.matchAll(/\{(\w+)\}/g)].map(match => match[1]))].sort();
   for (const key of keys(en)) assert.deepEqual(placeholders(en[key]), placeholders(ms[key]), key);
   assert.ok(Object.values(en).every(value => typeof value === 'string' && value.trim()));
-  const pendingMalay = new Set(['choose.reenabledTitle', 'choose.disableAgain']);
+  const pendingMalay = new Set(['choose.reenabledTitle', 'choose.disableAgain',
+    ...keys(en).filter(key => key.startsWith('dns.')), 'result.configured', 'result.restored']);
   assert.ok(Object.entries(ms).every(([key, value]) => typeof value === 'string' && (value.trim() || pendingMalay.has(key))));
 });
 
@@ -59,6 +60,9 @@ test('translation selects singular centrally for numeric one, including progress
   setLanguage('ms');
   assert.equal(translate('choose.clean', { n: 1 }), catalogs.ms['choose.clean.one'].replace('{n}', '1'));
   assert.equal(translate('choose.reenabledTitle'), catalogs.ms['choose.reenabledTitle']);
+  assert.equal(translate('dns.warning'), catalogs.ms['dns.warning']);
+  catalogs.ms['dns.warning'] = '';
+  assert.equal(translate('dns.warning'), catalogs.en['dns.warning']);
   for (const lang of ['en']) {
     setLanguage(lang);
     assert.equal(translate('choose.clean', { n: 1 }), 'Clean 1 app');
@@ -194,6 +198,13 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
     assert.equal(response.status, 202);
     return (await request(`/api/jobs/${(await response.json()).jobId}/events`)).text();
   };
+  assert.match(await eventsFor(`${device}/dns`, { provider: 'adguard' }), /"result":"configured"/);
+  assert.equal((await client.getSettings(serial))['global/private_dns_specifier'], 'dns.adguard-dns.com');
+  assert.match(await eventsFor(`${device}/dns`, { provider: 'off' }), /"failed":0/);
+  assert.equal((await client.getSettings(serial))['global/private_dns_mode'], 'off');
+  assert.match(await eventsFor(`${device}/restore`, { all: true }), /"result":"restored"/);
+  assert.deepEqual(await client.getSettings(serial), baseline.settings);
+  assert.ok((await engine.history(serial)).every(entry => entry.package));
   assert.match(await eventsFor(`${launcher}/swap`, { package: replacement }), /LAUNCHER_NOT_READY/);
   for (const route of ['open-store', 'swap', 'restore']) {
     const body = route === 'restore' ? {} : { package: replacement };

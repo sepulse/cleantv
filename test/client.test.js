@@ -12,7 +12,7 @@ const prefix = `-s ${serial} shell`;
 test('client exposes only the named methods', () => {
   assert.deepEqual(Object.keys(createAdbClient(fakeRunner({}))).sort(), [
     'connect', 'disconnect', 'devices', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
-    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage',
+    'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage', 'setPrivateDns', 'restorePrivateDns',
   ].sort());
 });
 
@@ -144,7 +144,7 @@ test('focused activity preserves android and rejects conflicting focus and resum
 test('all argument-taking methods reject unsafe inputs before any runner call', async () => {
   const run = fakeRunner({});
   const client = createAdbClient(run);
-  for (const method of ['disconnect', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+  for (const method of ['disconnect', 'getprops', 'getSettings', 'setPrivateDns', 'restorePrivateDns', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
     'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage']) {
     await assert.rejects(client[method]('host;id:5555', pkg), { code: 'INVALID_INPUT' });
   }

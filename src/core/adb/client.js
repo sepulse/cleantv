@@ -1,6 +1,7 @@
 import { CleanTvError, ErrorCode } from '../errors.js';
 import { isValidPackageName, isValidSerial } from '../safety.js';
 import { assertReplacement } from '../launchers.js';
+import { assertPrivateDns } from '../dns.js';
 
 const homeComponent = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*\/(?:\.?[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
 const parseHomeComponents = output => [...new Set(output.split(/\r?\n/).map(line => line.trim())
@@ -34,6 +35,17 @@ export function createAdbClient(run) {
       throw new CleanTvError(ErrorCode.COMMAND_FAILED, response.stderr || response.stdout, response);
     }
     return response.stdout;
+  }
+
+  async function writePrivateDns(serial, { mode, specifier }) {
+    if (specifier === null) await checked(['-s', serial, 'shell', 'settings', 'delete', 'global', 'private_dns_specifier']);
+    else await checked(['-s', serial, 'shell', 'settings', 'put', 'global', 'private_dns_specifier', specifier]);
+    if (mode === null) await checked(['-s', serial, 'shell', 'settings', 'delete', 'global', 'private_dns_mode']);
+    else await checked(['-s', serial, 'shell', 'settings', 'put', 'global', 'private_dns_mode', mode]);
+    const settings = await client.getSettings(serial);
+    if (settings['global/private_dns_mode'] !== mode || settings['global/private_dns_specifier'] !== specifier) {
+      throw new CleanTvError(ErrorCode.COMMAND_FAILED, 'Private DNS verification failed');
+    }
   }
 
   const client = {
@@ -90,6 +102,18 @@ export function createAdbClient(run) {
         settings[`${namespace}/${key}`] = value === 'null' ? null : value;
       }
       return settings;
+    },
+    /** @param {string} serial @param {{ mode: 'off' | 'opportunistic' | 'hostname', specifier: string | null }} settings */
+    async setPrivateDns(serial, settings) {
+      validate(serial);
+      assertPrivateDns(settings);
+      await writePrivateDns(serial, settings);
+    },
+    /** @param {string} serial @param {{ mode: string | null, specifier: string | null }} settings */
+    async restorePrivateDns(serial, settings) {
+      validate(serial);
+      assertPrivateDns(settings, true);
+      await writePrivateDns(serial, settings);
     },
     /** @param {string} serial @param {{ disabledOnly?: boolean }} [options] @returns {Promise<string[]>} */
     async listPackages(serial, { disabledOnly = false } = {}) {

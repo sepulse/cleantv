@@ -218,5 +218,19 @@
   "launcher.keepOriginal": "Keep original launcher",
   "launcher.optionAbsent": "Not installed",
   "launcher.optionInstalled": "Installed · check readiness",
-  "launcher.optionReady": "Installed · ready"
+  "launcher.optionReady": "Installed · ready",
+  "dns.title": "Ad-block Private DNS (optional)",
+  "dns.intro": "Choose a provider to block ads and trackers through DNS. The choice starts at Off; nothing changes until you apply it and confirm.",
+  "dns.warning": "Some apps or captive Wi-Fi portals may stop working; Restore all restores your original DNS settings.",
+  "dns.choice": "Choose Private DNS",
+  "dns.off": "Off",
+  "dns.apply": "Apply DNS choice",
+  "dns.confirm.title": "Apply this DNS choice?",
+  "dns.confirm.body": "CleanTV will apply your selected DNS choice. Some apps or captive Wi-Fi portals may stop working; Restore all restores your original DNS settings.",
+  "dns.confirm.accept": "Yes, apply DNS choice",
+  "dns.progressTitle": "Updating Private DNS",
+  "dns.doneTitle": "Your DNS choice was applied",
+  "dns.failedTitle": "The DNS change could not be completed",
+  "result.configured": "DNS settings applied",
+  "result.restored": "Original DNS settings restored"
 }

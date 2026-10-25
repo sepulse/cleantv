@@ -218,5 +218,19 @@
   "launcher.keepOriginal": "Kekalkan launcher asal",
   "launcher.optionAbsent": "Belum dipasang",
   "launcher.optionInstalled": "Dipasang · periksa kesediaan",
-  "launcher.optionReady": "Dipasang · sedia"
+  "launcher.optionReady": "Dipasang · sedia",
+  "dns.title": "Private DNS sekat iklan (pilihan)",
+  "dns.intro": "Pilih penyedia untuk menyekat iklan dan penjejak melalui DNS. Pilihan bermula pada Mati; tiada apa yang berubah sehingga anda guna dan sahkan.",
+  "dns.warning": "Sesetengah aplikasi atau portal Wi-Fi log masuk mungkin berhenti berfungsi; Pulihkan semua akan mengembalikan tetapan DNS asal anda.",
+  "dns.choice": "Pilih Private DNS",
+  "dns.off": "Mati",
+  "dns.apply": "Guna pilihan DNS",
+  "dns.confirm.title": "Guna pilihan DNS ini?",
+  "dns.confirm.body": "CleanTV akan menggunakan pilihan DNS yang dipilih. Sesetengah aplikasi atau portal Wi-Fi log masuk mungkin berhenti berfungsi; Pulihkan semua akan mengembalikan tetapan DNS asal anda.",
+  "dns.confirm.accept": "Ya, guna pilihan DNS",
+  "dns.progressTitle": "Mengemas kini Private DNS",
+  "dns.doneTitle": "Pilihan DNS anda telah digunakan",
+  "dns.failedTitle": "Perubahan DNS tidak dapat diselesaikan",
+  "result.configured": "Tetapan DNS telah digunakan",
+  "result.restored": "Tetapan DNS asal telah dipulihkan"
 }
