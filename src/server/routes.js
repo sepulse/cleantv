@@ -39,14 +39,16 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       requireAdb();
       const { info, presets, ...inspection } = await engine.inspect(match.serial);
       json(res, { ...info, presets, ...(inspection.recovered ? { recovered: true } : {}),
+        ...(inspection.reenabled?.length ? { reenabled: inspection.reenabled } : {}),
         ...(inspection.needsRecovery ? { needsRecovery: true } : {}),
         ...(inspection.manualHomePackage ? { manualHomePackage: inspection.manualHomePackage } : {}),
         ...(inspection.journalWarning ? { journalWarning: true } : {}) });
     }],
     ['GET', /^\/api\/devices\/([^/]+)\/packages$/, async (_req, res, match) => {
       requireAdb();
-      const { packages, recovered, needsRecovery, manualHomePackage, journalWarning } = await engine.inspect(match.serial);
+      const { packages, reenabled, recovered, needsRecovery, manualHomePackage, journalWarning } = await engine.inspect(match.serial);
       json(res, { packages, ...(recovered ? { recovered: true } : {}),
+        ...(reenabled?.length ? { reenabled } : {}),
         ...(needsRecovery ? { needsRecovery: true } : {}),
         ...(manualHomePackage ? { manualHomePackage } : {}), ...(journalWarning ? { journalWarning: true } : {}) });
     }],

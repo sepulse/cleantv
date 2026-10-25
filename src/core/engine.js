@@ -135,8 +135,13 @@ export function createEngine({ client, journal, presets }) {
       const ctx = await context(serial);
       const recovery = await checkLauncherHealth(serial, ctx);
       const { info, matched, index, installed } = ctx;
+      let disabledByUs = [];
+      try { disabledByUs = await journal.disabledByUs(info.deviceId); }
+      catch { /* Detection is unavailable when the journal cannot be read. */ }
+      const disabled = new Set(await client.listPackages(serial, { disabledOnly: true }));
+      const reenabled = disabledByUs.filter(pkg => installed.includes(pkg) && !disabled.has(pkg));
       return { info, presets: matched.map(preset => preset.id),
-        packages: await getPackageStates(client, serial, index, info.homePackage, installed), ...recovery };
+        packages: await getPackageStates(client, serial, index, info.homePackage, installed), reenabled, ...recovery };
     },
     /** @param {string} serial @param {string[]} pkgs @param {(progress: { done: number, total: number, package: string, result: string, reason?: string }) => void} [onProgress] */
     disable(serial, pkgs, onProgress) {

@@ -102,6 +102,8 @@
   "choose.clean": "Clean {n} apps",
   "choose.absent": "Show apps that are not installed",
   "choose.empty": "No apps in this group are installed.",
+  "choose.reenabledTitle": "Apps turned back on",
+  "choose.disableAgain": "Disable again",
   "category.ads": "Ads",
   "category.telemetry": "Telemetry",
   "category.bloat": "Pre-installed apps",

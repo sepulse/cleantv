@@ -100,6 +100,26 @@ test('disconnect refuses a busy serial for every job type and permits it after c
   }
 });
 
+test('device and package GETs include only non-empty reenabled lists and never disable automatically', async t => {
+  const { engine, calls, get, post } = await setup(t);
+  for (const reenabled of [undefined, [], ['com.example.foo']]) {
+    engine.inspect = async () => ({ info: { serial }, presets: [], packages: [], reenabled });
+    for (const suffix of ['', '/packages']) {
+      const response = await get(`/api/devices/${encoded}${suffix}`);
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      assert.equal(Object.hasOwn(data, 'reenabled'), Boolean(reenabled?.length));
+      if (reenabled?.length) assert.deepEqual(data.reenabled, reenabled);
+    }
+  }
+  assert.ok(!calls.some(call => call[0] === 'disable'));
+  const response = await post(`/api/devices/${encoded}/disable`, { packages: ['com.example.foo'] });
+  assert.equal(response.status, 202);
+  const events = await (await get(`/api/jobs/${(await response.json()).jobId}/events`)).text();
+  assert.match(events, /"result":"disabled"/);
+  assert.deepEqual(calls, [['disable', serial, ['com.example.foo']]]);
+});
+
 test('inspection detects recovery and the protected recovery job returns its verified result through SSE', async t => {
   const { engine, get, post } = await setup(t);
   engine.inspect = async () => ({ info: { serial }, presets: [], packages: [], needsRecovery: true, journalWarning: true });

@@ -10,7 +10,7 @@ const replacement = 'com.spocky.projengmenu';
 const stock = 'com.google.android.apps.tv.launcherx';
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 
-async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false, recoveryBusy = false, launcherFailures = 0 } = {}) {
+async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false, recoveryBusy = false, launcherFailures = 0, reenabled = [], packages } = {}) {
   const previous = Object.fromEntries(['document', 'Node', 'window', 'localStorage', 'fetch', 'EventSource', 'setTimeout', 'clearTimeout', 'ResizeObserver']
     .map(key => [key, globalThis[key]]));
   const { document, Node } = createDocument();
@@ -64,7 +64,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
         replacements: REPLACEMENT_LAUNCHERS.map(entry => ({ ...entry,
           installed: ready.has(entry.package), enabled: ready.has(entry.package), isHomeCandidate: ready.has(entry.package) })),
         stock: [{ package: stock, installed: true, enabled: true }] });
-      if (path.endsWith('/packages')) return response({ recovered, needsRecovery, ...(manualHomePackage ? { manualHomePackage } : {}), packages: [{ package: 'com.example.app', label: { en: 'Example app' },
+      if (path.endsWith('/packages')) return response({ recovered, needsRecovery, ...(reenabled.length ? { reenabled } : {}), ...(manualHomePackage ? { manualHomePackage } : {}), packages: packages ?? [{ package: 'com.example.app', label: { en: 'Example app' },
         risk: 'green', category: 'bloat', installed: true, enabled: true, canDisable: true }] });
       if (options.body) return jobPost ? jobPost(path, options) : response({ jobId: 'test' });
       return response({ serial, brand: 'google', model: 'Chromecast', androidVersion: '14' });
@@ -76,6 +76,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
   const click = async id => { const node = byId(id); assert.ok(!node.disabled, `${id} disabled`); await node.listeners.click?.({ target: node }); await settle(); };
   const emit = async (name, data) => { sources.at(-1).handlers[name](data === undefined ? {} : { data: JSON.stringify(data) }); await settle(); };
   return { document, polls, sources, requests, observers, byId, click, emit,
+    setReenabled: value => { reenabled = value; },
     failLauncher: () => { launcherFailures = 1; }, post: handler => { jobPost = handler; } };
 }
 
@@ -99,6 +100,53 @@ test('language-file failure renders a plain bilingual fallback', async t => {
   const app = await application(t, { missingCatalog: true });
   assert.match(app.document.root.textContent, /could not load its language files/);
   assert.match(app.document.root.textContent, /Muat semula/);
+});
+
+test('reenabled status lists affected apps and confirms only allowed enabled apps before a normal disable POST', async t => {
+  const packages = [
+    ['com.example.other', 'Other app', true, true, 'green'],
+    ['com.example.again', 'Returned app', true, true, 'yellow'],
+    ['com.example.blocked', 'Protected app', false, true, 'red'],
+    ['com.example.disabled', 'Disabled app', true, false, 'green'],
+  ].map(([pkg, label, canDisable, enabled, risk]) => ({ package: pkg, label: { en: label }, canDisable, enabled, risk, installed: true, category: 'bloat' }));
+  const app = await application(t, { packages, reenabled: [...packages.slice(1).map(entry => entry.package), 'com.example.outside'] });
+  await connect(app);
+  const card = app.byId('reenabled-card');
+  assert.equal(card.attributes.role, 'status');
+  for (const entry of packages.slice(1)) assert.ok(card.textContent.includes(entry.label.en));
+  assert.ok(card.textContent.includes('com.example.outside'), 'apps missing from the registry remain identifiable and unselected');
+  assert.ok(!card.textContent.includes('Other app'));
+  const screen = card.parentElement;
+  assert.ok(screen.children.indexOf(card) < screen.children.indexOf(app.byId('category-bloat').parentElement));
+  assert.equal(app.document.getElementById('confirm-dialog'), null);
+  assert.equal(app.requests.filter(request => request.path.endsWith('/disable')).length, 0);
+  await app.click('disable-again');
+  assert.equal(app.byId('confirm-dialog').open, true);
+  assert.equal(app.byId('clean').textContent, 'Clean 1 app');
+  assert.deepEqual(packages.map((_, index) => app.byId(`app-${index}`).checked), [false, true, undefined, false]);
+  assert.match(app.byId('dialog-body').textContent, /turn off 1 app\./);
+  assert.equal(app.requests.filter(request => request.path.endsWith('/disable')).length, 0);
+  await app.click('modal-cancel');
+  assert.equal(app.requests.filter(request => request.path.endsWith('/disable')).length, 0);
+  await app.click('disable-again');
+  await app.click('modal-confirm');
+  const posts = app.requests.filter(request => request.path.endsWith('/disable'));
+  assert.equal(posts.length, 1);
+  assert.equal(posts[0].options.method, 'POST');
+  assert.deepEqual(JSON.parse(posts[0].options.body), { packages: ['com.example.again'] });
+  await app.emit('complete', { succeeded: 1, failed: 0, results: [{ package: 'com.example.again', result: 'disabled' }] });
+  app.setReenabled([]);
+  await app.click('back-list');
+  assert.equal(app.document.getElementById('reenabled-card'), null);
+});
+
+test('reenabled status remains visible with a disabled action when no affected app is allowed', async t => {
+  const app = await application(t, { reenabled: ['com.example.app'], packages: [{ package: 'com.example.app', label: { en: 'Protected app' },
+    risk: 'red', category: 'bloat', installed: true, enabled: true, canDisable: false }] });
+  await connect(app);
+  assert.match(app.byId('reenabled-card').textContent, /Protected app/);
+  assert.equal(app.byId('disable-again').disabled, true);
+  assert.equal(app.requests.filter(request => request.path.endsWith('/disable')).length, 0);
 });
 
 test('launcher UI checks readiness, waits for POST, bounds rollback progress, and preserves previous result on POST failure', async t => {

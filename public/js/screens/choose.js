@@ -30,6 +30,8 @@ function manualStock(state) {
 export function chooseScreen(state, actions) {
   const counts = { green: 0, yellow: 0, red: 0 };
   for (const entry of state.packages.filter(entry => entry.installed)) counts[protectedApp(entry) ? 'red' : entry.risk]++;
+  const reenabled = (state.reenabled ?? []).map(pkg => state.packages.find(entry => entry.package === pkg) ?? { package: pkg, label: { en: pkg } });
+  const selectable = reenabled.filter(entry => entry.canDisable && entry.enabled);
   return h('section', { className: 'screen choose-screen' }, heading(t('choose.title'), t('choose.intro')),
     state.recovered && h('p', { role: 'status' }, t('launcher.recovered')),
     state.manualHomePackage && h('p', { role: 'status' }, t('launcher.manualHome', { stock: manualStock(state) })),
@@ -40,6 +42,14 @@ export function chooseScreen(state, actions) {
     h('div', { className: 'chips' }, h('span', { className: 'pill safe' }, icon('check'), t('choose.safeCount', { n: counts.green })),
       h('span', { className: 'pill optional' }, icon('optional'), t('choose.optionalCount', { n: counts.yellow })),
       h('span', { className: 'pill protected' }, icon('lock'), t('choose.protectedCount', { n: counts.red })))),
+    reenabled.length > 0 && h('div', { className: 'card stack', role: 'status', id: 'reenabled-card', 'aria-labelledby': 'reenabled-title' },
+      h('h2', { id: 'reenabled-title' }, t('choose.reenabledTitle')),
+      h('ul', { className: 'results' }, reenabled.map(entry => h('li', {}, registryText(entry)))),
+      button(t('choose.disableAgain'), () => {
+        if (state.busy) return;
+        state.selected = new Set(selectable.map(entry => entry.package));
+        actions.confirmClean();
+      }, { id: 'disable-again', disabled: state.busy || !selectable.length })),
     categories.map(category => {
       // Launchers stay in the approved System group, including their protection reason.
       const entries = state.packages.filter(entry => (entry.category === 'launcher' ? 'system' : entry.category) === category

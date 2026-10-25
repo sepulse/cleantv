@@ -144,6 +144,18 @@ Bentuk ralat: `{ "error": { "code": "DEVICE_UNAUTHORIZED", "message": "..." } }`
 `:serial` = `ip:port`, di-*URL-encode*. Satu peranti hanya menjalankan satu kerja
 pada satu masa; kerja kedua → `409 DEVICE_BUSY`.
 
+`GET /devices/:serial` dan `GET /devices/:serial/packages` juga memulangkan
+`reenabled: string[]` hanya jika tidak kosong: pakej yang rekod `ok` terakhirnya
+ialah `disable` dalam jurnal CleanTV, masih dipasang tetapi tidak lagi dalam
+senarai pakej dimatikan. Jurnal gagal dibaca → senarai kosong (medan tidak
+dihantar). Pengesanan sahaja; tiada pakej dimatikan secara automatik. Kad status
+UI menyenaraikan nama aplikasi melalui `registryText`; butang “Disable again”
+memilih hanya pakej `canDisable && enabled` dan membuka pengesahan biasa sebelum
+`POST /devices/:serial/disable`, dengan L1–L7 kekal terpakai. Pakej yang tidak lagi
+dibenarkan tetap dipaparkan tetapi tidak dipilih. Dalam mod demo, disconnect
+mensimulasikan reboot dengan menghidupkan semula pakej selain launcher; sambung
+semula selepas membersih untuk melihat kad ini.
+
 Status launcher sentiasa melaporkan semua entri registry dalam `replacements`.
 Query `package` memilih `replacement`; jika tiada, Projectivy kekal sebagai lalai
 untuk keserasian API. Query kosong, berulang atau pakej di luar registry ditolak

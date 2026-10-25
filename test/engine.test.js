@@ -70,7 +70,43 @@ test('inspect composes real client parsers, launcher health, device info, matchi
   assert.equal(inspection.packages.length, entries.length);
   assert.equal(inspection.packages[0].enabled, false);
   assert.equal(inspection.packages[1].installed, false);
-  assert.equal(run.calls.filter(args => args.includes('packages')).length, 3);
+  assert.equal(run.calls.filter(args => args.includes('packages')).length, 4);
+});
+
+test('inspect detects only journal-proven disables that are installed and turned back on, without mutations', async t => {
+  const { engine, journal, commands } = await setup(t, { disabled: ['com.example.bad'],
+    installed: [...entries.map(entry => entry.package).filter(pkg => pkg !== 'com.example.mismatch'), 'com.example.outside'] });
+  const records = [
+    ['com.example.good', 'disable', 'ok'],
+    ['com.example.good', 'enable', 'failed'],
+    ['com.example.bad', 'disable', 'ok'],
+    ['com.example.mismatch', 'disable', 'ok'],
+    ['com.example.red', 'disable', 'ok'],
+    ['com.example.red', 'enable', 'ok'],
+    ['com.example.home', 'disable', 'pending'],
+    ['com.example.outside', 'disable', 'ok'],
+  ];
+  for (const [pkg, action, status] of records) await journal.append('TV123', { at: 'today', package: pkg, action, status });
+  const before = await journal.read('TV123');
+  assert.deepEqual((await engine.inspect(serial)).reenabled, ['com.example.good', 'com.example.outside']);
+  assert.ok(!commands.some(command => /^(disable|enable):/.test(command)));
+  assert.deepEqual(await journal.read('TV123'), before);
+  const result = await engine.disable(serial, ['com.example.good', 'com.example.outside']);
+  assert.deepEqual(result.results.map(item => item.result), ['disabled', 'skipped']);
+  assert.equal(result.results[1].reason, 'PACKAGE_NOT_IN_REGISTRY');
+  assert.deepEqual(commands.slice(-3), ['disable:com.example.good', 'list', 'list-disabled']);
+  assert.deepEqual((await engine.inspect(serial)).reenabled, ['com.example.outside']);
+});
+
+test('inspect returns no reenabled packages when the journal is missing or unreadable', async t => {
+  const { engine, dir, commands } = await setup(t);
+  assert.deepEqual((await engine.inspect(serial)).reenabled, []);
+  for (const contents of ['invalid JSON', 'null', '{}']) {
+    await writeFile(join(dir, 'TV123.json'), contents);
+    assert.deepEqual((await engine.inspect(serial)).reenabled, []);
+    assert.equal(await readFile(join(dir, 'TV123.json'), 'utf8'), contents);
+  }
+  assert.ok(!commands.some(command => /^(disable|enable):/.test(command)));
 });
 
 test('disable sequentially journals, verifies, skips blocked entries and continues after failures', async t => {

@@ -11,7 +11,7 @@ import { confirmScreen } from './screens/confirm.js';
 
 const state = {
   screen: 'start', health: null, brand: 'google', prepared: false, connection: 'idle',
-  candidates: null, manualIP: '', candidate: null, serial: null, info: null, packages: [],
+  candidates: null, manualIP: '', candidate: null, serial: null, info: null, packages: [], reenabled: [],
   selected: new Set(), collapsed: new Set(), showAbsent: false, busy: false, error: null,
   modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, processed: 0, current: null, summary: null,
   launcher: null, launcherPackage: '', launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
@@ -123,6 +123,7 @@ async function loadDevice(repair = true) {
   state.manualHomePackage = info.manualHomePackage ?? data.manualHomePackage ?? null;
   state.journalWarning = Boolean(info.journalWarning || data.journalWarning);
   state.packages = data.packages;
+  state.reenabled = data.reenabled ?? [];
   state.selected = new Set(state.packages.filter(entry => entry.risk === 'green' && entry.canDisable && entry.enabled).map(entry => entry.package));
   await loadLauncher(false);
   if (repair && (info.needsRecovery || data.needsRecovery || state.launcher?.needsRecovery)) await recoverLauncher();

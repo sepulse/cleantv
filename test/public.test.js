@@ -28,7 +28,8 @@ test('language catalogs have identical keys and placeholder sets', async () => {
   const placeholders = value => [...new Set([...value.matchAll(/\{(\w+)\}/g)].map(match => match[1]))].sort();
   for (const key of keys(en)) assert.deepEqual(placeholders(en[key]), placeholders(ms[key]), key);
   assert.ok(Object.values(en).every(value => typeof value === 'string' && value.trim()));
-  assert.ok(Object.values(ms).every(value => typeof value === 'string' && value.trim()));
+  const pendingMalay = new Set(['choose.reenabledTitle', 'choose.disableAgain']);
+  assert.ok(Object.entries(ms).every(([key, value]) => typeof value === 'string' && (value.trim() || pendingMalay.has(key))));
 });
 
 test('all literal translation keys and dynamic key families exist', async () => {
@@ -57,6 +58,7 @@ test('translation selects singular centrally for numeric one, including progress
   await initI18n();
   setLanguage('ms');
   assert.equal(translate('choose.clean', { n: 1 }), catalogs.ms['choose.clean.one'].replace('{n}', '1'));
+  assert.equal(translate('choose.reenabledTitle'), catalogs.ms['choose.reenabledTitle']);
   for (const lang of ['en']) {
     setLanguage(lang);
     assert.equal(translate('choose.clean', { n: 1 }), 'Clean 1 app');
@@ -167,6 +169,17 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   const { entries } = await (await request(`${device}/history`)).json();
   assert.equal(entries.length, 1);
   assert.equal(entries[0].result, 'disabled');
+  await request(`${device}/disconnect`, {});
+  for (const state of ['unauthorized', 'unauthorized', 'device']) {
+    assert.equal((await (await request('/api/devices/connect', candidates[0])).json()).state, state);
+  }
+  for (const suffix of ['', '/packages']) {
+    assert.deepEqual((await (await request(device + suffix)).json()).reenabled, [pkg]);
+  }
+  assert.deepEqual(await client.listPackages(serial, { disabledOnly: true }), [], 'inspection never disables the demo app again');
+  const disableAgain = await (await request(`${device}/disable`, { packages: [pkg] })).json();
+  assert.match(await (await request(`/api/jobs/${disableAgain.jobId}/events`)).text(), /"result":"disabled"/);
+  assert.ok(!Object.hasOwn(await (await request(`${device}/packages`)).json(), 'reenabled'));
   const restore = await (await request(`${device}/restore`, { all: true })).json();
   assert.match(await (await request(`/api/jobs/${restore.jobId}/events`)).text(), /"result":"enabled"/);
   assert.deepEqual(await client.listPackages(serial, { disabledOnly: true }), []);

@@ -24,7 +24,11 @@ export function createDemoClient(presets) {
       connected = true;
       return { serial, state: ++attempts <= 2 ? 'unauthorized' : 'device' };
     },
-    async disconnect(value) { validate(value); connected = false; attempts = 0; },
+    async disconnect(value) {
+      validate(value); connected = false; attempts = 0;
+      // Simulate firmware turning non-launcher apps back on after restarting.
+      for (const pkg of disabled) if (!homePackages.includes(pkg)) disabled.delete(pkg);
+    },
     async devices() {
       return connected ? [{ serial, state: attempts <= 2 ? 'unauthorized' : 'device', model: 'Chromecast' }] : [];
     },

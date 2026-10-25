@@ -102,6 +102,8 @@
   "choose.clean": "Bersihkan {n} aplikasi",
   "choose.absent": "Tunjukkan aplikasi yang tidak dipasang",
   "choose.empty": "Tiada aplikasi dalam kumpulan ini yang dipasang.",
+  "choose.reenabledTitle": "Aplikasi dihidupkan semula",
+  "choose.disableAgain": "Matikan semula",
   "category.ads": "Iklan",
   "category.telemetry": "Telemetri",
   "category.bloat": "Aplikasi prapasang",
