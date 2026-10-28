@@ -65,12 +65,12 @@ The manifest is an integrity check; use GitHub attestations to verify build orig
 Local packaging requires the signed APK at `launcher/cleantv-home.apk`; there is
 no local debug-key fallback. Copy the release APK there if repackaging locally.
 
-Signing is **untested until CI runs** with the owner's secrets. The Gradle APK
-build of the patched launcher has **not** been run locally yet (the Android build
-was not permitted in the implementation session); the new Java was compiled with
-`javac` against the Android 34 `android.jar` and `PrayerTimesTest` passed on the
-JVM, but resources, manifest merge and R8 are unverified until a Gradle build.
-See STATUS.md for what was and was not verified on a real TV.
+Signing is **untested until CI runs** with the owner's secrets. The patched
+launcher was built locally on 28 Oct 2026 (pristine upstream `d6410ab` + the patch,
+JDK 21): `testDebugUnitTest` (PrayerTimesTest, 9 tests), `assembleDebug` and
+`lintVitalRelease` succeeded, and the merged manifest adds only `INTERNET`. That
+debug APK was never packaged. `assembleRelease` with R8 and signing is untested
+until CI runs. See STATUS.md for what was and was not verified on a real TV.
 
 ## Existing release checks
 
