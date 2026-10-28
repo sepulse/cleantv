@@ -4,6 +4,9 @@
 
 ## Bahasa Melayu
 
+> **Ada masalah semasa memasang?** Ikut [panduan pasang langkah demi langkah](docs/PANDUAN-PASANG.md) — setiap langkah ada cara menyelesaikan masalah.
+> **Nota:** CleanTV tiada widget waktu solat dan tidak memasang apa-apa pada TV ([sebabnya](docs/PANDUAN-PASANG.md#soalan-lazim)).
+
 CleanTV ialah aplikasi pada komputer yang membantu Android TV / Google TV anda menjadi lebih laju dan kurang iklan. Anda hanya perlu sambungkan komputer ke TV melalui rangkaian Wi-Fi yang sama, pilih aplikasi yang tidak diperlukan, dan CleanTV akan matikannya untuk anda.
 
 ### Janji keselamatan
@@ -51,6 +54,9 @@ Build lite tidak menyertakan adb. `CleanTV.cmd` memuat turun fail binari rasmi A
 ---
 
 ## English
+
+> **Trouble installing?** Follow the [step-by-step install guide](docs/PANDUAN-PASANG.md#english).
+> **Note:** CleanTV has no prayer-times widget and installs nothing on the TV.
 
 CleanTV is an app that runs on your computer to help your Android / Google TV
 become faster and show fewer ads. You connect to the TV over the same Wi-Fi network,
