@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { CleanTvError, ErrorCode } from './errors.js';
+import { BUNDLED_LAUNCHER, ownsBundledLauncher } from './bundled-launcher.js';
 
 /** @returns {string} */
 export function defaultDataDir() {
@@ -11,7 +12,7 @@ export function defaultDataDir() {
     : join(homedir(), '.cleantv');
 }
 
-/** @typedef {{ at: string, action: 'disable' | 'enable' | 'swap' | 'dns', package?: string, provider?: string, replacement?: string, disabled?: string[], status: 'pending' | 'ok' | 'failed' | 'rolled-back', error?: string }} JournalRecord */
+/** @typedef {{ at: string, action: 'disable' | 'enable' | 'swap' | 'dns' | 'install' | 'remove' | 'zone', package?: string, zone?: string, absentBefore?: boolean, provider?: string, replacement?: string, disabled?: string[], status: 'pending' | 'ok' | 'failed' | 'rolled-back', error?: string }} JournalRecord */
 /** @typedef {{ at: string, disabledBefore: string[], props: Record<string, string>, settings: Record<string, string | null>, homeComponent: string | null }} Baseline */
 
 export function warnJournal(error, result) {
@@ -99,6 +100,15 @@ export function createJournal(dataDir = defaultDataDir()) {
       finally { if (queues.get(deviceId) === next) queues.delete(deviceId); }
     },
     read,
+    /** Returns only the launcher a completed fresh install proves we own. */
+    async installedByUs(deviceId) {
+      return ownsBundledLauncher(await read(deviceId)) ? [BUNDLED_LAUNCHER.package] : [];
+    },
+    /** The JAKIM zone last sent to the TV, so it can be chosen again. */
+    async lastZone(deviceId) {
+      const sent = (await read(deviceId)).filter(record => record.action === 'zone' && record.status === 'ok');
+      return sent.at(-1)?.zone ?? null;
+    },
     /** @param {string} deviceId @returns {Promise<string[]>} */
     async disabledByUs(deviceId) {
       const latest = new Map();

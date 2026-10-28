@@ -8,7 +8,9 @@ export function confirmScreen(state, actions) {
   const launcher = ['launcherSwap', 'launcherRestore'].includes(state.modal);
   const dns = state.modal === 'dns';
   const closeAdb = state.modal === 'closeAdb';
-  const prefix = closeAdb ? 'closeAdb.confirm' : dns ? 'dns.confirm' : launcher ? `launcher.${state.modal === 'launcherSwap' ? 'confirm' : 'restoreConfirm'}` : restore ? 'restore' : 'confirm';
+  const bundled = state.modal === 'launcherSwap' && state.launcher?.replacements
+    .find(entry => entry.package === state.launcherPackage)?.source === 'bundled';
+  const prefix = bundled ? 'launcher.bundledConfirm' : closeAdb ? 'closeAdb.confirm' : dns ? 'dns.confirm' : launcher ? `launcher.${state.modal === 'launcherSwap' ? 'confirm' : 'restoreConfirm'}` : restore ? 'restore' : 'confirm';
   const name = state.launcher?.replacements.find(entry => entry.package === state.launcherPackage)?.name;
   const title = t(history ? 'history.title' : `${prefix}.title`, { name });
   const dialog = h('dialog', { id: 'confirm-dialog', 'aria-labelledby': 'dialog-title', 'aria-describedby': history ? null : 'dialog-body',

@@ -6,6 +6,7 @@ import { CleanTvError, ErrorCode } from './errors.js';
 import { createLauncherActions, STOCK_LAUNCHERS, REPLACEMENT_LAUNCHERS } from './launchers.js';
 import { appendRecovery, warnJournal } from './journal.js';
 import { privateDnsFor, assertPrivateDns } from './dns.js';
+import { BUNDLED_LAUNCHER } from './bundled-launcher.js';
 
 /**
  * @param {{ client: ReturnType<typeof import('./adb/client.js').createAdbClient>, journal: ReturnType<typeof import('./journal.js').createJournal>, presets: import('./registry.js').Preset[] }} dependencies
@@ -149,14 +150,38 @@ export function createEngine({ client, journal, presets }) {
           && !(await client.listPackages(serial, { disabledOnly: true })).includes(home)
           && await actualHome(serial) === home;
       } catch { /* An unverifiable HOME still needs the shared restoration attempt. */ }
-      if (!homeHealthy && !await restoreHome(serial, stocks)) {
+      // Prefer the saved original component, including a user-installed original HOME.
+      const original = baseline?.homeComponent;
+      // If the saved original is gone or disabled, a healthy stock HOME or the usual stock search still applies.
+      const homeRestored = (original && await restoreHome(serial, stocks, original))
+        || homeHealthy || await restoreHome(serial, stocks);
+      if (!homeRestored) {
         results.push({ package: stocks[0] ?? info.homePackage ?? REPLACEMENT_LAUNCHERS[0].package, result: 'failed',
           reason: stocks.length ? ErrorCode.LAUNCHER_RESTORE_FAILED : ErrorCode.LAUNCHER_STOCK_MISSING });
         if (stocks.length) outcome.manualHomePackage = stocks[0];
       }
+      let owned = [];
+      try { owned = await journal.installedByUs(info.deviceId); }
+      catch (error) { warnJournal(error, outcome); }
+      if (owned.includes(BUNDLED_LAUNCHER.package) && (await client.listPackages(serial)).includes(BUNDLED_LAUNCHER.package)) {
+        const pkg = BUNDLED_LAUNCHER.package;
+        let reason;
+        try {
+          if (!original || !homeRestored || await actualHome(serial) === pkg) throw new CleanTvError(ErrorCode.LAUNCHER_RESTORE_FAILED);
+          // Removal requires its own durable intent, even during recovery.
+          await journal.append(info.deviceId, { at: new Date().toISOString(), action: 'remove', package: pkg, status: 'pending' });
+          await client.removeBundledLauncher(serial, journal, info.deviceId);
+          if ((await client.listPackages(serial)).includes(pkg)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+        } catch (error) { reason = error.code ?? ErrorCode.COMMAND_FAILED; }
+        await appendRecovery(journal, info.deviceId, { at: new Date().toISOString(), action: 'remove', package: pkg,
+          status: reason ? 'failed' : 'ok', ...(reason ? { error: reason } : {}) }, outcome);
+        const result = { package: pkg, result: reason ? 'failed' : 'removed', ...(reason ? { reason } : {}) };
+        results.push(result);
+        onProgress({ done: results.length, total: results.length, ...result });
+      }
     }
     return {
-      succeeded: results.filter(item => ['disabled', 'enabled', 'restored'].includes(item.result)).length,
+      succeeded: results.filter(item => ['disabled', 'enabled', 'restored', 'removed'].includes(item.result)).length,
       failed: results.filter(item => item.result === 'failed').length,
       skipped: results.filter(item => item.result === 'skipped').length,
       results,

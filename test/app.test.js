@@ -49,6 +49,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
       requests.push({ path, options });
       if (path.startsWith('/i18n/')) return missingCatalog ? { ok: false } : response(catalog);
       if (path === '/api/health') return response({ demo: true, adb: { found: true } });
+      if (path === '/api/prayer-zones') return response({ states: [{ state: 'Kedah', zones: [{ code: 'KDH01', area: 'Kota Setar' }] }] });
       if (path === '/api/discover') return response({ candidates: [{ ip: '192.168.1.50' }] });
       if (path === '/api/devices/connect') return response({ serial, state: ++connects <= 2 ? 'unauthorized' : 'device' });
       if (path.endsWith('/open-store')) { ready.add(JSON.parse(options.body).package); return response({ ok: true }); }
@@ -502,7 +503,7 @@ test('launcher picker defaults to keeping the original and makes no request on s
     assert.match(option.parentElement.textContent, new RegExp(entry.name));
     assert.match(option.parentElement.textContent, /Not installed/);
     option.listeners.change();
-    assert.equal(app.byId('launcher-switch').disabled, true);
+    assert.equal(app.byId('launcher-switch').disabled, entry.source !== 'bundled');
   }
   app.byId('launcher-original').listeners.change();
   assert.equal(app.byId('launcher-original').checked, true);
@@ -510,7 +511,7 @@ test('launcher picker defaults to keeping the original and makes no request on s
   assert.equal(app.document.getElementById('launcher-switch'), null);
 });
 
-for (const entry of REPLACEMENT_LAUNCHERS) {
+for (const entry of REPLACEMENT_LAUNCHERS.filter(entry => entry.source === 'play')) {
   test(entry.name + ': store, check, confirmation, progress and result use the selection', async t => {
     const app = await application(t);
     await connect(app);
@@ -559,4 +560,53 @@ test('a failed initial launcher status keeps a read-only retry available with th
   assert.equal(app.byId('launcher-original').checked, true);
   for (const entry of REPLACEMENT_LAUNCHERS) assert.ok(app.byId('launcher-' + entry.package));
   assert.equal(app.document.getElementById('launcher-store'), null);
+});
+
+
+test('bundled launcher offers Install & switch without Play Store, confirms installation and uses the existing swap job', async t => {
+  const pkg = 'io.github.sepulse.cleantv.home';
+  const app = await application(t);
+  await connect(app);
+  await app.click('launcher-disclosure');
+  app.byId('launcher-' + pkg).listeners.change();
+  assert.equal(app.document.getElementById('launcher-store'), null);
+  assert.equal(app.byId('launcher-switch').textContent, 'Install & switch');
+  assert.equal(app.byId('launcher-switch').disabled, false);
+  assert.match(app.document.root.textContent, /based on Clean Your TV by Gathin/);
+  assert.match(app.document.root.textContent, /does not delete TV apps/);
+  await app.click('launcher-switch');
+  assert.equal(app.byId('dialog-title').textContent, 'Install & switch to CleanTV Home?');
+  assert.match(app.byId('dialog-body').textContent, /bundled launcher/);
+  assert.match(app.byId('dialog-body').textContent, /original HOME first/);
+  await app.click('modal-confirm');
+  assert.ok(app.requests.at(-1).path.endsWith('/launcher/swap'));
+  assert.deepEqual(JSON.parse(app.requests.at(-1).options.body), { package: pkg });
+  assert.ok(!app.requests.some(request => request.path.endsWith('/open-store')));
+  await app.emit('complete', { succeeded: 1, failed: 0, results: [{ package: pkg, result: 'switched' }] });
+  assert.match(app.document.root.textContent, /Your home screen is now CleanTV Home/);
+});
+
+test('bundled launcher card picks Negeri then Kawasan and sends only the chosen zone with the swap', async t => {
+  const pkg = 'io.github.sepulse.cleantv.home';
+  const app = await application(t);
+  await connect(app);
+  await app.click('launcher-disclosure');
+  app.byId('launcher-' + pkg).listeners.change();
+  assert.equal(app.document.getElementById('prayer-zone'), null, 'no area list before a state is chosen');
+  assert.equal(app.document.getElementById('launcher-zone'), null, 'nothing to send while CleanTV Home is absent');
+  app.byId('prayer-state').listeners.change({ target: { value: 'Kedah' } });
+  assert.match(app.byId('prayer-zone').parentElement.textContent, /KDH01 · Kota Setar/);
+  app.byId('prayer-zone').listeners.change({ target: { value: 'KDH01' } });
+  await app.click('launcher-switch');
+  await app.click('modal-confirm');
+  assert.deepEqual(JSON.parse(app.requests.at(-1).options.body), { package: pkg, zone: 'KDH01' });
+});
+
+test('keeping the original launcher or Projectivy never sends a zone', async t => {
+  const app = await application(t);
+  await connect(app);
+  await app.click('launcher-disclosure');
+  assert.equal(app.document.getElementById('prayer-state'), null);
+  app.byId('launcher-' + REPLACEMENT_LAUNCHERS[0].package).listeners.change();
+  assert.equal(app.document.getElementById('prayer-state'), null);
 });

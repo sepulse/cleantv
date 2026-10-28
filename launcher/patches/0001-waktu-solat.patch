@@ -1,0 +1,1013 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 4ec59a0..94d9ab6 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -45,4 +45,6 @@ dependencies {
+     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
+     // Test only (never in the APK): plain JVM tests for the module card validators, src/test.
+     testImplementation 'junit:junit:4.13.2'
++    // Android's org.json is only a stub on the JVM; PrayerTimesTest parses a saved e-Solat response with the real one.
++    testImplementation 'org.json:json:20240303'
+ }
+diff --git a/launcher/app/src/main/AndroidManifest.xml b/launcher/app/src/main/AndroidManifest.xml
+index 701b5fe..be77d42 100644
+--- a/launcher/app/src/main/AndroidManifest.xml
++++ b/launcher/app/src/main/AndroidManifest.xml
+@@ -7,6 +7,8 @@
+     <uses-feature android:name="android.hardware.wifi" android:required="false" />
+     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+ 
++    <!-- Used only for the prayer-times panel: one request to www.e-solat.gov.my (JAKIM) with the zone code. -->
++    <uses-permission android:name="android.permission.INTERNET" />
+     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
+@@ -233,6 +235,12 @@
+             </intent-filter>
+         </receiver>
+ 
++        <!-- CleanTV sets the prayer-times zone through this over adb; see PrayerConfig. -->
++        <receiver
++            android:name=".PrayerConfig"
++            android:exported="true"
++            android:permission="android.permission.WRITE_SECURE_SETTINGS" />
++
+         <service
+             android:name=".InputKeyService"
+             android:exported="false"
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/LauncherSettingsActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/LauncherSettingsActivity.java
+index e4d1ab4..c19d60e 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/LauncherSettingsActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/LauncherSettingsActivity.java
+@@ -34,6 +34,7 @@ public final class LauncherSettingsActivity extends Activity {
+     private final TextView[] dockChoices = new TextView[DOCK_OPACITIES.length];
+     private TextView wallpaperChoice;
+     private TextView animationsChoice;
++    private TextView prayerChoice;
+     private TextView advancedChoice;
+     private TextView followThemeChoice;
+     private TextView openOnStartChoice;
+@@ -108,6 +109,15 @@ public final class LauncherSettingsActivity extends Activity {
+         }
+         wallpaperChoice = findViewById(R.id.wallpaperChoice);
+         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
++        prayerChoice = findViewById(R.id.prayerChoice);
++        if (!PrayerStore.zone(this).isEmpty()) {
++            prayerChoice.setVisibility(View.VISIBLE);
++            prayerChoice.setOnClickListener(v -> {
++                PrayerStore.setHidden(this, !PrayerStore.hidden(this));
++                changed();
++                refresh();
++            });
++        }
+         animationsChoice = findViewById(R.id.animationsChoice);
+         animationsChoice.setOnClickListener(v -> {
+             animations = !animations;
+@@ -286,6 +296,8 @@ public final class LauncherSettingsActivity extends Activity {
+         for (int i = 0; i < dockChoices.length; i++) {
+             dockChoices[i].setSelected(dockOpacity == DOCK_OPACITIES[i]);
+         }
++        prayerChoice.setText(getString(R.string.prayer_state,
++                getString(PrayerStore.hidden(this) ? R.string.off : R.string.on)));
+         animationsChoice.setText(getString(R.string.animations_state,
+                 getString(animations ? R.string.on : R.string.off)));
+         advancedChoice.setText(getString(R.string.advanced_effects_state,
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index f453692..effda66 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -196,6 +196,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     /** game_day: each team's next game from an add-on, rotating in the race panel; null when the key is off. */
+     private GameDay gameDay;
+     private View raceBar;
++    private PrayerPanel prayer;
+     private LinearLayout racePager;
+     private long rotationStart;
+     private long lastEndedRead;
+@@ -406,6 +407,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         public void run() {
+             updateGreeting();
+             updatePanel();
++            prayer.update();
+             // The pill follows the network callbacks and each return to Home; only the diya's flame follows the
+             // signal level, so only it needs this minute's binder calls (about 7 ms on the UI thread).
+             if (festive) updateWifiLabel();
+@@ -531,6 +533,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         raceSessions = findViewById(R.id.raceSessions);
+         raceBar = findViewById(R.id.raceBar);
+         racePager = findViewById(R.id.racePager);
++        prayer = new PrayerPanel(this, racePanel);
+         gameDay = GameDay.create(this, cfg.gameDay, handler, this::updatePanel);
+         // The rotation runs on the clock that never jumps: setting the TV's time must not stall or stretch a turn.
+         rotationStart = SystemClock.elapsedRealtime();
+@@ -1031,6 +1034,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         if (openLiveTvAfterBoot()) return;
+         updateGreeting();
+         updatePanel();
++        prayer.update();
+         // The network and Inputs pills keep their state while Home is in the background, and callbacks update them
+         // when the network or the inputs change, so this refresh only catches anything missed. Its binder calls
+         // (about 7 ms on a TCL C755, most of it WifiManager.getConnectionInfo) would hold up the first frame back
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/PrayerConfig.java b/launcher/app/src/main/java/com/gathin/tvhome/PrayerConfig.java
+new file mode 100644
+index 0000000..684be6f
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/PrayerConfig.java
+@@ -0,0 +1,19 @@
++package com.gathin.tvhome;
++
++import android.content.BroadcastReceiver;
++import android.content.Context;
++import android.content.Intent;
++
++/**
++ * Sets the JAKIM zone of the prayer-times panel; CleanTV sends it over adb. Only callers holding
++ * WRITE_SECURE_SETTINGS can (the adb shell has it, ordinary apps cannot). An empty zone clears it.
++ * {@code adb shell am broadcast -n <package>/com.gathin.tvhome.PrayerConfig --es zone KDH01}
++ */
++public class PrayerConfig extends BroadcastReceiver {
++    @Override
++    public void onReceive(Context context, Intent intent) {
++        String zone = intent.getStringExtra("zone");
++        if (zone != null) PrayerStore.setZone(context, zone);
++        setResultData("zone=" + PrayerStore.zone(context));
++    }
++}
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/PrayerPanel.java b/launcher/app/src/main/java/com/gathin/tvhome/PrayerPanel.java
+new file mode 100644
+index 0000000..d783455
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/PrayerPanel.java
+@@ -0,0 +1,150 @@
++package com.gathin.tvhome;
++
++import android.app.Activity;
++import android.os.SystemClock;
++import android.text.SpannableString;
++import android.text.Spanned;
++import android.text.style.ForegroundColorSpan;
++import android.text.style.RelativeSizeSpan;
++import android.view.View;
++import android.widget.LinearLayout;
++import android.widget.TextView;
++
++import java.time.LocalDateTime;
++import java.time.LocalTime;
++import java.time.ZoneId;
++import java.time.format.DateTimeFormatter;
++import java.util.List;
++import java.util.Locale;
++
++/**
++ * The prayer-times panel under the clock, after the race-weekend panel: text only, redrawn once a minute with
++ * the clock and never animated. Shown only while a zone is set and the settings switch is on; the year for the
++ * zone is downloaded once and kept, so the panel keeps working offline, and a failed download is tried again
++ * no sooner than {@link #RETRY_MS}.
++ */
++final class PrayerPanel {
++
++    private static final ZoneId MALAYSIA = ZoneId.of("Asia/Kuala_Lumpur");
++    private static final long RETRY_MS = 30 * 60_000L;
++    /** With nothing to show (Home starts before Wi-Fi is up) the panel tries again sooner. */
++    private static final long RETRY_EMPTY_MS = 2 * 60_000L;
++    private static final int GREEN = 0xFF3DDC97;
++
++    private final Activity activity;
++    private final View panel, racePanel;
++    private final TextView place, date, headline, footer;
++    private final LinearLayout cells;
++    private List<PrayerTimes.Day> days;
++    private String daysZone = "";
++    private boolean fetching;
++    private long lastAttempt = -RETRY_MS;
++
++    PrayerPanel(Activity activity, View racePanel) {
++        this.activity = activity;
++        this.racePanel = racePanel;
++        panel = activity.findViewById(R.id.prayerPanel);
++        place = activity.findViewById(R.id.prayerPlace);
++        date = activity.findViewById(R.id.prayerDate);
++        headline = activity.findViewById(R.id.prayerHeadline);
++        footer = activity.findViewById(R.id.prayerFooter);
++        cells = activity.findViewById(R.id.prayerTimes);
++        ((TextView) activity.findViewById(R.id.prayerKicker)).setText(R.string.prayer_kicker);
++        for (int i = 0; i < PrayerTimes.KEYS.length; i++) {
++            TextView cell = new TextView(activity);
++            cell.setMaxLines(2);   // not singleLine: that would turn the line break between name and time into a space
++            cell.setTextSize(11);
++            cell.setLetterSpacing(0.08f);
++            cell.setLineSpacing(0, 0.95f);
++            cell.setIncludeFontPadding(false);
++            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
++            lp.setMarginEnd(Math.round(18 * activity.getResources().getDisplayMetrics().density));
++            cells.addView(cell, lp);
++        }
++    }
++
++    /** Redraws for this minute, and starts a download when the zone has no usable data. */
++    void update() {
++        String zone = PrayerStore.zone(activity);
++        // The race-weekend panel has the same place; it is rare and only shown for a few hours, so it wins.
++        if (zone.isEmpty() || PrayerStore.hidden(activity) || racePanel.getVisibility() == View.VISIBLE) {
++            panel.setVisibility(View.GONE);
++            return;
++        }
++        if (!zone.equals(daysZone)) {
++            days = PrayerStore.cached(activity, zone);
++            daysZone = zone;
++            lastAttempt = -RETRY_MS;   // a newly chosen zone is fetched at once, whatever happened to the last one
++        }
++        long age = System.currentTimeMillis() - PrayerStore.cachedAt(activity, zone);
++        if (!fetching && (days == null || age > PrayerStore.REFRESH_MS || days.get(days.size() - 1).date.isBefore(LocalDateTime.now(MALAYSIA).toLocalDate()))
++                && SystemClock.elapsedRealtime() - lastAttempt >= (days == null ? RETRY_EMPTY_MS : RETRY_MS)) {
++            fetch(zone);
++        }
++        draw(zone);
++        panel.setVisibility(View.VISIBLE);
++    }
++
++    private void fetch(String zone) {
++        fetching = true;
++        lastAttempt = SystemClock.elapsedRealtime();
++        new Thread(() -> {
++            List<PrayerTimes.Day> fresh = PrayerStore.download(activity, zone, System.currentTimeMillis());
++            activity.runOnUiThread(() -> {
++                fetching = false;
++                if (fresh != null && zone.equals(daysZone)) days = fresh;
++                if (!activity.isDestroyed()) update();
++            });
++        }, "prayer-times").start();
++    }
++
++    private void draw(String zone) {
++        String[] entry = zoneEntry(zone);
++        place.setText(entry == null ? zone : activity.getString(R.string.prayer_place, entry[1], entry[2]));
++        footer.setText(activity.getString(R.string.prayer_footer, zone));
++        LocalDateTime now = LocalDateTime.now(MALAYSIA);
++        PrayerTimes.State s = days == null ? null : PrayerTimes.at(days, now);
++        if (s == null) {
++            date.setVisibility(View.GONE);
++            cells.setVisibility(View.GONE);
++            headline.setText(R.string.prayer_no_data);
++            headline.setTextSize(14);
++            return;
++        }
++        date.setVisibility(View.VISIBLE);
++        cells.setVisibility(View.VISIBLE);
++        headline.setTextSize(20);
++        DateTimeFormatter day = DateTimeFormatter.ofPattern("EEEE, d MMM yyyy", Locale.getDefault());
++        String hijri = PrayerTimes.hijri(activity.getResources(), s.today.hijri);
++        date.setText(hijri.isEmpty() ? day.format(s.today.date) : activity.getString(R.string.prayer_dates, day.format(s.today.date), hijri));
++        DateTimeFormatter clock = DateTimeFormatter.ofPattern(
++                android.text.format.DateFormat.is24HourFormat(activity) ? "HH:mm" : "h:mm", Locale.getDefault());
++        String[] names = activity.getResources().getStringArray(R.array.prayer_names);
++        if (s.next >= 0) {
++            headline.setText(activity.getString(R.string.prayer_next, names[s.next], clock.format(s.nextTime),
++                    RaceWeekend.countdown(activity.getResources(), s.untilNext)));
++        } else {
++            headline.setText("");
++        }
++        for (int i = 0; i < cells.getChildCount(); i++) {
++            LocalTime t = s.today.times.get(i);
++            boolean next = s.nextIsToday && i == s.next;
++            SpannableString text = new SpannableString(names[i] + "\n" + clock.format(t));
++            int split = names[i].length() + 1;
++            text.setSpan(new RelativeSizeSpan(1.6f), split, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
++            // Done times fade, the next one is bright and green, the rest sit in between.
++            int color = next ? GREEN : t.isBefore(now.toLocalTime()) ? 0x47FFFFFF : 0xCCFFFFFF;
++            text.setSpan(new ForegroundColorSpan(color), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
++            ((TextView) cells.getChildAt(i)).setText(text);
++        }
++    }
++
++    /** {code, area, state} for a zone, from res/values/prayer_zones.xml; null for a code that is not listed. */
++    private String[] zoneEntry(String zone) {
++        for (String item : activity.getResources().getStringArray(R.array.prayer_zones)) {
++            String[] part = item.split("[|]");
++            if (part.length == 3 && part[0].equals(zone)) return part;
++        }
++        return null;
++    }
++}
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/PrayerStore.java b/launcher/app/src/main/java/com/gathin/tvhome/PrayerStore.java
+new file mode 100644
+index 0000000..b17d702
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/PrayerStore.java
+@@ -0,0 +1,102 @@
++package com.gathin.tvhome;
++
++import android.content.Context;
++import android.content.SharedPreferences;
++
++import java.io.ByteArrayOutputStream;
++import java.io.InputStream;
++import java.net.HttpURLConnection;
++import java.net.URL;
++import java.nio.charset.StandardCharsets;
++import java.util.List;
++import java.util.regex.Pattern;
++
++/**
++ * The prayer-times zone, the switch that hides the panel, and the downloaded year for that zone. The zone comes
++ * from CleanTV (PrayerConfig); the one network use is the e-Solat request below, which carries the zone code
++ * and nothing else.
++ */
++final class PrayerStore {
++
++    static final String PREFS = "prayer_times";
++    static final Pattern ZONE = Pattern.compile("[A-Z]{3}[0-9]{2}");
++    private static final String ZONE_KEY = "zone", HIDDEN_KEY = "hidden", CACHE_KEY = "year_json",
++            CACHE_ZONE_KEY = "year_zone", CACHE_AT_KEY = "year_at";
++    private static final String API = "https://www.e-solat.gov.my/index.php?r=esolatApi/takwimsolat&period=year&zone=";
++    private static final int MAX_BYTES = 1 << 20;
++    /** JAKIM can revise a month; a week-old year is fetched again when the network is there. */
++    static final long REFRESH_MS = 7L * 24 * 3_600_000;
++
++    private PrayerStore() {
++    }
++
++    private static SharedPreferences prefs(Context ctx) {
++        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
++    }
++
++    /** The saved zone, or "" when none is set. */
++    static String zone(Context ctx) {
++        return prefs(ctx).getString(ZONE_KEY, "");
++    }
++
++    /** Saves a zone code, or clears it with "". False for anything that is not a zone code. */
++    static boolean setZone(Context ctx, String zone) {
++        if (zone == null || !(zone.isEmpty() || ZONE.matcher(zone).matches())) return false;
++        prefs(ctx).edit().putString(ZONE_KEY, zone).apply();
++        return true;
++    }
++
++    static boolean hidden(Context ctx) {
++        return prefs(ctx).getBoolean(HIDDEN_KEY, false);
++    }
++
++    static void setHidden(Context ctx, boolean hidden) {
++        prefs(ctx).edit().putBoolean(HIDDEN_KEY, hidden).apply();
++    }
++
++    /** The saved year for {@code zone}, or null when none (or an unreadable one) is stored. */
++    static List<PrayerTimes.Day> cached(Context ctx, String zone) {
++        SharedPreferences p = prefs(ctx);
++        String json = p.getString(CACHE_KEY, null);
++        if (json == null || !zone.equals(p.getString(CACHE_ZONE_KEY, ""))) return null;
++        try {
++            return PrayerTimes.parse(json);
++        } catch (Exception e) {
++            return null;
++        }
++    }
++
++    static long cachedAt(Context ctx, String zone) {
++        SharedPreferences p = prefs(ctx);
++        return zone.equals(p.getString(CACHE_ZONE_KEY, "")) ? p.getLong(CACHE_AT_KEY, 0) : 0;
++    }
++
++    /** Downloads the year for {@code zone} (blocking: call off the main thread) and keeps it. Null when it failed. */
++    static List<PrayerTimes.Day> download(Context ctx, String zone, long nowMs) {
++        if (!ZONE.matcher(zone).matches()) return null;
++        HttpURLConnection c = null;
++        try {
++            c = (HttpURLConnection) new URL(API + zone).openConnection();
++            c.setConnectTimeout(8000);
++            c.setReadTimeout(15000);
++            c.setRequestProperty("User-Agent", "CleanTV-Home");
++            if (c.getResponseCode() != 200) return null;
++            ByteArrayOutputStream out = new ByteArrayOutputStream();
++            try (InputStream in = c.getInputStream()) {
++                byte[] buf = new byte[8192];
++                for (int n; (n = in.read(buf)) > 0; ) {
++                    out.write(buf, 0, n);
++                    if (out.size() > MAX_BYTES) return null;
++                }
++            }
++            String json = new String(out.toByteArray(), StandardCharsets.UTF_8);
++            List<PrayerTimes.Day> days = PrayerTimes.parse(json);
++            prefs(ctx).edit().putString(CACHE_KEY, json).putString(CACHE_ZONE_KEY, zone).putLong(CACHE_AT_KEY, nowMs).apply();
++            return days;
++        } catch (Exception e) {
++            return null;
++        } finally {
++            if (c != null) c.disconnect();
++        }
++    }
++}
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/PrayerTimes.java b/launcher/app/src/main/java/com/gathin/tvhome/PrayerTimes.java
+new file mode 100644
+index 0000000..6dca349
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/PrayerTimes.java
+@@ -0,0 +1,126 @@
++package com.gathin.tvhome;
++
++import android.content.res.Resources;
++
++import org.json.JSONArray;
++import org.json.JSONException;
++import org.json.JSONObject;
++
++import java.time.Duration;
++import java.time.LocalDate;
++import java.time.LocalDateTime;
++import java.time.LocalTime;
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.List;
++
++/**
++ * Prayer times for one JAKIM zone, from the official e-Solat API (takwimsolat, period=year). The times are
++ * Malaysian time and are read as such, whatever zone the TV's own clock is set to. Parsing and scheduling are
++ * plain Java, tested on the JVM against a saved real response; display labels use Android resources.
++ */
++final class PrayerTimes {
++
++    /** Imsak, Subuh, Syuruk, Zohor, Asar, Maghrib, Isyak: the keys of one day in the API response. */
++    static final String[] KEYS = {"imsak", "fajr", "syuruk", "dhuhr", "asr", "maghrib", "isha"};
++    private static final String[] MONTHS = {"Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogos", "Sep", "Okt", "Nov", "Dis"};
++
++    static final class Day {
++        final LocalDate date;
++        /** As written by JAKIM, for example 1448-05-17 (year-month-day of the Hijri calendar). */
++        final String hijri;
++        /** In the order of {@link #KEYS}. */
++        final List<LocalTime> times;
++
++        Day(LocalDate date, String hijri, List<LocalTime> times) {
++            this.date = date;
++            this.hijri = hijri;
++            this.times = Collections.unmodifiableList(new ArrayList<>(times));
++        }
++    }
++
++    /** What the panel shows at one moment. */
++    static final class State {
++        final Day today;
++        /** Index in {@link #KEYS} of the next time, counted from today's list or tomorrow's when today is over. */
++        final int next;
++        final boolean nextIsToday;
++        final LocalTime nextTime;
++        final Duration untilNext;
++
++        State(Day today, int next, boolean nextIsToday, LocalTime nextTime, Duration untilNext) {
++            this.today = today;
++            this.next = next;
++            this.nextIsToday = nextIsToday;
++            this.nextTime = nextTime;
++            this.untilNext = untilNext;
++        }
++    }
++
++    private PrayerTimes() {
++    }
++
++    /** Every day of the response, oldest first. Anything but a complete, successful response is an error. */
++    static List<Day> parse(String json) throws JSONException {
++        JSONObject root = new JSONObject(json);
++        if (!"OK!".equals(root.optString("status"))) throw new JSONException("status: " + root.optString("status"));
++        JSONArray array = root.getJSONArray("prayerTime");
++        List<Day> days = new ArrayList<>();
++        for (int i = 0; i < array.length(); i++) {
++            JSONObject o = array.getJSONObject(i);
++            List<LocalTime> times = new ArrayList<>();
++            for (String key : KEYS) times.add(LocalTime.parse(o.getString(key)));
++            days.add(new Day(date(o.getString("date")), o.optString("hijri"), times));
++        }
++        if (days.isEmpty()) throw new JSONException("no days");
++        days.sort((a, b) -> a.date.compareTo(b.date));
++        return days;
++    }
++
++    /** "01-Okt-2026", with the Malay month abbreviations the API uses. */
++    static LocalDate date(String text) throws JSONException {
++        String[] part = text.split("-");
++        try {
++            if (part.length == 3) {
++                for (int m = 0; m < MONTHS.length; m++) {
++                    if (MONTHS[m].equalsIgnoreCase(part[1])) {
++                        return LocalDate.of(Integer.parseInt(part[2]), m + 1, Integer.parseInt(part[0]));
++                    }
++                }
++            }
++        } catch (RuntimeException e) {
++            // falls through to the error below
++        }
++        throw new JSONException("date: " + text);
++    }
++
++    /** The next time after {@code now} (Malaysian local time), or null when the data ends with today. */
++    static State at(List<Day> days, LocalDateTime now) {
++        Day today = null, tomorrow = null;
++        for (Day d : days) {
++            if (d.date.equals(now.toLocalDate())) today = d;
++            else if (d.date.equals(now.toLocalDate().plusDays(1))) tomorrow = d;
++        }
++        if (today == null) return null;
++        for (int i = 0; i < KEYS.length; i++) {
++            LocalTime t = today.times.get(i);
++            if (now.toLocalTime().isBefore(t)) {
++                return new State(today, i, true, t, Duration.between(now, now.toLocalDate().atTime(t)));
++            }
++        }
++        if (tomorrow == null) return new State(today, -1, false, null, null);
++        LocalTime t = tomorrow.times.get(0);
++        return new State(today, 0, false, t, Duration.between(now, tomorrow.date.atTime(t)));
++    }
++
++    /** "17 Jamadilawal 1448H" from "1448-05-17"; empty when JAKIM sent something else. */
++    static String hijri(Resources res, String hijri) {
++        String[] p = hijri.split("-");
++        try {
++            return res.getString(R.string.prayer_hijri_date, Integer.parseInt(p[2]),
++                    res.getStringArray(R.array.prayer_hijri_months)[Integer.parseInt(p[1]) - 1], Integer.parseInt(p[0]));
++        } catch (RuntimeException e) {
++            return "";
++        }
++    }
++}
+diff --git a/launcher/app/src/main/res/layout-iw/activity_main.xml b/launcher/app/src/main/res/layout-iw/activity_main.xml
+index d1dc0fb..a63b53f 100644
+--- a/launcher/app/src/main/res/layout-iw/activity_main.xml
++++ b/launcher/app/src/main/res/layout-iw/activity_main.xml
+@@ -104,6 +104,96 @@
+             android:visibility="gone" />
+     </LinearLayout>
+ 
++    <!-- Prayer-times panel (JAKIM e-Solat, see PrayerPanel): in the same place as the race-weekend panel, shown
++         only while a zone is set. Updated once a minute with the clock, never animated. -->
++    <LinearLayout
++        android:id="@+id/prayerPanel"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="top|right"
++        android:layout_marginEnd="60dp"
++        android:layout_marginTop="158dp"
++        android:orientation="vertical"
++        android:gravity="right"
++        android:focusable="false"
++        android:importantForAccessibility="no"
++        android:visibility="gone">
++
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:orientation="horizontal"
++            android:gravity="center_vertical">
++
++            <View
++                android:layout_width="3dp"
++                android:layout_height="13dp"
++                android:layout_marginStart="10dp"
++                android:background="#FF3DDC97" />
++
++            <TextView
++                android:id="@+id/prayerKicker"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:singleLine="true"
++                android:textColor="#B3FFFFFF"
++                android:textSize="12sp"
++                android:fontFamily="@string/font_medium"
++                android:letterSpacing="0.22"
++                android:textAllCaps="true" />
++        </LinearLayout>
++
++        <TextView
++            android:id="@+id/prayerPlace"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="8dp"
++            android:maxWidth="520dp"
++            android:ellipsize="end"
++            android:singleLine="true"
++            android:textColor="#FFFFFFFF"
++            android:textSize="14sp"
++            android:fontFamily="@string/font_medium" />
++
++        <TextView
++            android:id="@+id/prayerDate"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="2dp"
++            android:singleLine="true"
++            android:textColor="#99FFFFFF"
++            android:textSize="12sp"
++            android:fontFamily="@string/font_medium" />
++
++        <TextView
++            android:id="@+id/prayerHeadline"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="8dp"
++            android:singleLine="true"
++            android:textColor="#FFFFFFFF"
++            android:textSize="20sp"
++            android:fontFamily="@string/font_light"
++            android:includeFontPadding="false" />
++
++        <LinearLayout
++            android:id="@+id/prayerTimes"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="10dp"
++            android:orientation="horizontal" />
++
++        <TextView
++            android:id="@+id/prayerFooter"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="8dp"
++            android:singleLine="true"
++            android:textColor="#66FFFFFF"
++            android:textSize="10sp"
++            android:fontFamily="@string/font_medium" />
++    </LinearLayout>
++
+     <!-- Cinematic top shelf: darkens the edge behind the shelf and the lower half, so the text and the
+          dock stay readable over the artwork. -->
+     <View
+diff --git a/launcher/app/src/main/res/layout/activity_launcher_settings.xml b/launcher/app/src/main/res/layout/activity_launcher_settings.xml
+index b3de864..4bae347 100644
+--- a/launcher/app/src/main/res/layout/activity_launcher_settings.xml
++++ b/launcher/app/src/main/res/layout/activity_launcher_settings.xml
+@@ -93,6 +93,12 @@
+             style="@style/SettingsRow"
+             android:layout_marginTop="28dp" />
+ 
++        <TextView
++            android:id="@+id/prayerChoice"
++            style="@style/SettingsRow"
++            android:layout_marginTop="28dp"
++            android:visibility="gone" />
++
+         <TextView
+             android:id="@+id/animationsChoice"
+             style="@style/SettingsRow"
+diff --git a/launcher/app/src/main/res/layout/activity_main.xml b/launcher/app/src/main/res/layout/activity_main.xml
+index 70c6de3..e3dd8e3 100644
+--- a/launcher/app/src/main/res/layout/activity_main.xml
++++ b/launcher/app/src/main/res/layout/activity_main.xml
+@@ -104,6 +104,95 @@
+             android:visibility="gone" />
+     </LinearLayout>
+ 
++    <!-- Prayer-times panel (JAKIM e-Solat, see PrayerPanel): in the same place as the race-weekend panel, shown
++         only while a zone is set. Updated once a minute with the clock, never animated. -->
++    <LinearLayout
++        android:id="@+id/prayerPanel"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="top|left"
++        android:layout_marginStart="60dp"
++        android:layout_marginTop="158dp"
++        android:orientation="vertical"
++        android:focusable="false"
++        android:importantForAccessibility="no"
++        android:visibility="gone">
++
++        <LinearLayout
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:orientation="horizontal"
++            android:gravity="center_vertical">
++
++            <View
++                android:layout_width="3dp"
++                android:layout_height="13dp"
++                android:layout_marginEnd="10dp"
++                android:background="#FF3DDC97" />
++
++            <TextView
++                android:id="@+id/prayerKicker"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:singleLine="true"
++                android:textColor="#B3FFFFFF"
++                android:textSize="12sp"
++                android:fontFamily="@string/font_medium"
++                android:letterSpacing="0.22"
++                android:textAllCaps="true" />
++        </LinearLayout>
++
++        <TextView
++            android:id="@+id/prayerPlace"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="8dp"
++            android:maxWidth="520dp"
++            android:ellipsize="end"
++            android:singleLine="true"
++            android:textColor="#FFFFFFFF"
++            android:textSize="14sp"
++            android:fontFamily="@string/font_medium" />
++
++        <TextView
++            android:id="@+id/prayerDate"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="2dp"
++            android:singleLine="true"
++            android:textColor="#99FFFFFF"
++            android:textSize="12sp"
++            android:fontFamily="@string/font_medium" />
++
++        <TextView
++            android:id="@+id/prayerHeadline"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="8dp"
++            android:singleLine="true"
++            android:textColor="#FFFFFFFF"
++            android:textSize="20sp"
++            android:fontFamily="@string/font_light"
++            android:includeFontPadding="false" />
++
++        <LinearLayout
++            android:id="@+id/prayerTimes"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="10dp"
++            android:orientation="horizontal" />
++
++        <TextView
++            android:id="@+id/prayerFooter"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:layout_marginTop="8dp"
++            android:singleLine="true"
++            android:textColor="#66FFFFFF"
++            android:textSize="10sp"
++            android:fontFamily="@string/font_medium" />
++    </LinearLayout>
++
+     <!-- Cinematic top shelf: darkens the edge behind the shelf and the lower half, so the text and the
+          dock stay readable over the artwork. -->
+     <View
+diff --git a/launcher/app/src/main/res/values-ms/strings.xml b/launcher/app/src/main/res/values-ms/strings.xml
+new file mode 100644
+index 0000000..51e300a
+--- /dev/null
++++ b/launcher/app/src/main/res/values-ms/strings.xml
+@@ -0,0 +1,34 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="race_countdown_minutes">%1$d min</string>
++    <string name="race_countdown_hours">%1$dj %2$dm</string>
++    <string name="race_countdown_days">%1$dh %2$dj</string>
++    <string name="prayer_kicker">Waktu Solat</string>
++    <string name="prayer_next">Seterusnya: %1$s %2$s · Masuk waktu dalam %3$s</string>
++    <string name="prayer_no_data">Waktu solat belum dimuat. Menunggu sambungan internet.</string>
++    <string name="prayer_footer">Zon %1$s · JAKIM e-Solat</string>
++    <string name="prayer_state">Waktu solat: %1$s</string>
++    <string-array name="prayer_names">
++        <item>Imsak</item>
++        <item>Subuh</item>
++        <item>Syuruk</item>
++        <item>Zohor</item>
++        <item>Asar</item>
++        <item>Maghrib</item>
++        <item>Isyak</item>
++    </string-array>
++    <string-array name="prayer_hijri_months">
++        <item>Muharram</item>
++        <item>Safar</item>
++        <item>Rabiulawal</item>
++        <item>Rabiulakhir</item>
++        <item>Jamadilawal</item>
++        <item>Jamadilakhir</item>
++        <item>Rejab</item>
++        <item>Syaaban</item>
++        <item>Ramadan</item>
++        <item>Syawal</item>
++        <item>Zulkaedah</item>
++        <item>Zulhijjah</item>
++    </string-array>
++</resources>
+diff --git a/launcher/app/src/main/res/values/prayer_zones.xml b/launcher/app/src/main/res/values/prayer_zones.xml
+new file mode 100644
+index 0000000..b1d0e59
+--- /dev/null
++++ b/launcher/app/src/main/res/values/prayer_zones.xml
+@@ -0,0 +1,66 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- JAKIM e-Solat zones, code|area|state, from https://www.e-solat.gov.my/ (JAKIM e-Solat, zone selector) on 2026-10-28. Keep in step with CleanTV's src/core/jakim-zones.json. -->
++<resources>
++    <string-array name="prayer_zones" translatable="false">
++        <item>JHR01|Pulau Aur dan Pulau Pemanggil|Johor</item>
++        <item>JHR02|Johor Bahru, Kota Tinggi, Mersing, Kulai|Johor</item>
++        <item>JHR03|Kluang, Pontian|Johor</item>
++        <item>JHR04|Batu Pahat, Muar, Segamat, Gemas Johor, Tangkak|Johor</item>
++        <item>KDH01|Kota Setar, Kubang Pasu, Pokok Sena (Daerah Kecil)|Kedah</item>
++        <item>KDH02|Kuala Muda, Yan, Pendang|Kedah</item>
++        <item>KDH03|Padang Terap, Sik|Kedah</item>
++        <item>KDH04|Baling|Kedah</item>
++        <item>KDH05|Bandar Baharu, Kulim|Kedah</item>
++        <item>KDH06|Langkawi|Kedah</item>
++        <item>KDH07|Puncak Gunung Jerai|Kedah</item>
++        <item>KTN01|Bachok, Kota Bharu, Machang, Pasir Mas, Pasir Puteh, Tanah Merah, Tumpat, Kuala Krai, Mukim Chiku|Kelantan</item>
++        <item>KTN02|Gua Musang (Daerah Galas Dan Bertam), Jeli, Jajahan Kecil Lojing|Kelantan</item>
++        <item>MLK01|SELURUH NEGERI MELAKA|Melaka</item>
++        <item>NGS01|Tampin, Jempol|Negeri Sembilan</item>
++        <item>NGS02|Jelebu, Kuala Pilah, Rembau|Negeri Sembilan</item>
++        <item>NGS03|Port Dickson, Seremban|Negeri Sembilan</item>
++        <item>PHG01|Pulau Tioman|Pahang</item>
++        <item>PHG02|Kuantan, Pekan, Muadzam Shah|Pahang</item>
++        <item>PHG03|Jerantut, Temerloh, Maran, Bera, Chenor, Jengka|Pahang</item>
++        <item>PHG04|Bentong, Lipis, Raub|Pahang</item>
++        <item>PHG05|Genting Sempah, Janda Baik, Bukit Tinggi|Pahang</item>
++        <item>PHG06|Cameron Highlands, Genting Higlands, Bukit Fraser|Pahang</item>
++        <item>PHG07|Daerah Rompin, (Mukim Rompin, Mukim Endau, Mukim Pontian)|Pahang</item>
++        <item>PLS01|Kangar, Padang Besar, Arau|Perlis</item>
++        <item>PNG01|Seluruh Negeri Pulau Pinang|Pulau Pinang</item>
++        <item>PRK01|Tapah, Slim River, Tanjung Malim|Perak</item>
++        <item>PRK02|Kuala Kangsar, Sg. Siput , Ipoh, Batu Gajah, Kampar|Perak</item>
++        <item>PRK03|Lenggong, Pengkalan Hulu, Grik|Perak</item>
++        <item>PRK04|Temengor, Belum|Perak</item>
++        <item>PRK05|Kg Gajah, Teluk Intan, Bagan Datuk, Seri Iskandar, Beruas, Parit, Lumut, Sitiawan, Pulau Pangkor|Perak</item>
++        <item>PRK06|Selama, Taiping, Bagan Serai, Parit Buntar|Perak</item>
++        <item>PRK07|Bukit Larut|Perak</item>
++        <item>SBH01|Bahagian Sandakan (Timur), Bukit Garam, Semawang, Temanggong, Tambisan, Bandar Sandakan, Sukau|Sabah</item>
++        <item>SBH02|Beluran, Telupid, Pinangah, Terusan, Kuamut, Bahagian Sandakan (Barat)|Sabah</item>
++        <item>SBH03|Lahad Datu, Silabukan, Kunak, Sahabat, Semporna, Tungku, Bahagian Tawau (Timur)|Sabah</item>
++        <item>SBH04|Bandar Tawau, Balong, Merotai, Kalabakan, Bahagian Tawau (Barat)|Sabah</item>
++        <item>SBH05|Kudat, Kota Marudu, Pitas, Pulau Banggi, Bahagian Kudat|Sabah</item>
++        <item>SBH06|Gunung Kinabalu|Sabah</item>
++        <item>SBH07|Kota Kinabalu, Ranau, Kota Belud, Tuaran, Penampang, Papar, Putatan, Bahagian Pantai Barat|Sabah</item>
++        <item>SBH08|Pensiangan, Keningau, Tambunan, Nabawan, Bahagian Pendalaman (Atas)|Sabah</item>
++        <item>SBH09|Beaufort, Kuala Penyu, Sipitang, Tenom, Long Pasia, Membakut, Weston, Bahagian Pendalaman (Bawah)|Sabah</item>
++        <item>SGR01|Gombak, Petaling, Sepang, Hulu Langat, Hulu Selangor, S.Alam|Selangor</item>
++        <item>SGR02|Kuala Selangor, Sabak Bernam|Selangor</item>
++        <item>SGR03|Klang, Kuala Langat|Selangor</item>
++        <item>SWK01|Limbang, Lawas, Sundar, Trusan|Sarawak</item>
++        <item>SWK02|Miri, Niah, Bekenu, Sibuti, Marudi|Sarawak</item>
++        <item>SWK03|Pandan, Belaga, Suai, Tatau, Sebauh, Bintulu|Sarawak</item>
++        <item>SWK04|Sibu, Mukah, Dalat, Song, Igan, Oya, Balingian, Kanowit, Kapit|Sarawak</item>
++        <item>SWK05|Sarikei, Matu, Julau, Rajang, Daro, Bintangor, Belawai|Sarawak</item>
++        <item>SWK06|Lubok Antu, Sri Aman, Roban, Debak, Kabong, Lingga, Engkelili, Betong, Spaoh, Pusa, Saratok|Sarawak</item>
++        <item>SWK07|Serian, Simunjan, Samarahan, Sebuyau, Meludam|Sarawak</item>
++        <item>SWK08|Kuching, Bau, Lundu, Sematan|Sarawak</item>
++        <item>SWK09|Zon Khas (Kampung Patarikan)|Sarawak</item>
++        <item>TRG01|Kuala Terengganu, Marang, Kuala Nerus|Terengganu</item>
++        <item>TRG02|Besut, Setiu|Terengganu</item>
++        <item>TRG03|Hulu Terengganu|Terengganu</item>
++        <item>TRG04|Dungun, Kemaman|Terengganu</item>
++        <item>WLY01|Kuala Lumpur, Putrajaya|Wilayah Persekutuan</item>
++        <item>WLY02|Labuan|Wilayah Persekutuan</item>
++    </string-array>
++</resources>
+diff --git a/launcher/app/src/main/res/values/strings.xml b/launcher/app/src/main/res/values/strings.xml
+index e655766..5b2c245 100644
+--- a/launcher/app/src/main/res/values/strings.xml
++++ b/launcher/app/src/main/res/values/strings.xml
+@@ -149,6 +149,37 @@
+     <string name="race_countdown_minutes">%1$d min</string>
+     <string name="race_countdown_hours">%1$dh %2$dm</string>
+     <string name="race_countdown_days">%1$dd %2$dh</string>
++    <string name="prayer_kicker">Prayer times</string>
++    <string name="prayer_place">%1$s · %2$s</string>
++    <string name="prayer_dates">%1$s · %2$s</string>
++    <string name="prayer_hijri_date">%1$d %2$s %3$dH</string>
++    <string name="prayer_next">Next: %1$s %2$s · starts in %3$s</string>
++    <string name="prayer_no_data">Prayer times are not loaded yet. Waiting for the internet.</string>
++    <string name="prayer_footer">Zone %1$s · JAKIM e-Solat</string>
++    <string name="prayer_state">Prayer times: %1$s</string>
++    <string-array name="prayer_names">
++        <item>Imsak</item>
++        <item>Fajr</item>
++        <item>Sunrise</item>
++        <item>Dhuhr</item>
++        <item>Asr</item>
++        <item>Maghrib</item>
++        <item>Isha</item>
++    </string-array>
++    <string-array name="prayer_hijri_months">
++        <item>Muharram</item>
++        <item>Safar</item>
++        <item>Rabi\' al-awwal</item>
++        <item>Rabi\' al-thani</item>
++        <item>Jumada al-awwal</item>
++        <item>Jumada al-thani</item>
++        <item>Rajab</item>
++        <item>Sha\'ban</item>
++        <item>Ramadan</item>
++        <item>Shawwal</item>
++        <item>Dhu al-Qi\'dah</item>
++        <item>Dhu al-Hijjah</item>
++    </string-array>
+     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
+          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
+     <string name="last_opened">Last opened %1$s</string>
+diff --git a/launcher/app/src/test/java/com/gathin/tvhome/PrayerTimesTest.java b/launcher/app/src/test/java/com/gathin/tvhome/PrayerTimesTest.java
+new file mode 100644
+index 0000000..cbd662a
+--- /dev/null
++++ b/launcher/app/src/test/java/com/gathin/tvhome/PrayerTimesTest.java
+@@ -0,0 +1,96 @@
++package com.gathin.tvhome;
++
++import static org.junit.Assert.assertEquals;
++import static org.junit.Assert.assertFalse;
++import static org.junit.Assert.assertNotNull;
++import static org.junit.Assert.assertNull;
++import static org.junit.Assert.assertThrows;
++import static org.junit.Assert.assertTrue;
++
++import org.json.JSONException;
++import org.junit.Test;
++
++import java.io.InputStream;
++import java.nio.charset.StandardCharsets;
++import java.time.Duration;
++import java.time.LocalDate;
++import java.time.LocalDateTime;
++import java.time.LocalTime;
++import java.util.List;
++
++/** Against a real e-Solat response (zone KDH01, October 2026, saved as it came from www.e-solat.gov.my). */
++public class PrayerTimesTest {
++    private static List<PrayerTimes.Day> days() throws Exception {
++        try (InputStream in = PrayerTimesTest.class.getResourceAsStream("/esolat-kdh01-2026-10.json")) {
++            assertNotNull(in);
++            return PrayerTimes.parse(new String(in.readAllBytes(), StandardCharsets.UTF_8));
++        }
++    }
++
++    @Test public void parsesEveryDayOfTheMonth() throws Exception {
++        List<PrayerTimes.Day> days = days();
++        assertEquals(31, days.size());
++        PrayerTimes.Day first = days.get(0);
++        assertEquals(LocalDate.of(2026, 10, 1), first.date);
++        assertEquals("1448-04-19", first.hijri);
++        assertEquals(PrayerTimes.KEYS.length, first.times.size());
++        assertEquals(LocalTime.of(5, 48), first.times.get(0));
++        assertEquals(LocalTime.of(20, 20), first.times.get(6));
++    }
++
++    @Test public void afternoonNextIsAsar() throws Exception {
++        PrayerTimes.State s = PrayerTimes.at(days(), LocalDateTime.of(2026, 10, 28, 13, 26));
++        assertEquals(4, s.next);
++        assertTrue(s.nextIsToday);
++        assertEquals(LocalTime.of(16, 24), s.nextTime);
++        assertEquals(Duration.ofHours(2).plusMinutes(58), s.untilNext);
++        assertEquals("1448-05-17", s.today.hijri);
++    }
++
++    @Test public void atExactlyATimeTheNextOneIsAfterIt() throws Exception {
++        assertEquals(5, PrayerTimes.at(days(), LocalDateTime.of(2026, 10, 28, 16, 24)).next);
++    }
++
++    @Test public void beforeImsakNextIsImsak() throws Exception {
++        PrayerTimes.State s = PrayerTimes.at(days(), LocalDateTime.of(2026, 10, 28, 3, 0));
++        assertEquals(0, s.next);
++        assertTrue(s.nextIsToday);
++    }
++
++    @Test public void afterIsyakNextIsTomorrowsImsak() throws Exception {
++        List<PrayerTimes.Day> days = days();
++        PrayerTimes.State s = PrayerTimes.at(days, LocalDateTime.of(2026, 10, 28, 23, 0));
++        assertEquals(0, s.next);
++        assertFalse(s.nextIsToday);
++        assertEquals(days.get(28).times.get(0), s.nextTime);   // 29 October
++        assertEquals(Duration.between(LocalDateTime.of(2026, 10, 28, 23, 0),
++                LocalDateTime.of(2026, 10, 29, s.nextTime.getHour(), s.nextTime.getMinute())), s.untilNext);
++    }
++
++    @Test public void afterTheLastDayThereIsNoNext() throws Exception {
++        PrayerTimes.State s = PrayerTimes.at(days(), LocalDateTime.of(2026, 10, 31, 23, 0));
++        assertEquals(-1, s.next);
++        assertNull(s.nextTime);
++    }
++
++    @Test public void dayOutsideTheDataHasNoState() throws Exception {
++        assertNull(PrayerTimes.at(days(), LocalDateTime.of(2026, 11, 2, 12, 0)));
++    }
++
++    @Test public void readsMalayMonthNames() throws Exception {
++        assertEquals(LocalDate.of(2026, 3, 5), PrayerTimes.date("05-Mac-2026"));
++        assertEquals(LocalDate.of(2026, 5, 5), PrayerTimes.date("05-Mei-2026"));
++        assertEquals(LocalDate.of(2026, 8, 31), PrayerTimes.date("31-Ogos-2026"));
++        assertEquals(LocalDate.of(2026, 12, 1), PrayerTimes.date("01-Dis-2026"));
++        assertThrows(JSONException.class, () -> PrayerTimes.date("01-Xyz-2026"));
++    }
++
++    @Test public void refusesAnythingButASuccessfulResponse() {
++        assertThrows(JSONException.class, () -> PrayerTimes.parse(
++                "{\"prayerTime\":{\"data\":[\"No data available for the current request\"]},\"status\":\"NO_RECORD!\"}"));
++        assertThrows(JSONException.class, () -> PrayerTimes.parse("<html>Error 404</html>"));
++        assertThrows(JSONException.class, () -> PrayerTimes.parse("{\"prayerTime\":[],\"status\":\"OK!\"}"));
++        assertThrows(JSONException.class, () -> PrayerTimes.parse(
++                "{\"prayerTime\":[{\"date\":\"01-Okt-2026\",\"hijri\":\"1448-04-19\"}],\"status\":\"OK!\"}"));
++    }
++}
+diff --git a/launcher/app/src/test/resources/esolat-kdh01-2026-10.json b/launcher/app/src/test/resources/esolat-kdh01-2026-10.json
+new file mode 100644
+index 0000000..e8ad76c
+--- /dev/null
++++ b/launcher/app/src/test/resources/esolat-kdh01-2026-10.json
+@@ -0,0 +1 @@
++{"prayerTime":[{"hijri":"1448-04-19","date":"01-Okt-2026","day":"Thursday","imsak":"05:48:00","fajr":"05:58:00","syuruk":"07:04:00","dhuha":"07:31:00","dhuhr":"13:10:00","asr":"16:23:00","maghrib":"19:11:00","isha":"20:20:00"},{"hijri":"1448-04-20","date":"02-Okt-2026","day":"Friday","imsak":"05:48:00","fajr":"05:58:00","syuruk":"07:04:00","dhuha":"07:31:00","dhuhr":"13:10:00","asr":"16:23:00","maghrib":"19:11:00","isha":"20:20:00"},{"hijri":"1448-04-21","date":"03-Okt-2026","day":"Saturday","imsak":"05:48:00","fajr":"05:58:00","syuruk":"07:04:00","dhuha":"07:31:00","dhuhr":"13:10:00","asr":"16:23:00","maghrib":"19:10:00","isha":"20:19:00"},{"hijri":"1448-04-22","date":"04-Okt-2026","day":"Sunday","imsak":"05:48:00","fajr":"05:58:00","syuruk":"07:04:00","dhuha":"07:31:00","dhuhr":"13:09:00","asr":"16:23:00","maghrib":"19:10:00","isha":"20:19:00"},{"hijri":"1448-04-23","date":"05-Okt-2026","day":"Monday","imsak":"05:47:00","fajr":"05:57:00","syuruk":"07:04:00","dhuha":"07:31:00","dhuhr":"13:09:00","asr":"16:23:00","maghrib":"19:09:00","isha":"20:18:00"},{"hijri":"1448-04-24","date":"06-Okt-2026","day":"Tuesday","imsak":"05:47:00","fajr":"05:57:00","syuruk":"07:04:00","dhuha":"07:31:00","dhuhr":"13:09:00","asr":"16:24:00","maghrib":"19:09:00","isha":"20:18:00"},{"hijri":"1448-04-25","date":"07-Okt-2026","day":"Wednesday","imsak":"05:47:00","fajr":"05:57:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:08:00","asr":"16:24:00","maghrib":"19:08:00","isha":"20:18:00"},{"hijri":"1448-04-26","date":"08-Okt-2026","day":"Thursday","imsak":"05:47:00","fajr":"05:57:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:08:00","asr":"16:24:00","maghrib":"19:08:00","isha":"20:17:00"},{"hijri":"1448-04-27","date":"09-Okt-2026","day":"Friday","imsak":"05:47:00","fajr":"05:57:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:08:00","asr":"16:24:00","maghrib":"19:07:00","isha":"20:17:00"},{"hijri":"1448-04-28","date":"10-Okt-2026","day":"Saturday","imsak":"05:47:00","fajr":"05:57:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:08:00","asr":"16:24:00","maghrib":"19:07:00","isha":"20:16:00"},{"hijri":"1448-04-29","date":"11-Okt-2026","day":"Sunday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:07:00","asr":"16:24:00","maghrib":"19:07:00","isha":"20:16:00"},{"hijri":"1448-05-01","date":"12-Okt-2026","day":"Monday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:07:00","asr":"16:24:00","maghrib":"19:06:00","isha":"20:16:00"},{"hijri":"1448-05-02","date":"13-Okt-2026","day":"Tuesday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:07:00","asr":"16:24:00","maghrib":"19:06:00","isha":"20:15:00"},{"hijri":"1448-05-03","date":"14-Okt-2026","day":"Wednesday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:07:00","asr":"16:24:00","maghrib":"19:05:00","isha":"20:15:00"},{"hijri":"1448-05-04","date":"15-Okt-2026","day":"Thursday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:06:00","asr":"16:24:00","maghrib":"19:05:00","isha":"20:15:00"},{"hijri":"1448-05-05","date":"16-Okt-2026","day":"Friday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:06:00","asr":"16:24:00","maghrib":"19:05:00","isha":"20:14:00"},{"hijri":"1448-05-06","date":"17-Okt-2026","day":"Saturday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:06:00","asr":"16:24:00","maghrib":"19:04:00","isha":"20:14:00"},{"hijri":"1448-05-07","date":"18-Okt-2026","day":"Sunday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:06:00","asr":"16:24:00","maghrib":"19:04:00","isha":"20:14:00"},{"hijri":"1448-05-08","date":"19-Okt-2026","day":"Monday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:06:00","asr":"16:24:00","maghrib":"19:04:00","isha":"20:14:00"},{"hijri":"1448-05-09","date":"20-Okt-2026","day":"Tuesday","imsak":"05:46:00","fajr":"05:56:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:03:00","isha":"20:13:00"},{"hijri":"1448-05-10","date":"21-Okt-2026","day":"Wednesday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:03:00","isha":"20:13:00"},{"hijri":"1448-05-11","date":"22-Okt-2026","day":"Thursday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:03:00","isha":"20:13:00"},{"hijri":"1448-05-12","date":"23-Okt-2026","day":"Friday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:02:00","isha":"20:13:00"},{"hijri":"1448-05-13","date":"24-Okt-2026","day":"Saturday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:02:00","isha":"20:12:00"},{"hijri":"1448-05-14","date":"25-Okt-2026","day":"Sunday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:02:00","isha":"20:12:00"},{"hijri":"1448-05-15","date":"26-Okt-2026","day":"Monday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:02:00","isha":"20:12:00"},{"hijri":"1448-05-16","date":"27-Okt-2026","day":"Tuesday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:01:00","isha":"20:12:00"},{"hijri":"1448-05-17","date":"28-Okt-2026","day":"Wednesday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:05:00","asr":"16:24:00","maghrib":"19:01:00","isha":"20:12:00"},{"hijri":"1448-05-18","date":"29-Okt-2026","day":"Thursday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:04:00","asr":"16:24:00","maghrib":"19:01:00","isha":"20:12:00"},{"hijri":"1448-05-19","date":"30-Okt-2026","day":"Friday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:04:00","asr":"16:24:00","maghrib":"19:01:00","isha":"20:12:00"},{"hijri":"1448-05-20","date":"31-Okt-2026","day":"Saturday","imsak":"05:45:00","fajr":"05:55:00","syuruk":"07:03:00","dhuha":"07:30:00","dhuhr":"13:04:00","asr":"16:25:00","maghrib":"19:01:00","isha":"20:11:00"}],"status":"OK!","serverTime":"2026-10-28 11:08:51","periodType":"month","lang":"ms_my","zone":"KDH01","bearing":"291&#176; 5&#8242; 39&#8243;"}
+\ No newline at end of file

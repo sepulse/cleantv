@@ -18,6 +18,7 @@ export function doneScreen(state, actions) {
         h('div', { className: 'total' }, h('strong', {}, t('common.number', { n: value })), h('span', {}, t(`done.${key}`))))),
       h('p', {}, t(state.operation === 'dns' ? 'dns.warning' : launcher ? 'launcher.doneTip' : 'done.tip'))),
     summary.journalWarning && h('p', { role: 'status' }, t('launcher.journalWarning')),
+    summary.prayerZoneFailed && h('p', { role: 'status' }, t('launcher.zoneFailed')),
     summary.manualHomePackage && h('div', { className: 'card stack', role: 'status' },
       h('p', {}, t('launcher.manualHome', { stock: stock ? registryText(stock) : t('launcher.stockName') })),
       button(t('launcher.check'), () => actions.startJob('launcherRestore'), { id: 'launcher-check-restore', disabled: state.busy })),

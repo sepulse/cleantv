@@ -444,8 +444,11 @@ test('launcher routes validate registry selections and preserve the absent-packa
   for (const { package: pkg } of REPLACEMENT_LAUNCHERS) {
     assert.deepEqual(await (await get(path + '?package=' + pkg)).json(), { package: pkg });
     assert.deepEqual(calls.pop(), ['status', serial, pkg]);
-    assert.equal((await post(path + '/open-store', { package: pkg })).status, 200);
-    assert.deepEqual(calls.pop(), ['store', serial, pkg]);
+    if (pkg === 'io.github.sepulse.cleantv.home') assert.equal((await post(path + '/open-store', { package: pkg })).status, 400);
+    else {
+      assert.equal((await post(path + '/open-store', { package: pkg })).status, 200);
+      assert.deepEqual(calls.pop(), ['store', serial, pkg]);
+    }
     const response = await post(path + '/swap', { package: pkg });
     assert.equal(response.status, 202);
     await (await get('/api/jobs/' + (await response.json()).jobId + '/events')).text();
@@ -466,4 +469,27 @@ test('launcher routes validate registry selections and preserve the absent-packa
     }
   }
   assert.deepEqual(calls, [], 'invalid requests never reach the engine or start a mutation');
+});
+
+test('zone list is served without a device; zones reach the engine only when listed', async t => {
+  const { engine, get, post } = await setup(t);
+  const list = await (await get('/api/prayer-zones')).json();
+  assert.ok(list.states.some(entry => entry.zones.some(zone => zone.code === 'KDH01')));
+  const calls = [];
+  engine.swapLauncher = async (value, pkg, _progress, options) => { calls.push(['swap', value, pkg, options]); return { results: [] }; };
+  engine.setPrayerZone = async (value, zone) => { calls.push(['zone', value, zone]); return {}; };
+  const path = '/api/devices/' + encoded + '/launcher';
+  const swap = await post(path + '/swap', { package: 'io.github.sepulse.cleantv.home', zone: 'KDH01' });
+  assert.equal(swap.status, 202);
+  await (await get('/api/jobs/' + (await swap.json()).jobId + '/events')).text();
+  assert.deepEqual(calls.pop(), ['swap', serial, 'io.github.sepulse.cleantv.home', { zone: 'KDH01' }]);
+  assert.equal((await post(path + '/prayer-zone', { zone: 'SGR01' })).status, 200);
+  assert.deepEqual(calls.pop(), ['zone', serial, 'SGR01']);
+  for (const body of [{ zone: 'KDH99' }, { zone: 'KDH01;reboot' }, { zone: null }, {}, { zone: 'KDH01', extra: 1 }, [], null]) {
+    assert.equal((await post(path + '/prayer-zone', body)).status, 400);
+  }
+  for (const zone of ['KDH99', 'kdh01', 1]) {
+    assert.equal((await post(path + '/swap', { package: 'io.github.sepulse.cleantv.home', zone })).status, 400);
+  }
+  assert.deepEqual(calls, [], 'invalid zones never reach the engine');
 });

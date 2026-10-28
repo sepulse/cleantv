@@ -11,9 +11,26 @@ const prefix = `-s ${serial} shell`;
 
 test('client exposes only the named methods', () => {
   assert.deepEqual(Object.keys(createAdbClient(fakeRunner({}))).sort(), [
-    'connect', 'disconnect', 'usbMode', 'devices', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
+    'installBundledLauncher', 'removeBundledLauncher', 'setPrayerZone', 'connect', 'disconnect', 'usbMode', 'devices', 'getprops', 'getSettings', 'listPackages', 'disableUser', 'enableUser', 'resolveHomeActivity', 'openPlayStore', 'listHomeCandidates',
     'listHomeCandidateComponents', 'resolveHomeComponent', 'setHomeActivity', 'pressHome', 'focusedPackage', 'setPrivateDns', 'restorePrivateDns',
   ].sort());
+});
+
+test('setPrayerZone sends one fixed broadcast and only for a listed zone', async () => {
+  const command = zone => `${prefix} am broadcast -n io.github.sepulse.cleantv.home/com.gathin.tvhome.PrayerConfig --es zone ${zone}`;
+  const run = fakeRunner({ [command('KDH01')]: { stdout: 'Broadcast completed: result=0, data="zone=KDH01"\r\n' } });
+  await createAdbClient(run).setPrayerZone(serial, 'KDH01');
+  assert.deepEqual(run.calls, [['-s', serial, 'shell', 'am', 'broadcast', '-n', 'io.github.sepulse.cleantv.home/com.gathin.tvhome.PrayerConfig', '--es', 'zone', 'KDH01']]);
+  for (const bad of ['kdh01', 'KDH01;reboot', 'KDH99', '', 'KDH01 KDH02', null, 1, ['KDH01']]) {
+    const guarded = fakeRunner({});
+    await assert.rejects(createAdbClient(guarded).setPrayerZone(serial, bad), { code: 'INVALID_INPUT' });
+    assert.deepEqual(guarded.calls, []);
+  }
+  await assert.rejects(createAdbClient(fakeRunner({})).setPrayerZone('bad serial', 'KDH01'), { code: 'INVALID_INPUT' });
+  // A broadcast nobody answered (launcher without the receiver) or answered with another zone is a failure.
+  for (const stdout of ['Broadcast completed: result=0', 'Broadcast completed: result=0, data="zone=SGR01"', 'Error: unable to resolve']) {
+    await assert.rejects(createAdbClient(fakeRunner({ [command('KDH01')]: { stdout } })).setPrayerZone(serial, 'KDH01'), { code: 'COMMAND_FAILED' });
+  }
 });
 
 test('devices parser handles CRLF, model, unauthorized, offline and daemon noise', async () => {
@@ -164,7 +181,7 @@ test('all argument-taking methods reject unsafe inputs before any runner call', 
   assert.deepEqual(run.calls, []);
 });
 
-for (const { package: pkg } of REPLACEMENT_LAUNCHERS) test(`store command allows only registry packages (${pkg}) and detects unresolved intents`, async () => {
+for (const { package: pkg } of REPLACEMENT_LAUNCHERS.filter(entry => entry.source === 'play')) test(`store command allows only registry packages (${pkg}) and detects unresolved intents`, async () => {
   const args = `${prefix} am start -a android.intent.action.VIEW -d market://details?id=${pkg}`;
   const run = fakeRunner({ [args]: { stdout: 'Starting: Intent' } });
   await createAdbClient(run).openPlayStore(serial, pkg);

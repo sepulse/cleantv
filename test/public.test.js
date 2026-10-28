@@ -262,7 +262,7 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
   await eventsFor(`${launcher}/swap`, { package: replacement });
   assert.match(await eventsFor(`${launcher}/restore`, {}), /"failed":0/);
   assert.equal((await status()).home, initial.home);
-  for (const entry of REPLACEMENT_LAUNCHERS) {
+  for (const entry of REPLACEMENT_LAUNCHERS.filter(entry => entry.source === 'play')) {
     await request(`${launcher}/open-store`, { package: entry.package });
     const selected = await (await request(`${launcher}?package=${encodeURIComponent(entry.package)}`)).json();
     assert.deepEqual(selected.replacement, { ...entry, installed: true, enabled: true, isHomeCandidate: true });
@@ -270,7 +270,14 @@ test('demo supports discovery, authorization, cleaning, history, and restore thr
     assert.match(await eventsFor(`${launcher}/swap`, { package: entry.package }), /"result":"switched"/);
     assert.equal((await status()).home, entry.package);
   }
-  assert.match(await eventsFor(`${device}/restore`, { all: true }), /"failed":0/);
+  const bundled = 'io.github.sepulse.cleantv.home';
+  assert.equal((await invalid('/open-store', { package: bundled })).status, 400);
+  assert.match(await eventsFor(`${launcher}/swap`, { package: bundled }), /"result":"switched"/);
+  assert.deepEqual(await journal.installedByUs('CLEANTV_DEMO'), [bundled]);
+  assert.equal((await status()).home, bundled);
+  assert.match(await eventsFor(`${device}/restore`, { all: true }), /"result":"removed"/);
+  assert.ok(!(await client.listPackages(serial)).includes(bundled));
+  assert.deepEqual(await journal.installedByUs('CLEANTV_DEMO'), []);
   assert.equal((await status()).home, initial.home);
   for (const path of ['/favicon.svg', '/favicon.ico']) {
     const response = await request(path);

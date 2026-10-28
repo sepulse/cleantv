@@ -5,11 +5,9 @@
 Panduan ini untuk sesiapa sahaja, walaupun tidak biasa dengan komputer. Ikut langkah satu per satu.
 Di bawah setiap langkah ada bahagian **"Jika ada masalah"** dengan cara menyelesaikannya.
 
-> **Penting: CleanTV TIADA widget waktu solat.**
-> CleanTV hanya mematikan aplikasi yang tidak perlu pada TV. Ia tidak memasang apa-apa aplikasi
-> atau widget pada TV anda. Widget waktu solat yang mungkin anda nampak di internet ialah projek lain
-> (add-on untuk launcher "Clean Your TV"), bukan sebahagian daripada CleanTV.
-> Lihat [Soalan lazim](#soalan-lazim).
+> **Mahu waktu solat pada skrin utama TV?** CleanTV boleh memasang launcher pilihan **CleanTV Home**
+> dengan panel Waktu Solat JAKIM. Anda memilih zon pada komputer. Lihat [Soalan lazim](#soalan-lazim).
+> Tanpa pilihan itu, CleanTV hanya mematikan aplikasi dan tidak memasang apa-apa pada TV.
 
 ## Yang anda perlukan
 
@@ -136,18 +134,20 @@ Tidak puas hati? Tekan **Pulihkan semua** bila-bila masa. Factory reset pada TV 
 ## Soalan lazim
 
 **Di mana widget waktu solat?**
-CleanTV tidak ada widget waktu solat, dan tidak pernah memasang apa-apa pada TV. Ia hanya *mematikan*
-aplikasi yang tidak perlu. Widget waktu solat yang mungkin anda lihat di internet ialah add-on untuk
-launcher lain bernama "Clean Your TV". Ia projek berasingan dan tidak termasuk dalam CleanTV.
-Jika anda mahu waktu solat pada TV, pasang aplikasi waktu solat pilihan anda dari Play Store.
-CleanTV tidak akan mematikannya kerana ia tiada dalam senarai CleanTV.
+Pilih launcher **CleanTV Home** (bahagian *Buang iklan skrin utama (lanjutan)*, butang **Pasang & tukar**). Pada langkah
+yang sama, pilih **Negeri** kemudian **Kawasan** (zon JAKIM) anda. Panel Waktu Solat akan muncul pada
+skrin utama TV, dengan waktu seterusnya diserlahkan. Anda boleh menukar zon kemudian dengan **Hantar zon
+ke TV**, atau menyembunyikan panel dalam tetapan launcher pada TV. CleanTV Home berdasarkan launcher
+"Clean Your TV" oleh Gathin. Ia menghubungi e-solat.gov.my (JAKIM) untuk waktu solat zon anda; hanya kod
+zon dihantar dan tiada kebenaran lokasi diperlukan. **Pulihkan semua** mengembalikan skrin utama asal dan
+membuang CleanTV Home yang CleanTV sendiri pasang (aplikasi TV lain tidak dipadam).
 
 **Selepas tukar launcher, widget atau ikon saya hilang.**
 Widget itu milik skrin utama asal TV. Dalam CleanTV, pilih **Pulihkan skrin utama asal** atau
 **Pulihkan semua**.
 
 **Adakah CleanTV memadam aplikasi?**
-Tidak. Ia hanya mematikan aplikasi. Semuanya boleh dipulihkan.
+Tidak. Ia hanya mematikan aplikasi; satu-satunya yang dibuang ialah launcher CleanTV Home jika CleanTV sendiri yang memasangnya. Semuanya boleh dipulihkan.
 
 **Masih ada masalah?**
 Hantarkan kepada kami: (1) gambar skrin tetingkap hitam, (2) gambar skrin CleanTV dalam pelayar,
@@ -157,9 +157,12 @@ dan (3) jenama dan model TV anda.
 
 ## English
 
-**CleanTV has no prayer-times widget.** It only turns off apps you don't need on the TV; it does not
-install any app or widget on the TV. A prayer-times widget you may have seen online is a separate
-project (an add-on for the "Clean Your TV" launcher), not part of CleanTV.
+**Prayer times on the TV home screen?** Choose the optional **CleanTV Home** launcher (**Install & switch**)
+and pick your JAKIM **State** and **Area** in the same step. A Prayer Times panel then shows on the TV
+home screen with the next time highlighted. CleanTV Home is based on the "Clean Your TV" launcher by
+Gathin; it contacts e-solat.gov.my (JAKIM) with the zone code only, and needs no location permission.
+**Restore all** brings back the original home screen and removes only the CleanTV Home that CleanTV
+installed. Without this option CleanTV installs nothing on the TV.
 
 You need: a **Windows** 10/11 computer, an Android TV / Google TV, both on the **same Wi-Fi**, and
 internet on the computer the first time.

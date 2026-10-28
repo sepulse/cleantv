@@ -2,6 +2,8 @@ import { NEVER_TOUCH } from '../core/safety.js';
 import { CleanTvError, ErrorCode } from '../core/errors.js';
 import { assertReplacement, REPLACEMENT_LAUNCHERS, STOCK_LAUNCHERS } from '../core/launchers.js';
 import { assertPrivateDns } from '../core/dns.js';
+import { BUNDLED_LAUNCHER, ownsBundledLauncher } from '../core/bundled-launcher.js';
+import { assertZone } from '../core/jakim-zones.js';
 
 const serial = '192.168.1.50:5555';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -93,8 +95,24 @@ export function createDemoClient(presets) {
     async openPlayStore(value, pkg) {
       validate(value);
       assertReplacement(pkg);
+      if (pkg === BUNDLED_LAUNCHER.package) throw new CleanTvError(ErrorCode.INVALID_INPUT);
       installed.add(pkg);
       disabled.delete(pkg);
+    },
+    async installBundledLauncher(value) {
+      validate(value);
+      installed.add(BUNDLED_LAUNCHER.package);
+    },
+    async setPrayerZone(value, zone) {
+      validate(value);
+      assertZone(zone);
+      if (!installed.has(BUNDLED_LAUNCHER.package)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+    },
+    async removeBundledLauncher(value, journal, deviceId) {
+      validate(value);
+      if (!ownsBundledLauncher(await journal.read(deviceId))) throw new CleanTvError(ErrorCode.PACKAGE_PROTECTED);
+      installed.delete(BUNDLED_LAUNCHER.package);
+      disabled.delete(BUNDLED_LAUNCHER.package);
     },
     async disableUser(value, pkg) {
       validate(value);

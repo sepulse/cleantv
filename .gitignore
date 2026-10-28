@@ -3,3 +3,6 @@ vendor/
 *.log
 .cleantv-data/
 dist/
+launcher/*.apk
+launcher/SHA256SUMS.txt
+upstream-launcher/

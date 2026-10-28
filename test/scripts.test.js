@@ -99,8 +99,8 @@ test('launcher cmd files exactly match independent expectations; demo never down
 test('portable build excludes even existing vendor tools, copies fetcher and hashes the zip', async t => {
   const root = await mkdtemp(join(tmpdir(), 'cleantv-build-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  for (const dir of ['src/server', 'scripts', 'public', 'presets', 'vendor/platform-tools']) await mkdir(join(root, dir), { recursive: true });
-  for (const file of ['package.json', 'scripts/fetch-adb.js', 'src/server/index.js', 'vendor/platform-tools/adb.exe', 'runtime.exe', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) await writeFile(join(root, file), 'fixture');
+  for (const dir of ['src/server', 'scripts', 'public', 'presets', 'vendor/platform-tools', 'launcher']) await mkdir(join(root, dir), { recursive: true });
+  for (const file of ['package.json', 'scripts/fetch-adb.js', 'src/server/index.js', 'vendor/platform-tools/adb.exe', 'runtime.exe', 'launcher/cleantv-home.apk', 'launcher/UPSTREAM.txt', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) await writeFile(join(root, file), 'fixture');
   // A previous first run must not leak its adb back into the next build.
   const paths = layout(root);
   await mkdir(join(paths.app, 'vendor/platform-tools'), { recursive: true });
@@ -118,9 +118,13 @@ test('portable build excludes even existing vendor tools, copies fetcher and has
   }
   if (zip) {
     const sums = await readFile(paths.sums, 'utf8');
-    assert.match(sums, /^[a-f0-9]{64}  CleanTV-win-x64\.zip\n$/);
+    assert.match(sums, /^[a-f0-9]{64}  CleanTV-win-x64\.zip\n[a-f0-9]{64}  cleantv-home\.apk\n$/);
     const digest = createHash('sha256').update(await readFile(zip)).digest('hex');
-    assert.equal(sums, `${digest}  CleanTV-win-x64.zip\n`);
+    const apkDigest = createHash('sha256').update('fixture').digest('hex');
+    assert.equal(sums, `${digest}  CleanTV-win-x64.zip\n${apkDigest}  cleantv-home.apk\n`);
+    assert.equal(await readFile(join(paths.app, 'launcher/SHA256SUMS.txt'), 'utf8'), `${apkDigest}  cleantv-home.apk\n`);
+    assert.equal(await readFile(join(paths.dist, 'cleantv-home.apk'), 'utf8'), 'fixture');
+    assert.equal(await readFile(join(folder, 'THIRD_PARTY_NOTICES.md'), 'utf8'), 'fixture');
     assert.ok(logs.includes(sums.trimEnd()));
   }
 });

@@ -10,6 +10,8 @@ import { createJournal } from '../src/core/journal.js';
 import { loadPresets } from '../src/core/registry.js';
 import { REPLACEMENT_LAUNCHERS, STOCK_LAUNCHERS } from '../src/core/launchers.js';
 import { CleanTvError } from '../src/core/errors.js';
+import { BUNDLED_LAUNCHER, BUNDLED_APK } from '../src/core/bundled-launcher.js';
+import { createHash } from 'node:crypto';
 
 const serial = '192.168.1.5:5555';
 const replacement = REPLACEMENT_LAUNCHERS[0].package;
@@ -32,9 +34,28 @@ async function fixture(t, options = {}) {
     calls.push(args);
     const result = stdout => ({ stdout, stderr: '', code: 0 });
     if (args[0] === 'devices') return result(`${serial} device\n`);
+    if (args[2] === 'install') {
+      assert.deepEqual(args, ['-s', serial, 'install', '-r', BUNDLED_APK]);
+      assert.equal((await journal.read('LAUNCHER_TEST')).at(-1).action, 'install');
+      assert.equal((await journal.read('LAUNCHER_TEST')).at(-1).status, 'pending');
+      assert.ok(await journal.readBaseline('LAUNCHER_TEST'));
+      if (options.installFailure) return result('Failure [INSTALL_FAILED_TEST]');
+      installed.add(BUNDLED_LAUNCHER.package);
+      return result('Success\n');
+    }
+    if (args[2] === 'uninstall') {
+      assert.deepEqual(args, ['-s', serial, 'uninstall', BUNDLED_LAUNCHER.package]);
+      assert.equal(home(), (await journal.readBaseline('LAUNCHER_TEST')).homeComponent.split('/')[0]);
+      assert.deepEqual(await journal.installedByUs('LAUNCHER_TEST'), [BUNDLED_LAUNCHER.package]);
+      assert.equal((await journal.read('LAUNCHER_TEST')).at(-1).action, 'remove');
+      assert.equal((await journal.read('LAUNCHER_TEST')).at(-1).status, 'pending');
+      if (options.removeFailure) return result('Failure');
+      installed.delete(BUNDLED_LAUNCHER.package);
+      return result('Success\n');
+    }
     assert.deepEqual(args.slice(0, 3), ['-s', serial, 'shell']);
     const command = args.slice(3).join(' ');
-    if (command === 'getprop') return result(['[ro.serialno]: [LAUNCHER_TEST]', ...Object.entries(options.props ?? {})
+    if (command === 'getprop') return result(['[ro.serialno]: [LAUNCHER_TEST]', '[ro.build.version.sdk]: [34]', ...Object.entries(options.props ?? {})
       .map(([key, value]) => `[${key}]: [${value}]`)].join('\n'));
     if (['settings get global private_dns_mode', 'settings get global private_dns_specifier',
       'settings get secure screensaver_components', 'settings get global window_animation_scale',
@@ -78,10 +99,15 @@ async function fixture(t, options = {}) {
       if (disable && options.falseOn === pkg) return result('Failure');
       return result(`Package ${pkg} new state: ${disable ? 'disabled-user' : 'enabled'}`);
     }
+    if (args[3] === 'am' && args[4] === 'broadcast') {
+      if (options.zoneFailure) return result('Broadcast completed: result=0');
+      return result(`Broadcast completed: result=0, data="zone=${args.at(-1)}"`);
+    }
     if (command === `am start -a android.intent.action.VIEW -d market://details?id=${replacement}`) return result('Starting: Intent');
     throw new Error(`Unexpected command: ${command}`);
   };
-  const client = createAdbClient(run);
+  const client = createAdbClient(run, { readBundledFile: async path => path === BUNDLED_APK ? Buffer.from('fixture APK')
+    : `${createHash('sha256').update('fixture APK').digest('hex')}  cleantv-home.apk\n` });
   const presets = [{ id: 'launcher-test', match: { any: true }, packages: stock.map(packageName => ({ package: packageName, risk: 'red', category: 'launcher' })) }];
   const engine = createEngine({ client, journal, presets });
   const changes = kind => calls.filter(args => args[3] === 'pm' && args[4] === kind).map(args => args.at(-1));
@@ -97,8 +123,9 @@ test('stock allowlist covers supported preset launchers and excludes Fire OS', a
   }
   for (const pkg of ['com.google.android.apps.tv.launcherx', 'com.google.android.tvlauncher', 'com.mitv.tvhome.atv']) assert.ok(STOCK_LAUNCHERS.includes(pkg));
   assert.deepEqual(REPLACEMENT_LAUNCHERS, [
-    { package: 'com.spocky.projengmenu', name: 'Projectivy Launcher' },
-    { package: 'me.efesser.flauncher', name: 'FLauncher' },
+    { package: 'com.spocky.projengmenu', name: 'Projectivy Launcher', source: 'play' },
+    { package: 'me.efesser.flauncher', name: 'FLauncher', source: 'play' },
+    { package: 'io.github.sepulse.cleantv.home', name: 'CleanTV Home', source: 'bundled', minSdk: 26 },
   ]);
 });
 
@@ -108,7 +135,7 @@ test('status reports HOME, all stock states and replacement readiness', async t 
   assert.equal(status.home, stock[0]);
   assert.deepEqual(status.replacement, { ...REPLACEMENT_LAUNCHERS[0], installed: true, enabled: true, isHomeCandidate: true });
   assert.deepEqual(status.replacements, [status.replacement,
-    { ...REPLACEMENT_LAUNCHERS[1], installed: false, enabled: false, isHomeCandidate: false }]);
+    ...REPLACEMENT_LAUNCHERS.slice(1).map(entry => ({ ...entry, installed: false, enabled: false, isHomeCandidate: false }))]);
   assert.deepEqual(status.stock[2], { package: stock[2], installed: true, enabled: false });
   assert.equal(status.stock.at(-1).installed, false);
 });
@@ -541,7 +568,7 @@ test('restoreLauncher with no installed stock launcher explains the original hom
 for (const { package: replacement, name } of REPLACEMENT_LAUNCHERS) {
   test(name + ': selected status and readiness guards do not use another launcher', async t => {
     const other = REPLACEMENT_LAUNCHERS.find(entry => entry.package !== replacement).package;
-    for (const [options, condition] of [[{ absent: true }, 'installed'], [{ disabled: true }, 'enabled'], [{ notCandidate: true }, 'isHomeCandidate']]) {
+    for (const [options, condition] of [[{ absent: true }, 'installed'], [{ disabled: true }, 'enabled'], [{ notCandidate: true }, 'isHomeCandidate']].filter(([options]) => replacement !== 'io.github.sepulse.cleantv.home' || !options.absent)) {
       const { engine, journal, changes } = await fixture(t, { ...options, replacement, extraInstalled: [other] });
       const status = await engine.launcherStatus(serial, replacement);
       assert.equal(status.replacement.package, replacement);
@@ -628,4 +655,200 @@ test('FLauncher restore failures identify original HOME or FLauncher rather than
   for (const pkg of stock) disabled.add(pkg);
   await journal.append('LAUNCHER_TEST', { action: 'swap', status: 'pending', replacement, disabled: stock });
   assert.equal((await engine.recoverLauncher(serial)).results.at(-1).package, stock[0]);
+});
+
+
+test('bundled fresh install saves baseline and intent, swaps, restores original HOME, then removes only its own package', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  const { engine, journal, calls, installed } = await fixture(t, { replacement: pkg, absent: true, extraInstalled: ['com.gathin.tvhome'] });
+  assert.equal((await engine.swapLauncher(serial, pkg)).failed, 0);
+  assert.deepEqual(await journal.installedByUs('LAUNCHER_TEST'), [pkg]);
+  assert.equal((await journal.readBaseline('LAUNCHER_TEST')).homeComponent, stock[0] + '/.Main');
+  const result = await engine.restore(serial, 'all');
+  assert.equal(result.failed, 0);
+  assert.ok(result.results.some(item => item.package === pkg && item.result === 'removed'));
+  assert.ok(!installed.has(pkg));
+  assert.ok(installed.has('com.gathin.tvhome'));
+  assert.deepEqual(calls.filter(args => args[2] === 'uninstall'), [['-s', serial, 'uninstall', pkg]]);
+  assert.deepEqual(await journal.installedByUs('LAUNCHER_TEST'), []);
+  assert.deepEqual((await journal.read('LAUNCHER_TEST')).filter(item => ['install', 'remove'].includes(item.action)).map(item => [item.action, item.status]),
+    [['install', 'pending'], ['install', 'ok'], ['remove', 'pending'], ['remove', 'ok']]);
+  await engine.restore(serial, 'all');
+  assert.equal(calls.filter(args => args[2] === 'uninstall').length, 1);
+});
+
+test('bundled SDK and platform guards run before baseline, journal or installation', async t => {
+  for (const props of [
+    { 'ro.build.version.sdk': '25' }, { 'ro.build.version.sdk': '' }, { 'ro.build.version.sdk': 'NaN' },
+    { 'ro.product.manufacturer': 'Amazon' }, { 'ro.product.manufacturer': 'CVTE' },
+    { 'ro.product.manufacturer': 'Xiaomi', 'ro.build.display.id': 'OS2.0.cn' },
+  ]) {
+    const { engine, journal, calls } = await fixture(t, { replacement: BUNDLED_LAUNCHER.package, absent: true, props });
+    await assert.rejects(engine.swapLauncher(serial, BUNDLED_LAUNCHER.package), { code: 'LAUNCHER_UNSUPPORTED' });
+    assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+    assert.equal(await journal.readBaseline('LAUNCHER_TEST'), null);
+    assert.ok(!calls.some(args => args[2] === 'install' || args.includes('disable-user')));
+  }
+});
+
+test('bundled installation rejects an unknown real HOME before install', async t => {
+  const { engine, calls, journal } = await fixture(t, { replacement: BUNDLED_LAUNCHER.package, absent: true, focusBefore: 'android' });
+  await assert.rejects(engine.swapLauncher(serial, BUNDLED_LAUNCHER.package), { code: 'LAUNCHER_NOT_READY' });
+  assert.ok(!calls.some(args => args[2] === 'install'));
+  assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+});
+
+test('pre-existing bundled launcher is switched without install evidence and never removed', async t => {
+  const { engine, calls, installed, journal } = await fixture(t, { replacement: BUNDLED_LAUNCHER.package });
+  assert.equal((await engine.swapLauncher(serial, BUNDLED_LAUNCHER.package)).failed, 0);
+  assert.deepEqual(await journal.installedByUs('LAUNCHER_TEST'), []);
+  assert.equal((await engine.restore(serial, 'all')).failed, 0);
+  assert.ok(installed.has(BUNDLED_LAUNCHER.package));
+  assert.ok(!calls.some(args => ['install', 'uninstall'].includes(args[2])));
+});
+
+test('failed bundled install journals failure and leaves stock HOME untouched', async t => {
+  const { engine, journal, changes } = await fixture(t, { replacement: BUNDLED_LAUNCHER.package, absent: true, installFailure: true });
+  await assert.rejects(engine.swapLauncher(serial, BUNDLED_LAUNCHER.package), { code: 'COMMAND_FAILED' });
+  assert.deepEqual(changes('disable-user'), []);
+  assert.deepEqual(await journal.installedByUs('LAUNCHER_TEST'), []);
+  assert.deepEqual((await journal.read('LAUNCHER_TEST')).map(item => item.status), ['pending', 'failed']);
+});
+
+test('bundled install needs a durable intent; failed journal prevents installation', async t => {
+  const { engine, journal, calls } = await fixture(t, { replacement: BUNDLED_LAUNCHER.package, absent: true });
+  journal.append = async () => { throw new Error('disk full'); };
+  await assert.rejects(engine.swapLauncher(serial, BUNDLED_LAUNCHER.package), /disk full/);
+  assert.ok(!calls.some(args => args[2] === 'install'));
+});
+
+test('restore all keeps an owned launcher when HOME cannot be verified, then permits a later recovery', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  const { engine, options, calls, installed } = await fixture(t, { replacement: pkg, absent: true });
+  await engine.swapLauncher(serial, pkg);
+  options.setHomeFailure = true;
+  const result = await engine.restore(serial, 'all');
+  assert.ok(result.failed > 0);
+  assert.ok(installed.has(pkg));
+  assert.ok(!calls.some(args => args[2] === 'uninstall'));
+  options.setHomeFailure = false;
+  assert.equal((await engine.restore(serial, 'all')).failed, 0);
+  assert.ok(!installed.has(pkg));
+});
+
+test('removal failure is journalled and only restore all retries it', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  const { engine, options, journal, installed } = await fixture(t, { replacement: pkg, absent: true, removeFailure: true });
+  await engine.swapLauncher(serial, pkg);
+  await engine.restoreLauncher(serial);
+  assert.ok(installed.has(pkg));
+  const result = await engine.restore(serial, 'all');
+  assert.equal(result.results.at(-1).result, 'failed');
+  assert.equal((await journal.read('LAUNCHER_TEST')).at(-1).status, 'failed');
+  assert.deepEqual(await journal.installedByUs('LAUNCHER_TEST'), [pkg]);
+  options.removeFailure = false;
+  assert.equal((await engine.restore(serial, 'all')).failed, 0);
+  assert.ok(!installed.has(pkg));
+});
+
+test('uncertain install and unreadable journal never authorize removal', async t => {
+  for (const damaged of [false, true]) {
+    const pkg = BUNDLED_LAUNCHER.package;
+    // The fixture's own pending-intent check reads the journal, which is what is damaged here.
+    const { engine, journal, calls, installed } = await fixture(t, { replacement: pkg, skipJournalCheck: damaged });
+    await journal.append('LAUNCHER_TEST', { at: 'today', action: 'install', package: pkg, absentBefore: true, status: 'pending' });
+    if (damaged) journal.read = journal.installedByUs = async () => { throw new Error('damaged'); };
+    const result = await engine.restore(serial, 'all');
+    assert.equal(result.failed, 0);
+    if (damaged) assert.equal(result.journalWarning, true);
+    assert.ok(installed.has(pkg));
+    assert.ok(!calls.some(args => args[2] === 'uninstall'));
+  }
+});
+
+
+test('bundled install refuses when the original HOME baseline cannot be saved', async t => {
+  const { engine, journal, calls } = await fixture(t, { replacement: BUNDLED_LAUNCHER.package, absent: true });
+  journal.saveBaseline = async () => { throw new Error('baseline disk full'); };
+  await assert.rejects(engine.swapLauncher(serial, BUNDLED_LAUNCHER.package), { code: 'COMMAND_FAILED' });
+  assert.deepEqual(await journal.read('LAUNCHER_TEST'), []);
+  assert.ok(!calls.some(args => args[2] === 'install'));
+});
+
+test('restore all restores the original Projectivy HOME before removing CleanTV Home', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  const original = REPLACEMENT_LAUNCHERS[0].package;
+  const { engine, journal, client, installed } = await fixture(t, { replacement: pkg, absent: true, home: original, extraInstalled: [original] });
+  assert.equal((await engine.swapLauncher(serial, pkg)).failed, 0);
+  assert.equal((await journal.readBaseline('LAUNCHER_TEST')).homeComponent, original + '/.Main');
+  assert.equal((await engine.restore(serial, 'all')).failed, 0);
+  assert.equal(await client.focusedPackage(serial), original);
+  assert.ok(!installed.has(pkg));
+  assert.ok(installed.has(original));
+});
+
+
+test('lost original HOME baseline allows fallback recovery but never removal', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  for (const damaged of [false, true]) {
+    const { engine, journal, calls, installed } = await fixture(t, { replacement: pkg, absent: true });
+    await engine.swapLauncher(serial, pkg);
+    journal.readBaseline = async () => { if (damaged) throw new Error('baseline damaged'); return null; };
+    const result = await engine.restore(serial, 'all');
+    assert.ok(result.results.some(item => item.package === pkg && item.result === 'failed' && item.reason === 'LAUNCHER_RESTORE_FAILED'));
+    assert.ok(installed.has(pkg));
+    assert.ok(!calls.some(args => args[2] === 'uninstall'));
+    if (damaged) assert.equal(result.journalWarning, true);
+  }
+});
+
+const zoneBroadcasts = calls => calls.filter(args => args[3] === 'am' && args[4] === 'broadcast');
+
+test('bundled swap sends the chosen zone after the switch and journals it for the next choice', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  const { engine, journal, calls } = await fixture(t, { replacement: pkg, absent: true });
+  const result = await engine.swapLauncher(serial, pkg, () => {}, { zone: 'KDH01' });
+  assert.equal(result.failed, 0);
+  assert.equal(result.prayerZone, 'KDH01');
+  assert.deepEqual(zoneBroadcasts(calls), [['-s', serial, 'shell', 'am', 'broadcast', '-n',
+    `${pkg}/com.gathin.tvhome.PrayerConfig`, '--es', 'zone', 'KDH01']]);
+  assert.ok(calls.findIndex(args => args[3] === 'am') > calls.findIndex(args => args[2] === 'install'));
+  assert.equal(await journal.lastZone('LAUNCHER_TEST'), 'KDH01');
+  assert.equal((await engine.launcherStatus(serial, pkg)).prayerZone, 'KDH01');
+});
+
+test('a zone that cannot be sent does not undo a working switch', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  const { engine, journal, disabled } = await fixture(t, { replacement: pkg, absent: true, zoneFailure: true });
+  const result = await engine.swapLauncher(serial, pkg, () => {}, { zone: 'JHR02' });
+  assert.equal(result.failed, 0);
+  assert.equal(result.prayerZoneFailed, true);
+  assert.equal(result.prayerZone, undefined);
+  assert.ok(stock.slice(0, 2).every(item => disabled.has(item)));
+  assert.equal(await journal.lastZone('LAUNCHER_TEST'), null);
+});
+
+test('a zone is validated before anything runs and only fits CleanTV Home', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  for (const [replacementPackage, zone] of [[pkg, 'KDH99'], [pkg, 'kdh01'], [pkg, null], [pkg, 'KDH01;reboot'], [REPLACEMENT_LAUNCHERS[0].package, 'KDH01']]) {
+    const { engine, calls } = await fixture(t, { replacement: replacementPackage });
+    await assert.rejects(engine.swapLauncher(serial, replacementPackage, () => {}, { zone }), { code: 'INVALID_INPUT' });
+    assert.deepEqual(calls, []);
+  }
+});
+
+test('setPrayerZone needs CleanTV Home on the TV, validates the zone and journals it', async t => {
+  const pkg = BUNDLED_LAUNCHER.package;
+  const absent = await fixture(t, { replacement: pkg, absent: true });
+  await assert.rejects(absent.engine.setPrayerZone(serial, 'KDH01'), { code: 'LAUNCHER_NOT_READY' });
+  assert.deepEqual(zoneBroadcasts(absent.calls), []);
+  const present = await fixture(t, { replacement: pkg });
+  await assert.rejects(present.engine.setPrayerZone(serial, 'XXX00'), { code: 'INVALID_INPUT' });
+  assert.deepEqual(zoneBroadcasts(present.calls), []);
+  await present.engine.setPrayerZone(serial, 'SGR01');
+  assert.equal(zoneBroadcasts(present.calls).length, 1);
+  assert.equal(await present.journal.lastZone('LAUNCHER_TEST'), 'SGR01');
+  const failing = await fixture(t, { replacement: pkg, zoneFailure: true });
+  await assert.rejects(failing.engine.setPrayerZone(serial, 'SGR01'), { code: 'COMMAND_FAILED' });
+  assert.equal(await failing.journal.lastZone('LAUNCHER_TEST'), null);
 });

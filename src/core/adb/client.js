@@ -2,6 +2,8 @@ import { CleanTvError, ErrorCode } from '../errors.js';
 import { isValidPackageName, isValidSerial } from '../safety.js';
 import { assertReplacement } from '../launchers.js';
 import { assertPrivateDns } from '../dns.js';
+import { assertZone } from '../jakim-zones.js';
+import { BUNDLED_LAUNCHER, BUNDLED_APK, verifyBundledLauncher, ownsBundledLauncher } from '../bundled-launcher.js';
 
 const homeComponent = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*\/(?:\.?[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
 const parseHomeComponents = output => [...new Set(output.split(/\r?\n/).map(line => line.trim())
@@ -22,15 +24,15 @@ export function parseFocusedPackage(output) {
 }
 
 /** @param {import('./runner.js').Runner} run */
-export function createAdbClient(run) {
+export function createAdbClient(run, { readBundledFile } = {}) {
   function validate(serial, pkg) {
     if (!isValidSerial(serial) || (arguments.length > 1 && !isValidPackageName(pkg))) {
       throw new CleanTvError(ErrorCode.INVALID_INPUT);
     }
   }
 
-  async function checked(args) {
-    const response = await run(args);
+  async function checked(args, options) {
+    const response = await run(args, options);
     if (response.code !== 0) {
       throw new CleanTvError(ErrorCode.COMMAND_FAILED, response.stderr || response.stdout, response);
     }
@@ -141,10 +143,39 @@ export function createAdbClient(run) {
       const output = await checked(['-s', serial, 'shell', 'pm', 'enable', '--user', '0', pkg]);
       return /new state: enabled(?:\s|$)/.test(output);
     },
+    /** @param {string} serial */
+    async installBundledLauncher(serial) {
+      validate(serial);
+      const sdk = (await client.getprops(serial))['ro.build.version.sdk'];
+      if (!/^\d+$/.test(sdk) || Number(sdk) < BUNDLED_LAUNCHER.minSdk) {
+        throw new CleanTvError(ErrorCode.LAUNCHER_UNSUPPORTED);
+      }
+      await verifyBundledLauncher(readBundledFile);
+      // A slow TV can need much longer than the 15 s default to install.
+      const output = await checked(['-s', serial, 'install', '-r', BUNDLED_APK], { timeoutMs: 120000 });
+      if (!/^Success\s*$/m.test(output) || /Failure|Error:/i.test(output)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+    },
+    /** Fixed package only, with durable journal evidence checked at the command boundary. */
+    async removeBundledLauncher(serial, journal, deviceId) {
+      validate(serial);
+      if (!ownsBundledLauncher(await journal.read(deviceId))) throw new CleanTvError(ErrorCode.PACKAGE_PROTECTED);
+      const output = await checked(['-s', serial, 'uninstall', 'io.github.sepulse.cleantv.home']);
+      if (!/^Success\s*$/m.test(output) || /Failure|Error:/i.test(output)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+    },
+    /** Sets the JAKIM zone of CleanTV Home's prayer-times panel; only a listed zone code is sent. */
+    async setPrayerZone(serial, zone) {
+      validate(serial);
+      assertZone(zone);
+      const output = await checked(['-s', serial, 'shell', 'am', 'broadcast', '-n',
+        `${BUNDLED_LAUNCHER.package}/com.gathin.tvhome.PrayerConfig`, '--es', 'zone', zone]);
+      // A broadcast nobody receives still completes; only the launcher's own answer proves the zone was set.
+      if (!output.includes(`data="zone=${zone}"`)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+    },
     /** @param {string} serial @param {string} pkg */
     async openPlayStore(serial, pkg) {
       validate(serial, pkg);
       assertReplacement(pkg);
+      if (pkg === BUNDLED_LAUNCHER.package) throw new CleanTvError(ErrorCode.INVALID_INPUT);
       const output = await checked(['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW',
         '-d', `market://details?id=${pkg}`]);
       if (/Error:|Exception|unable to resolve/i.test(output)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);

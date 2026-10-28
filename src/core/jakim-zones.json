@@ -1,0 +1,94 @@
+{
+ "source": "https://www.e-solat.gov.my/ (JAKIM e-Solat, zone selector)",
+ "fetched": "2026-10-28",
+ "states": [
+  {"state": "Johor", "zones": [
+   {"code":"JHR01","area":"Pulau Aur dan Pulau Pemanggil"},
+   {"code":"JHR02","area":"Johor Bahru, Kota Tinggi, Mersing, Kulai"},
+   {"code":"JHR03","area":"Kluang, Pontian"},
+   {"code":"JHR04","area":"Batu Pahat, Muar, Segamat, Gemas Johor, Tangkak"}
+  ]},
+  {"state": "Kedah", "zones": [
+   {"code":"KDH01","area":"Kota Setar, Kubang Pasu, Pokok Sena (Daerah Kecil)"},
+   {"code":"KDH02","area":"Kuala Muda, Yan, Pendang"},
+   {"code":"KDH03","area":"Padang Terap, Sik"},
+   {"code":"KDH04","area":"Baling"},
+   {"code":"KDH05","area":"Bandar Baharu, Kulim"},
+   {"code":"KDH06","area":"Langkawi"},
+   {"code":"KDH07","area":"Puncak Gunung Jerai"}
+  ]},
+  {"state": "Kelantan", "zones": [
+   {"code":"KTN01","area":"Bachok, Kota Bharu, Machang, Pasir Mas, Pasir Puteh, Tanah Merah, Tumpat, Kuala Krai, Mukim Chiku"},
+   {"code":"KTN02","area":"Gua Musang (Daerah Galas Dan Bertam), Jeli, Jajahan Kecil Lojing"}
+  ]},
+  {"state": "Melaka", "zones": [
+   {"code":"MLK01","area":"SELURUH NEGERI MELAKA"}
+  ]},
+  {"state": "Negeri Sembilan", "zones": [
+   {"code":"NGS01","area":"Tampin, Jempol"},
+   {"code":"NGS02","area":"Jelebu, Kuala Pilah, Rembau"},
+   {"code":"NGS03","area":"Port Dickson, Seremban"}
+  ]},
+  {"state": "Pahang", "zones": [
+   {"code":"PHG01","area":"Pulau Tioman"},
+   {"code":"PHG02","area":"Kuantan, Pekan, Muadzam Shah"},
+   {"code":"PHG03","area":"Jerantut, Temerloh, Maran, Bera, Chenor, Jengka"},
+   {"code":"PHG04","area":"Bentong, Lipis, Raub"},
+   {"code":"PHG05","area":"Genting Sempah, Janda Baik, Bukit Tinggi"},
+   {"code":"PHG06","area":"Cameron Highlands, Genting Higlands, Bukit Fraser"},
+   {"code":"PHG07","area":"Daerah Rompin, (Mukim Rompin, Mukim Endau, Mukim Pontian)"}
+  ]},
+  {"state": "Perlis", "zones": [
+   {"code":"PLS01","area":"Kangar, Padang Besar, Arau"}
+  ]},
+  {"state": "Pulau Pinang", "zones": [
+   {"code":"PNG01","area":"Seluruh Negeri Pulau Pinang"}
+  ]},
+  {"state": "Perak", "zones": [
+   {"code":"PRK01","area":"Tapah, Slim River, Tanjung Malim"},
+   {"code":"PRK02","area":"Kuala Kangsar, Sg. Siput , Ipoh, Batu Gajah, Kampar"},
+   {"code":"PRK03","area":"Lenggong, Pengkalan Hulu, Grik"},
+   {"code":"PRK04","area":"Temengor, Belum"},
+   {"code":"PRK05","area":"Kg Gajah, Teluk Intan, Bagan Datuk, Seri Iskandar, Beruas, Parit, Lumut, Sitiawan, Pulau Pangkor"},
+   {"code":"PRK06","area":"Selama, Taiping, Bagan Serai, Parit Buntar"},
+   {"code":"PRK07","area":"Bukit Larut"}
+  ]},
+  {"state": "Sabah", "zones": [
+   {"code":"SBH01","area":"Bahagian Sandakan (Timur), Bukit Garam, Semawang, Temanggong, Tambisan, Bandar Sandakan, Sukau"},
+   {"code":"SBH02","area":"Beluran, Telupid, Pinangah, Terusan, Kuamut, Bahagian Sandakan (Barat)"},
+   {"code":"SBH03","area":"Lahad Datu, Silabukan, Kunak, Sahabat, Semporna, Tungku, Bahagian Tawau (Timur)"},
+   {"code":"SBH04","area":"Bandar Tawau, Balong, Merotai, Kalabakan, Bahagian Tawau (Barat)"},
+   {"code":"SBH05","area":"Kudat, Kota Marudu, Pitas, Pulau Banggi, Bahagian Kudat"},
+   {"code":"SBH06","area":"Gunung Kinabalu"},
+   {"code":"SBH07","area":"Kota Kinabalu, Ranau, Kota Belud, Tuaran, Penampang, Papar, Putatan, Bahagian Pantai Barat"},
+   {"code":"SBH08","area":"Pensiangan, Keningau, Tambunan, Nabawan, Bahagian Pendalaman (Atas)"},
+   {"code":"SBH09","area":"Beaufort, Kuala Penyu, Sipitang, Tenom, Long Pasia, Membakut, Weston, Bahagian Pendalaman (Bawah)"}
+  ]},
+  {"state": "Selangor", "zones": [
+   {"code":"SGR01","area":"Gombak, Petaling, Sepang, Hulu Langat, Hulu Selangor, S.Alam"},
+   {"code":"SGR02","area":"Kuala Selangor, Sabak Bernam"},
+   {"code":"SGR03","area":"Klang, Kuala Langat"}
+  ]},
+  {"state": "Sarawak", "zones": [
+   {"code":"SWK01","area":"Limbang, Lawas, Sundar, Trusan"},
+   {"code":"SWK02","area":"Miri, Niah, Bekenu, Sibuti, Marudi"},
+   {"code":"SWK03","area":"Pandan, Belaga, Suai, Tatau, Sebauh, Bintulu"},
+   {"code":"SWK04","area":"Sibu, Mukah, Dalat, Song, Igan, Oya, Balingian, Kanowit, Kapit"},
+   {"code":"SWK05","area":"Sarikei, Matu, Julau, Rajang, Daro, Bintangor, Belawai"},
+   {"code":"SWK06","area":"Lubok Antu, Sri Aman, Roban, Debak, Kabong, Lingga, Engkelili, Betong, Spaoh, Pusa, Saratok"},
+   {"code":"SWK07","area":"Serian, Simunjan, Samarahan, Sebuyau, Meludam"},
+   {"code":"SWK08","area":"Kuching, Bau, Lundu, Sematan"},
+   {"code":"SWK09","area":"Zon Khas (Kampung Patarikan)"}
+  ]},
+  {"state": "Terengganu", "zones": [
+   {"code":"TRG01","area":"Kuala Terengganu, Marang, Kuala Nerus"},
+   {"code":"TRG02","area":"Besut, Setiu"},
+   {"code":"TRG03","area":"Hulu Terengganu"},
+   {"code":"TRG04","area":"Dungun, Kemaman"}
+  ]},
+  {"state": "Wilayah Persekutuan", "zones": [
+   {"code":"WLY01","area":"Kuala Lumpur, Putrajaya"},
+   {"code":"WLY02","area":"Labuan"}
+  ]}
+ ]
+}
