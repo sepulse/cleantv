@@ -22,6 +22,6 @@
 | Fasa 13a Private DNS (AdGuard, pilihan) | Codex + Sol (2) + Gemini | main | done (cc6df64) | — |
 | Fasa 13b tutup ADB rangkaian | Codex + Sol (3) + Gemini | main | done (1710345) | — |
 | Fasa 13c audit privasi (baca sahaja) | Codex + Sonnet + Gemini | main | done (d9bcf4b) | — |
-| Fasa 10 launcher CleanTV Home | Codex | — | dibatalkan oleh pemilik | patch WIP disimpan di luar repo (`D:\Project\Deep\_cytasa10-launcher-wip.patch`) |
+| Fasa 10 launcher CleanTV Home | Codex | — | dihidupkan semula dalam Fasa 14 (28 Okt) | patch WIP: `D:/Project/Deep/_cyt/fasa10-launcher-wip.patch` |
 | Panduan pasang + FAQ widget solat | Claude Opus + semakan Sonnet | main | done (2d4b241, belum push) | push; isi nota release v0.2.1-beta (perlu izin) |
 | Fasa 14 CleanTV Home + panel Waktu Solat JAKIM | Sonnet (bina) + semakan subagent | — | brief siap (`docs/brief/FASA14-launcher-waktu-solat.md`) | jangan pack/release; pemilik: 4 GitHub Secrets keystore, ujian TV sebenar |
