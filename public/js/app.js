@@ -260,6 +260,18 @@ const actions = {
     state.zoneSent = null;
     render();
   },
+  openPrayerSetup() {
+    const bundled = state.launcher?.replacements.find(entry => entry.source === 'bundled');
+    if (state.busy || !bundled) return;
+    state.launcherExpanded = true;
+    state.launcherPackage = bundled.package;
+    state.storeOpened = false;
+    state.zoneSent = null;
+    render();
+    const field = document.getElementById('prayer-state');
+    field?.scrollIntoView?.({ block: 'center' });
+    field?.focus({ preventScroll: true });
+  },
   selectPrayerState(name) {
     if (state.busy) return;
     state.prayerStateName = name;

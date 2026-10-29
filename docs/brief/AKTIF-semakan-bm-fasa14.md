@@ -7,7 +7,7 @@ Peraturan: kekalkan istilah teknikal English (launcher, APK, home app, Home, Dev
 Jangan tambah apa-apa yang tiada dalam sumber. Kekalkan struktur dan fakta.
 
 Fail dan kunci untuk disemak:
-- `public/i18n/ms.json`: semua kunci `launcher.zone*`, `launcher.bundled*`, `launcher.installSwitch`, `result.removed`,
+- `public/i18n/ms.json`: semua kunci `prayer.promo*` (kad Waktu solat di bahagian atas skrin pilihan), `launcher.zone*`, `launcher.bundled*`, `launcher.installSwitch`, `result.removed`,
   `restore.body`, `launcher.notInstalled`, `error.LAUNCHER_UNSUPPORTED` (bandingkan dengan `public/i18n/en.json`).
 - `README.md` (bahagian Bahasa Melayu), `docs/PANDUAN-PASANG.md` (nota atas, FAQ "Di mana widget waktu solat?", "Adakah CleanTV memadam aplikasi?"),
   `THIRD_PARTY_NOTICES.md` (bahagian "Data waktu solat (JAKIM)"), `scripts/build-portable.js` (`quickStartText`, bahagian BAHASA MELAYU).

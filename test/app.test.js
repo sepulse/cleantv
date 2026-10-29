@@ -11,7 +11,7 @@ const replacement = 'com.spocky.projengmenu';
 const stock = 'com.google.android.apps.tv.launcherx';
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 
-async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false, recoveryBusy = false, launcherFailures = 0, reenabled = [], packages } = {}) {
+async function application(t, { missingCatalog = false, recovered = false, manualHomePackage, needsRecovery = false, recoveryResult, failRecoveryRefresh = false, recoveryBusy = false, launcherFailures = 0, reenabled = [], packages, home = stock, installedLaunchers = [], zones =[{ state: 'Kedah', zones: [{ code: 'KDH01', area: 'Kota Setar' }] }] } = {}) {
   const previous = Object.fromEntries(['document', 'Node', 'window', 'localStorage', 'fetch', 'EventSource', 'setTimeout', 'clearTimeout', 'ResizeObserver']
     .map(key => [key, globalThis[key]]));
   const { document, Node } = createDocument();
@@ -21,7 +21,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
   const observers = [];
   const requests = [];
   let connects = 0;
-  const ready = new Set();
+  const ready = new Set(installedLaunchers);
   let recoveryStarted = false;
   let jobPost;
   let pagehide;
@@ -49,7 +49,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
       requests.push({ path, options });
       if (path.startsWith('/i18n/')) return missingCatalog ? { ok: false } : response(catalog);
       if (path === '/api/health') return response({ demo: true, adb: { found: true } });
-      if (path === '/api/prayer-zones') return response({ states: [{ state: 'Kedah', zones: [{ code: 'KDH01', area: 'Kota Setar' }] }] });
+      if (path === '/api/prayer-zones') return response({ states: zones });
       if (path === '/api/discover') return response({ candidates: [{ ip: '192.168.1.50' }] });
       if (path === '/api/devices/connect') return response({ serial, state: ++connects <= 2 ? 'unauthorized' : 'device' });
       if (path.endsWith('/open-store')) { ready.add(JSON.parse(options.body).package); return response({ ok: true }); }
@@ -61,7 +61,7 @@ async function application(t, { missingCatalog = false, recovered = false, manua
       if (path.split('?')[0].endsWith('/launcher') && launcherFailures-- > 0) {
         return { ok: false, json: async () => ({ error: { code: 'COMMAND_FAILED' } }) };
       }
-      if (path.split('?')[0].endsWith('/launcher') && !options.body) return response({ home: stock,
+      if (path.split('?')[0].endsWith('/launcher') && !options.body) return response({ home,
         needsRecovery,
         replacements: REPLACEMENT_LAUNCHERS.map(entry => ({ ...entry,
           installed: ready.has(entry.package), enabled: ready.has(entry.package), isHomeCandidate: ready.has(entry.package) })),
@@ -600,6 +600,41 @@ test('bundled launcher card picks Negeri then Kawasan and sends only the chosen 
   await app.click('launcher-switch');
   await app.click('modal-confirm');
   assert.deepEqual(JSON.parse(app.requests.at(-1).options.body), { package: pkg, zone: 'KDH01' });
+});
+
+test('prayer-times card is visible above the app list and opens the zone choice without hunting for the advanced section', async t => {
+  const pkg = 'io.github.sepulse.cleantv.home';
+  const app = await application(t);
+  await connect(app);
+  const text = app.document.root.textContent;
+  assert.match(app.byId('prayer-promo').textContent, /Prayer times on your TV/);
+  assert.ok(text.indexOf('Prayer times on your TV') < text.indexOf('Example app'), 'shown before the app list');
+  assert.equal(app.byId('prayer-promo-open').textContent, 'Set up prayer times');
+  assert.equal(app.document.getElementById('launcher-steps'), null, 'the advanced card stays collapsed until asked');
+  await app.click('prayer-promo-open');
+  assert.equal(app.byId('launcher-disclosure').attributes['aria-expanded'], 'true');
+  assert.equal(app.byId('launcher-' + pkg).checked, true);
+  assert.equal(app.document.activeElement, app.byId('prayer-state'));
+  app.byId('prayer-state').listeners.change({ target: { value: 'Kedah' } });
+  app.byId('prayer-zone').listeners.change({ target: { value: 'KDH01' } });
+  await app.click('launcher-switch');
+  await app.click('modal-confirm');
+  assert.deepEqual(JSON.parse(app.requests.at(-1).options.body), { package: pkg, zone: 'KDH01' });
+});
+
+test('prayer-times card offers a zone change only once CleanTV Home is the active home screen', async t => {
+  const pkg = 'io.github.sepulse.cleantv.home';
+  for (const [home, label] of [[pkg, 'Change prayer-times zone'], [stock, 'Set up prayer times']]) {
+    const app = await application(t, { home, installedLaunchers: [pkg] });
+    await connect(app);
+    assert.equal(app.byId('prayer-promo-open').textContent, label);
+  }
+});
+
+test('prayer-times card is not offered when the zone list is empty', async t => {
+  const app = await application(t, { zones: [] });
+  await connect(app);
+  assert.equal(app.document.getElementById('prayer-promo'), null);
 });
 
 test('keeping the original launcher or Projectivy never sends a zone', async t => {

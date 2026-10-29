@@ -18,6 +18,17 @@ function zoneChoice(state, actions, replacement) {
     state.zoneSent && h('p', { role: 'status', className: 'small' }, t('launcher.zoneSaved', { zone: state.zoneSent })));
 }
 
+/** An easy-to-see way in to the prayer-times panel, which otherwise sits inside the collapsed advanced launcher card. */
+export function prayerPromoCard(state, actions) {
+  const bundled = state.launcher?.replacements.find(entry => entry.source === 'bundled');
+  if (!bundled || !state.prayerStates.length) return null;
+  return h('section', { className: 'card stack', id: 'prayer-promo', 'aria-labelledby': 'prayer-promo-title' },
+    h('h2', { id: 'prayer-promo-title' }, t('prayer.promoTitle')),
+    h('p', {}, t('prayer.promoBody')),
+    button(t(bundled.installed && state.launcher.home === bundled.package ? 'prayer.promoChange' : 'prayer.promoSetup'), actions.openPrayerSetup,
+      { id: 'prayer-promo-open', primary: true, disabled: state.busy }));
+}
+
 export function launcherCard(state, actions) {
   const status = state.launcher;
   const replacement = status?.replacements.find(entry => entry.package === state.launcherPackage);

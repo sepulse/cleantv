@@ -259,5 +259,9 @@
   "launcher.zoneChoose": "Choose an area",
   "launcher.zoneSave": "Send zone to the TV",
   "launcher.zoneSaved": "Zone {zone} was sent to CleanTV Home.",
-  "launcher.zoneFailed": "The home screen was switched, but the prayer-times zone could not be sent. Choose the zone again in the launcher section."
+  "launcher.zoneFailed": "The home screen was switched, but the prayer-times zone could not be sent. Choose the zone again in the launcher section.",
+  "prayer.promoTitle": "Prayer times on your TV",
+  "prayer.promoBody": "Show the JAKIM prayer times on the TV home screen. This uses CleanTV Home, an optional home screen, and you can bring your original home screen back at any time.",
+  "prayer.promoSetup": "Set up prayer times",
+  "prayer.promoChange": "Change prayer-times zone"
 }

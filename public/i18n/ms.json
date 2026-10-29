@@ -259,5 +259,9 @@
   "launcher.zoneChoose": "Pilih kawasan",
   "launcher.zoneSave": "Hantar zon ke TV",
   "launcher.zoneSaved": "Zon {zone} telah dihantar ke CleanTV Home.",
-  "launcher.zoneFailed": "Skrin utama telah ditukar, tetapi zon waktu solat tidak dapat dihantar. Pilih zon itu sekali lagi di bahagian launcher."
+  "launcher.zoneFailed": "Skrin utama telah ditukar, tetapi zon waktu solat tidak dapat dihantar. Pilih zon itu sekali lagi di bahagian launcher.",
+  "prayer.promoTitle": "Waktu solat pada TV anda",
+  "prayer.promoBody": "Paparkan waktu solat JAKIM pada skrin utama TV. Ini menggunakan CleanTV Home, skrin utama pilihan, dan anda boleh memulihkan skrin utama asal pada bila-bila masa.",
+  "prayer.promoSetup": "Tetapkan waktu solat",
+  "prayer.promoChange": "Tukar zon waktu solat"
 }

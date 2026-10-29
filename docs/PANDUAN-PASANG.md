@@ -134,8 +134,9 @@ Tidak puas hati? Tekan **Pulihkan semua** bila-bila masa. Factory reset pada TV 
 ## Soalan lazim
 
 **Di mana widget waktu solat?**
-Pilih launcher **CleanTV Home** (bahagian *Buang iklan skrin utama (lanjutan)*, butang **Pasang & tukar**). Pada langkah
-yang sama, pilih **Negeri** kemudian **Kawasan** (zon JAKIM) anda. Panel Waktu Solat akan muncul pada
+Pada skrin pilihan, tepat di bawah maklumat TV anda, tekan **Tetapkan waktu solat** (kad *Waktu solat pada TV
+anda*). Ia membuka launcher **CleanTV Home** (bahagian *Buang iklan skrin utama (lanjutan)*) dengan pilihan
+**Negeri** dan **Kawasan** (zon JAKIM) yang sedia untuk dipilih; kemudian tekan **Pasang & tukar**. Panel Waktu Solat akan muncul pada
 skrin utama TV, dengan waktu seterusnya diserlahkan. Anda boleh menukar zon kemudian dengan **Hantar zon
 ke TV**, atau menyembunyikan panel dalam tetapan launcher pada TV. CleanTV Home berdasarkan launcher
 "Clean Your TV" oleh Gathin. Ia menghubungi e-solat.gov.my (JAKIM) untuk waktu solat zon anda; hanya kod
@@ -157,8 +158,9 @@ dan (3) jenama dan model TV anda.
 
 ## English
 
-**Prayer times on the TV home screen?** Choose the optional **CleanTV Home** launcher (**Install & switch**)
-and pick your JAKIM **State** and **Area** in the same step. A Prayer Times panel then shows on the TV
+**Prayer times on the TV home screen?** On the choose screen, right under your TV's details, press
+**Set up prayer times** (the *Prayer times on your TV* card). It opens the optional **CleanTV Home** launcher
+with the JAKIM **State** and **Area** choice ready; pick them, then press **Install & switch**. A Prayer Times panel then shows on the TV
 home screen with the next time highlighted. CleanTV Home is based on the "Clean Your TV" launcher by
 Gathin; it contacts e-solat.gov.my (JAKIM) with the zone code only, and needs no location permission.
 **Restore all** brings back the original home screen and removes only the CleanTV Home that CleanTV

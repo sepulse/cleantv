@@ -1,7 +1,7 @@
 import { h, heading, button } from '../dom.js';
 import { t, registryText, errorText } from '../i18n.js';
 import { icon } from '../icons.js';
-import { launcherCard } from './launcher.js';
+import { launcherCard, prayerPromoCard } from './launcher.js';
 import { dnsCard } from './dns.js';
 import { privacyCard } from './privacy.js';
 
@@ -44,6 +44,7 @@ export function chooseScreen(state, actions) {
     h('div', { className: 'chips' }, h('span', { className: 'pill safe' }, icon('check'), t('choose.safeCount', { n: counts.green })),
       h('span', { className: 'pill optional' }, icon('optional'), t('choose.optionalCount', { n: counts.yellow })),
       h('span', { className: 'pill protected' }, icon('lock'), t('choose.protectedCount', { n: counts.red })))),
+    prayerPromoCard(state, actions),
     reenabled.length > 0 && h('div', { className: 'card stack', role: 'status', id: 'reenabled-card', 'aria-labelledby': 'reenabled-title' },
       h('h2', { id: 'reenabled-title' }, t('choose.reenabledTitle')),
       h('ul', { className: 'results' }, reenabled.map(entry => h('li', {}, registryText(entry)))),
