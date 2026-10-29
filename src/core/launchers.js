@@ -1,9 +1,12 @@
 import { CleanTvError, ErrorCode } from './errors.js';
 import { appendRecovery, warnJournal } from './journal.js';
+import { BUNDLED_LAUNCHER } from './bundled-launcher.js';
+import { assertZone, isValidZone } from './jakim-zones.js';
 
 export const REPLACEMENT_LAUNCHERS = Object.freeze([
-  Object.freeze({ package: 'com.spocky.projengmenu', name: 'Projectivy Launcher' }),
-  Object.freeze({ package: 'me.efesser.flauncher', name: 'FLauncher' }),
+  Object.freeze({ package: 'com.spocky.projengmenu', name: 'Projectivy Launcher', source: 'play' }),
+  Object.freeze({ package: 'me.efesser.flauncher', name: 'FLauncher', source: 'play' }),
+  BUNDLED_LAUNCHER,
 ]);
 // HOME packages only; recommendation and channel services are deliberately excluded.
 export const STOCK_LAUNCHERS = Object.freeze([
@@ -103,8 +106,15 @@ export function createLauncherActions({ client, journal, context, ensureBaseline
     return STOCK_LAUNCHERS.includes(home) && await enabled(serial, home);
   }
 
-  async function restoreHome(serial, targets) {
+  async function restoreHome(serial, targets, originalComponent) {
     try {
+      if (originalComponent) {
+        const pkg = originalComponent.split('/')[0];
+        if (!await enabled(serial, pkg)) return false;
+        if (await actualHome(serial) === pkg) return true;
+        await client.setHomeActivity(serial, originalComponent);
+        return await actualHome(serial) === pkg;
+      }
       if (await stockHome(serial)) return true;
       const candidates = await client.listHomeCandidateComponents(serial);
       for (const component of candidates) {
@@ -166,20 +176,62 @@ export function createLauncherActions({ client, journal, context, ensureBaseline
       assertReplacement(pkg);
       const ctx = await context(serial);
       const outcome = await healthCheck(serial, ctx);
-      return { ...await status(serial, ctx, pkg), ...outcome };
+      let prayerZone = null;
+      try { prayerZone = await journal.lastZone(ctx.info.deviceId); } catch { /* The zone is only a default for the picker. */ }
+      return { ...await status(serial, ctx, pkg), ...outcome, ...(isValidZone(prayerZone) ? { prayerZone } : {}) };
+    },
+    /** Sends the prayer-times zone to CleanTV Home, which must already be installed. */
+    async setPrayerZone(serial, zone) {
+      assertZone(zone);
+      const { info, installed } = await context(serial);
+      if (!installed.includes(BUNDLED_LAUNCHER.package)) throw new CleanTvError(ErrorCode.LAUNCHER_NOT_READY);
+      await client.setPrayerZone(serial, zone);
+      const outcome = {};
+      await appendRecovery(journal, info.deviceId, { ...record('zone', BUNDLED_LAUNCHER.package, 'ok'), zone }, outcome);
+      return outcome;
     },
     async openLauncherStore(serial, pkg) {
       assertReplacement(pkg);
+      if (pkg === BUNDLED_LAUNCHER.package) throw new CleanTvError(ErrorCode.INVALID_INPUT);
       await context(serial);
       await client.openPlayStore(serial, pkg);
     },
-    async swapLauncher(serial, replacement, onProgress = () => {}) {
+    async swapLauncher(serial, replacement, onProgress = () => {}, { zone } = {}) {
       assertReplacement(replacement);
+      if (zone !== undefined) {
+        assertZone(zone);
+        if (replacement !== BUNDLED_LAUNCHER.package) throw new CleanTvError(ErrorCode.INVALID_INPUT);
+      }
       // Never interleave with a health check that is still re-enabling stock launchers.
       while (checks.has(serial)) await checks.get(serial).catch(() => {});
-      const ctx = await context(serial);
-      const reason = unsupportedPlatform(ctx, await client.getprops(serial));
+      let ctx = await context(serial);
+      const props = await client.getprops(serial);
+      const reason = unsupportedPlatform(ctx, props);
       if (reason) throw new CleanTvError(ErrorCode.LAUNCHER_UNSUPPORTED, reason);
+      const bundled = replacement === BUNDLED_LAUNCHER.package;
+      if (bundled && (!/^\d+$/.test(props['ro.build.version.sdk']) || Number(props['ro.build.version.sdk']) < BUNDLED_LAUNCHER.minSdk)) {
+        throw new CleanTvError(ErrorCode.LAUNCHER_UNSUPPORTED, 'CleanTV Home requires Android SDK 26 or newer.');
+      }
+      const outcome = {};
+      if (bundled && !ctx.installed.includes(replacement)) {
+        const current = await status(serial, ctx, replacement);
+        const homes = [...current.stock, ...current.replacements.filter(item => item.isHomeCandidate)]
+          .filter(item => item.installed && item.enabled).map(item => item.package);
+        if (!homes.includes(await actualHome(serial))) throw new CleanTvError(ErrorCode.LAUNCHER_NOT_READY);
+        const baseline = await ensureBaseline(serial, ctx.info, outcome);
+        if (!baseline?.homeComponent) throw new CleanTvError(ErrorCode.COMMAND_FAILED, 'Cannot save the original HOME before installing CleanTV Home.');
+        const installRecord = status => ({ ...record('install', replacement, status), absentBefore: true });
+        await journal.append(ctx.info.deviceId, installRecord('pending'));
+        try {
+          await client.installBundledLauncher(serial);
+          if (!(await client.listPackages(serial)).includes(replacement)) throw new CleanTvError(ErrorCode.COMMAND_FAILED);
+        } catch (error) {
+          await journal.append(ctx.info.deviceId, { ...installRecord('failed'), error: error.code ?? ErrorCode.COMMAND_FAILED });
+          throw error;
+        }
+        await journal.append(ctx.info.deviceId, installRecord('ok'));
+        ctx = await context(serial);
+      }
       const before = await status(serial, ctx, replacement);
       for (const condition of ['installed', 'enabled', 'isHomeCandidate']) {
         if (!before.replacement[condition]) {
@@ -196,7 +248,6 @@ export function createLauncherActions({ client, journal, context, ensureBaseline
       if (!component) throw new CleanTvError(ErrorCode.LAUNCHER_NOT_READY);
       const attempted = [];
       const disabledBySwap = [];
-      const outcome = {};
       swapping.add(serial);
       try {
         await ensureBaseline(serial, ctx.info, outcome);
@@ -226,7 +277,14 @@ export function createLauncherActions({ client, journal, context, ensureBaseline
           throw new CleanTvError(ErrorCode.COMMAND_FAILED);
         }
         await journal.append(ctx.info.deviceId, swapRecord(replacement, disabledBySwap, 'ok'));
-        return { ...summary([{ package: replacement, result: 'switched' }]), ...outcome };
+        // The switch already worked; a zone that did not reach the TV can be sent again from CleanTV.
+        let prayerZone;
+        if (zone !== undefined) {
+          try { await client.setPrayerZone(serial, zone); prayerZone = zone; }
+          catch { outcome.prayerZoneFailed = true; }
+          if (prayerZone) await appendRecovery(journal, ctx.info.deviceId, { ...record('zone', replacement, 'ok'), zone }, outcome);
+        }
+        return { ...summary([{ package: replacement, result: 'switched' }]), ...outcome, ...(prayerZone ? { prayerZone } : {}) };
       } catch (error) {
         // A previous replacement swap may already have disabled every stock HOME.
         let toEnable = targets.length ? attempted : before.stock.filter(item => item.installed).map(item => item.package);

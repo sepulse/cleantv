@@ -2,6 +2,8 @@ import { CleanTvError, ErrorCode } from '../core/errors.js';
 import { isValidSerial } from '../core/safety.js';
 import { assertReplacement } from '../core/launchers.js';
 import { DNS_PROVIDERS, privateDnsFor } from '../core/dns.js';
+import { BUNDLED_LAUNCHER } from '../core/bundled-launcher.js';
+import { JAKIM_STATES, assertZone } from '../core/jakim-zones.js';
 
 const invalid = () => { throw new CleanTvError(ErrorCode.INVALID_INPUT); };
 const json = (response, value, status = 200) => {
@@ -32,6 +34,7 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
       if (typeof ip !== 'string' || !Number.isInteger(port) || !isValidSerial(`${ip}:${port}`)) invalid();
       json(res, await client.connect(ip, port));
     }],
+    ['GET', /^\/api\/prayer-zones$/, async (_req, res) => json(res, { states: JAKIM_STATES })],
     ['GET', /^\/api\/devices$/, async (_req, res) => {
       requireAdb();
       json(res, { devices: (await client.devices()).map(({ serial, state }) => ({ serial, state })) });
@@ -82,14 +85,23 @@ export function createRoutes({ engine, client, scan, jobs, demo = false }) {
     ['POST', /^\/api\/devices\/([^/]+)\/launcher\/open-store$/, async (_req, res, match, body) => {
       requireAdb();
       assertReplacement(body?.package);
+      if (body.package === BUNDLED_LAUNCHER.package) invalid();
       await engine.openLauncherStore(match.serial, body.package);
       json(res, { ok: true });
     }],
     ['POST', /^\/api\/devices\/([^/]+)\/launcher\/swap$/, async (_req, res, match, body) => {
       requireAdb();
       assertReplacement(body?.package);
+      if (Object.keys(body).some(key => !['package', 'zone'].includes(key))) invalid();
+      if (body.zone !== undefined) assertZone(body.zone);
       json(res, { jobId: jobs.start(match.serial,
-        onProgress => engine.swapLauncher(match.serial, body.package, onProgress)) }, 202);
+        onProgress => engine.swapLauncher(match.serial, body.package, onProgress, body.zone === undefined ? {} : { zone: body.zone })) }, 202);
+    }],
+    ['POST', /^\/api\/devices\/([^/]+)\/launcher\/prayer-zone$/, async (_req, res, match, body) => {
+      requireAdb();
+      if (!body || typeof body !== 'object' || Object.keys(body).some(key => key !== 'zone')) invalid();
+      assertZone(body.zone);
+      json(res, { ok: true, ...await engine.setPrayerZone(match.serial, body.zone) });
     }],
     ['POST', /^\/api\/devices\/([^/]+)\/launcher\/restore$/, async (_req, res, match, body) => {
       requireAdb();

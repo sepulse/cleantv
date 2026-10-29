@@ -24,4 +24,4 @@
 | Fasa 13c audit privasi (baca sahaja) | Codex + Sonnet + Gemini | main | done (d9bcf4b) | — |
 | Fasa 10 launcher CleanTV Home | Codex | — | dihidupkan semula dalam Fasa 14 (28 Okt) | patch WIP: `D:/Project/Deep/_cyt/fasa10-launcher-wip.patch` |
 | Panduan pasang + FAQ widget solat | Claude Opus + semakan Sonnet | main | done (2d4b241, belum push) | push; isi nota release v0.2.1-beta (perlu izin) |
-| Fasa 14 CleanTV Home + panel Waktu Solat JAKIM | Sonnet (bina) + semakan subagent | — | brief siap (`docs/brief/FASA14-launcher-waktu-solat.md`) | jangan pack/release; pemilik: 4 GitHub Secrets keystore, ujian TV sebenar |
+| Fasa 14 CleanTV Home + panel Waktu Solat JAKIM | Sonnet (bina) + semakan subagent | claude/optimistic-hopper-421765 | dibina pada cawangan, belum ke main/pack/release; build debug + JUnit + lintVitalRelease berjaya secara tempatan (28 Okt), release/R8/tandatangan hanya diuji oleh CI | pemilik: 4 GitHub Secrets keystore, ujian TV sebenar, semakan BM Gemini (`docs/brief/AKTIF-semakan-bm-fasa14.md`) |

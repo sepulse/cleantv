@@ -15,7 +15,7 @@ const state = {
   selected: new Set(), collapsed: new Set(['privacy']), showAbsent: false, busy: false, error: null,
   modal: null, historyEntries: [], operation: 'disable', results: [], total: 0, processed: 0, current: null, summary: null,
   launcher: null, launcherPackage: '', launcherError: null, storeOpened: false, launcherExpanded: false, recovered: false, manualHomePackage: null, journalWarning: false,
-  dnsProvider: 'off', closeAdbResult: null,
+  dnsProvider: 'off', closeAdbResult: null, prayerStates: [], prayerZone: null, prayerStateName: '', zoneSent: null,
 };
 const screens = { start: startScreen, setup: setupScreen, connect: connectScreen, choose: chooseScreen, progress: progressScreen, done: doneScreen };
 const flow = ['setup', 'connect', 'choose', 'progress', 'done'];
@@ -136,6 +136,8 @@ async function loadLauncher(repair = true) {
     state.recovered ||= Boolean(state.launcher.recovered);
     state.manualHomePackage ||= state.launcher.manualHomePackage ?? null;
     state.journalWarning ||= Boolean(state.launcher.journalWarning);
+    // The zone sent last time is the starting choice; '' is the user's own "no prayer-times panel".
+    state.prayerZone ??= state.launcher.prayerZone ?? '';
     if (repair && state.launcher.needsRecovery) await recoverLauncher();
   }
   catch (error) { state.launcher = null; state.launcherError = error.code ?? 'INTERNAL'; }
@@ -160,7 +162,7 @@ async function connectAttempt(generation) {
       return;
     }
     if (connection.state !== 'device') throw { code: connection.state === 'offline' ? 'DEVICE_OFFLINE' : 'DEVICE_UNREACHABLE' };
-    if (state.serial !== connection.serial) { state.launcherPackage = ''; state.storeOpened = false; state.dnsProvider = 'off'; }
+    if (state.serial !== connection.serial) { state.launcherPackage = ''; state.storeOpened = false; state.dnsProvider = 'off'; state.prayerZone = null; state.prayerStateName = ''; }
     state.serial = connection.serial;
     state.connection = 'connecting';
     render();
@@ -255,7 +257,45 @@ const actions = {
     if (state.busy || (pkg && !state.launcher?.replacements.some(entry => entry.package === pkg))) return;
     state.launcherPackage = pkg;
     state.storeOpened = false;
+    state.zoneSent = null;
     render();
+  },
+  openPrayerSetup() {
+    const bundled = state.launcher?.replacements.find(entry => entry.source === 'bundled');
+    if (state.busy || !bundled) return;
+    state.launcherExpanded = true;
+    state.launcherPackage = bundled.package;
+    state.storeOpened = false;
+    state.zoneSent = null;
+    render();
+    const field = document.getElementById('prayer-state');
+    field?.scrollIntoView?.({ block: 'center' });
+    field?.focus({ preventScroll: true });
+  },
+  selectPrayerState(name) {
+    if (state.busy) return;
+    state.prayerStateName = name;
+    state.prayerZone = '';
+    state.zoneSent = null;
+    render();
+  },
+  selectPrayerZone(zone) {
+    if (state.busy) return;
+    state.prayerZone = zone;
+    state.zoneSent = null;
+    render();
+  },
+  async savePrayerZone() {
+    if (state.busy || !state.prayerZone) return;
+    state.busy = true;
+    state.error = null;
+    render();
+    try {
+      await api(devicePath('/launcher/prayer-zone'), { zone: state.prayerZone });
+      state.zoneSent = state.prayerZone;
+      state.busy = false;
+      render();
+    } catch (error) { state.busy = false; fail(error); }
   },
   confirmLauncherSwap() { if (selectedLauncher()) openModal('launcherSwap'); },
   confirmLauncherRestore() { openModal('launcherRestore'); },
@@ -294,7 +334,8 @@ const actions = {
     try {
       const path = { disable: '/disable', restore: '/restore', dns: '/dns', launcherSwap: '/launcher/swap', launcherRestore: '/launcher/restore' }[operation];
       const body = operation === 'disable' ? { packages: [...state.selected] } : operation === 'restore' ? { all: true }
-        : operation === 'dns' ? { provider: state.dnsProvider } : operation === 'launcherSwap' ? { package: state.launcherPackage } : {};
+        : operation === 'dns' ? { provider: state.dnsProvider } : operation === 'launcherSwap'
+          ? { package: state.launcherPackage, ...(selectedLauncher()?.source === 'bundled' && state.prayerZone ? { zone: state.prayerZone } : {}) } : {};
       const data = await api(devicePath(path), body);
       state.operation = operation;
       state.results = [];
@@ -355,6 +396,8 @@ try {
   await initI18n();
   render();
   await actions.health();
+  // A static list of JAKIM zones for the launcher card; without it the card simply offers no prayer-times choice.
+  state.prayerStates = (await api('/prayer-zones').catch(() => null))?.states ?? [];
 } catch {
   root.replaceChildren(h('p', { role: 'alert' }, t('error.I18N_UNAVAILABLE')));
 }

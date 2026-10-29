@@ -1,0 +1,9 @@
+URL: https://github.com/Gathin23/cleanyourtv
+SHA: d6410ab3514506db666279e7ee17d4933f835776
+Date: 2026-10-28
+
+CleanTV Home is based on Clean Your TV by Gathin (MIT), including Outfit (OFL 1.1).
+CI builds launcher/ with applicationId io.github.sepulse.cleantv.home and display
+name CleanTV Home, after launcher/patches/0001-waktu-solat.patch (prayer-times panel)
+is applied. Otherwise only build identity and release signing are changed.
+No upstream installation scripts are run. See THIRD_PARTY_NOTICES.md.

@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { access, cp, copyFile, mkdir, rm, stat, writeFile } from 'node:fs/promises';
+import { access, cp, copyFile, mkdir, rm, stat, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -60,7 +60,8 @@ export function quickStartText() {
     '=== BAHASA MELAYU ===',
     '',
     'CleanTV membantu TV Android/Google TV anda lebih laju dan kurang iklan.',
-    'Ia hanya MEMATIKAN aplikasi - tiada apa yang dipadam. Anda boleh',
+    'CleanTV tidak memadam aplikasi TV; hanya membuang launcher yang CleanTV',
+    'sendiri pasang. Anda boleh',
     'memulihkan semuanya dengan satu klik, dan factory reset TV juga',
     'memulihkan semuanya.',
     '',
@@ -73,12 +74,18 @@ export function quickStartText() {
     '"Pulihkan skrin utama asal" / "Pulihkan semua". Factory reset sentiasa',
     'memulihkan semuanya.',
     '',
+    'Anda juga boleh memilih CleanTV Home, skrin utama terbina dengan panel Waktu',
+    'Solat JAKIM. CleanTV memasangnya hanya apabila anda memilihnya, dan "Pulihkan',
+    'semua" memulihkan skrin utama asal dahulu, kemudian membuang CleanTV Home',
+    'yang CleanTV sendiri pasang.',
+    '',
     'Juga dalam versi ini (setiap satu pilihan dan bertanya dahulu sebelum mengubah',
     'apa-apa):',
     '- Senarai aplikasi Google TV, Xiaomi, TCL, Sony, Hisense dan Amazon Fire TV.',
     '  Senarai ini belum lagi diuji pada TV sebenar.',
     '- Sebelum perubahan pertama, CleanTV menyimpan keadaan asal TV, supaya',
-    '  "Pulihkan semua" hanya menghidupkan semula apa yang dimatikan oleh CleanTV.',
+    '  "Pulihkan semua" hanya menghidupkan semula apa yang dimatikan oleh CleanTV,',
+    '  dan hanya membuang launcher CleanTV Home yang CleanTV sendiri pasang.',
     '- Selepas TV dimulakan semula, CleanTV menyemak sama ada sebarang aplikasi',
     '  yang dimatikannya hidup semula, dan membolehkan anda mematikannya lagi.',
     '- Private DNS: sekat iklan bagi seluruh TV dengan AdGuard DNS, atau matikannya.',
@@ -104,12 +111,15 @@ export function quickStartText() {
     'nyahzip: klik kanan zip > Properties > tandakan Unblock > OK.',
     'node.exe ditandatangani oleh OpenJS Foundation; adb.exe yang dimuat turun pada',
     'kali pertama ditandatangani oleh Google dan tandatangannya disemak sebelum digunakan.',
-    'Fail selebihnya ialah teks JavaScript/HTML dan data yang boleh dibaca.',
+    'Zip ini turut menyertakan APK CleanTV Home yang ditandatangani. Jika anda',
+    'memasangnya dan memilih zon, TV menghubungi e-solat.gov.my (JAKIM) untuk',
+    'waktu solat; hanya kod zon dihantar.',
     '',
     '=== ENGLISH ===',
     '',
     'CleanTV helps your Android/Google TV run faster with fewer ads.',
-    'It only DISABLES apps - nothing is deleted. You can restore everything',
+    'CleanTV does not delete TV apps; it only removes the launcher CleanTV itself installed.',
+    'You can restore everything',
     'with one click, and a factory reset of the TV also restores everything.',
     '',
     'You can optionally switch the home screen (launcher) to Projectivy.',
@@ -120,11 +130,17 @@ export function quickStartText() {
     'or you can choose "Restore the original home screen" / "Restore all".',
     'A factory reset always restores everything.',
     '',
+    'You can also choose CleanTV Home, a bundled home screen with a JAKIM Prayer',
+    'Times panel. CleanTV installs it only when you choose it, and "Restore all"',
+    'brings back the original home screen first, then removes only the CleanTV Home',
+    'that CleanTV installed.',
+    '',
     'Also in this version (each is optional and asks before it changes anything):',
     '- App lists for Google TV, Xiaomi, TCL, Sony, Hisense and Amazon Fire TV.',
     '  These lists are not yet tested on a real TV.',
     '- Before the first change, CleanTV saves the original state of the TV, so',
-    '  "Restore all" only turns back on what CleanTV turned off.',
+    '  "Restore all" only turns back on what CleanTV turned off, and only removes',
+    '  the CleanTV Home launcher that CleanTV itself installed.',
     '- After the TV restarts, CleanTV checks whether any app it turned off came',
     '  back on, and lets you turn it off again.',
     '- Private DNS: block ads for the whole TV with AdGuard DNS, or switch it off.',
@@ -149,7 +165,9 @@ export function quickStartText() {
     'right-click the zip > Properties > tick Unblock > OK.',
     'node.exe is signed by the OpenJS Foundation; adb.exe downloaded on first run',
     'is signed by Google, and its signature is checked before use.',
-    'The remaining files are plain, readable JavaScript/HTML text and data.',
+    'The zip also includes the signed CleanTV Home APK. If you install it and',
+    'choose a zone, the TV contacts e-solat.gov.my (JAKIM) for prayer times;',
+    'only the zone code is sent.',
     '',
   ].join('\r\n');
 }
@@ -174,11 +192,20 @@ export async function buildPortable({ root = ROOT, nodePath, log = console.log }
   const nodeSource = nodePath ?? (isWinX64 ? process.execPath : undefined);
   if (!nodeSource) throw new Error('Not on Windows x64: pass --node <path to a Windows x64 node.exe>.');
   if (!await exists(nodeSource)) throw new Error(`node.exe not found: ${nodeSource}`);
+  const apkSource = join(root, 'launcher/cleantv-home.apk');
+  if (!await exists(apkSource)) throw new Error('Signed launcher/cleantv-home.apk missing. Build it through the release workflow; see docs/RELEASE.md.');
 
   await rm(paths.folder, { recursive: true, force: true });
   await mkdir(paths.app, { recursive: true });
   await copyFile(nodeSource, paths.node);
   for (const item of COPIED) await cp(join(root, item), join(paths.app, item), { recursive: true });
+  const launcherDir = join(paths.app, 'launcher');
+  await mkdir(launcherDir, { recursive: true });
+  await copyFile(apkSource, join(launcherDir, 'cleantv-home.apk'));
+  const apkHash = createHash('sha256').update(await readFile(join(launcherDir, 'cleantv-home.apk'))).digest('hex');
+  await writeFile(join(launcherDir, 'SHA256SUMS.txt'), `${apkHash}  cleantv-home.apk\n`);
+  await copyFile(join(root, 'launcher/UPSTREAM.txt'), join(launcherDir, 'UPSTREAM.txt'));
+  for (const file of ['LICENSE', 'THIRD_PARTY_NOTICES.md']) await copyFile(join(root, file), join(paths.folder, file));
 
   await mkdir(join(paths.app, 'scripts'), { recursive: true });
   await copyFile(join(root, 'scripts', 'fetch-adb.js'), paths.fetchScript);
@@ -200,7 +227,8 @@ export async function buildPortable({ root = ROOT, nodePath, log = console.log }
   log(`Zipped ${paths.zip} (${((await stat(paths.zip)).size / 1048576).toFixed(1)} MB)`);
   const hash = createHash('sha256');
   for await (const chunk of createReadStream(paths.zip)) hash.update(chunk);
-  const sums = `${hash.digest('hex')}  ${NAME}.zip\n`;
+  await copyFile(apkSource, join(paths.dist, 'cleantv-home.apk'));
+  const sums = `${hash.digest('hex')}  ${NAME}.zip\n${apkHash}  cleantv-home.apk\n`;
   await writeFile(paths.sums, sums);
   log(sums.trimEnd());
   return { folder: paths.folder, zip: paths.zip };
