@@ -123,7 +123,8 @@ test('release workflow consumes the pin, requires all signing secrets, attests a
   assert.match(workflow, /sparse-checkout: launcher\r?\n/);
   assert.match(workflow, /does not apply to the pinned upstream SHA/);
   assert.ok(workflow.indexOf('Apply CleanTV launcher patches') < workflow.indexOf('prepare-launcher.js'));
-  assert.match(workflow, /-PlauncherApplicationId=io.github.sepulse.cleantv.home testDebugUnitTest --tests '\*PrayerTimesTest' assembleRelease/);
+  assert.match(workflow, /'-PlauncherApplicationId=io\.github\.sepulse\.cleantv\.home' testDebugUnitTest --tests '\*PrayerTimesTest' assembleRelease/,
+    'the -P value is quoted: unquoted, PowerShell splits it at the first dot');
   assert.match(workflow, /apksigner.bat" verify/);
   assert.match(workflow, /subject-path: \|\s+dist\/CleanTV-win-x64.zip\s+dist\/cleantv-home.apk/);
   assert.doesNotMatch(workflow, /assembleDebug|keytool|build-and-install/);

@@ -87,7 +87,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Launcher build preparation failed' }
             Push-Location upstream-launcher/launcher
             try {
-              .\gradlew.bat --no-daemon -PlauncherApplicationId=io.github.sepulse.cleantv.home testDebugUnitTest --tests '*PrayerTimesTest' assembleRelease
+              # Quoted: PowerShell otherwise splits the -P value at its first dot and Gradle sees a task named ".github...".
+              .\gradlew.bat --no-daemon '-PlauncherApplicationId=io.github.sepulse.cleantv.home' testDebugUnitTest --tests '*PrayerTimesTest' assembleRelease
               if ($LASTEXITCODE -ne 0) { throw 'Signed launcher build failed' }
             } finally { Pop-Location }
             $apk = 'upstream-launcher/launcher/app/build/outputs/apk/release/app-release.apk'
