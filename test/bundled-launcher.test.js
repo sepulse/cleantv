@@ -126,5 +126,23 @@ test('release workflow consumes the pin, requires all signing secrets, attests a
   assert.match(workflow, /-PlauncherApplicationId=io.github.sepulse.cleantv.home testDebugUnitTest --tests '\*PrayerTimesTest' assembleRelease/);
   assert.match(workflow, /apksigner.bat" verify/);
   assert.match(workflow, /subject-path: \|\s+dist\/CleanTV-win-x64.zip\s+dist\/cleantv-home.apk/);
-  assert.doesNotMatch(workflow, /assembleDebug|keytool|upload-artifact|build-and-install/);
+  assert.doesNotMatch(workflow, /assembleDebug|keytool|build-and-install/);
+});
+
+test('release workflow keeps secrets and upstream code away from the write and attestation tokens', async () => {
+  const workflow = await readFile(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
+  const [head, publish] = workflow.split(/^  publish:$/m);
+  assert.ok(publish, 'a separate publish job exists');
+  const [top, build] = head.split(/^jobs:$/m);
+  assert.match(top, /^permissions: \{\}$/m, 'no permissions unless a job asks');
+  assert.match(build, /^  build:\r?\n    runs-on: windows-latest\r?\n    permissions:\r?\n      contents: read\r?\n/m);
+  assert.doesNotMatch(build, /contents: write|id-token|attestations/);
+  assert.match(publish, /needs: build[\s\S]*contents: write[\s\S]*id-token: write[\s\S]*attestations: write/);
+  assert.doesNotMatch(publish, /secrets\.LAUNCHER|gradlew|prepare-launcher|actions\/checkout|apply /, 'publish never runs upstream code or sees the key');
+  assert.equal((build.match(/persist-credentials: false/g) ?? []).length, build.match(/actions\/checkout@/g).length, 'no checkout leaves a token in .git/config');
+  assert.match(build, /merge-base --is-ancestor \$env:GITHUB_SHA origin\/main/);
+  assert.match(build, /fetch-depth: 0/);
+  for (const [, ref] of workflow.matchAll(/^\s+(?:- )?uses: (\S+)/gm)) assert.match(ref, /@[0-9a-f]{40}$/, `${ref} is pinned to a commit`);
+  assert.match(build, /actions\/upload-artifact@[0-9a-f]{40}[\s\S]*name: release-assets[\s\S]*if-no-files-found: error/);
+  assert.match(publish, /actions\/download-artifact@[0-9a-f]{40}[\s\S]*name: release-assets/);
 });

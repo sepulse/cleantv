@@ -44,11 +44,18 @@ secrets fail the build; the upstream debug signing configuration is replaced.
    Only app identity, display name and release signing are patched. The Java
    namespace stays upstream's so component class names remain valid. No upstream
    install scripts, key helpers, extra permissions or compilation commands run on TVs.
-5. After review and tests, the owner commits, pushes and tags a new `v*` release.
+5. After review and tests, the owner merges to `main`, then tags a new `v*` release
+   on a commit that is on `main` (the workflow stops otherwise).
    CI runs `assembleRelease` with applicationId `io.github.sepulse.cleantv.home`,
    name **CleanTV Home**, and the secret-backed signing configuration. The decoded
    key lives in the runner's temporary directory and is deleted in `finally`.
    No key is uploaded; only the APK, portable zip and checksums become assets.
+   The workflow has two jobs. `build` can only read the repository, runs the tests,
+   the upstream Gradle build and the signing, and holds the four secrets; it stores no
+   Git token. `publish` holds the write and attestation tokens but never runs upstream
+   code or sees the key; it only attests and publishes the files `build` produced.
+   Every action is pinned to a commit SHA. The attestation names the `publish` job
+   as the builder; the files it attests were produced by `build` in the same run.
 6. Download `CleanTV-win-x64.zip`, `cleantv-home.apk` and `SHA256SUMS.txt`. Compare
    both asset hashes with the sums and verify both attestations:
 
@@ -61,7 +68,19 @@ The zip includes `app/launcher/cleantv-home.apk` and
 `app/launcher/SHA256SUMS.txt` (the exact APK digest). The runtime verifies that
 fixed asset before installing; it never accepts an APK path from an API request.
 The manifest is an integrity check; use GitHub attestations to verify build origin.
-`LICENSE`, `THIRD_PARTY_NOTICES.md` (MIT + Outfit OFL) and `UPSTREAM.txt` ship too.
+`LICENSE`, `THIRD_PARTY_NOTICES.md` (MIT, Outfit OFL, AndroidX Apache-2.0) and `UPSTREAM.txt` ship too.
+The release page text points to the same notices for the standalone APK.
+
+**Existing installs are not updated.** CleanTV installs CleanTV Home only when the
+package is absent, so a TV that already has it keeps the old build after a newer
+CleanTV release. Upstream's `versionCode` (10) is unchanged by the patch, so a
+future launcher update needs a `versionCode` bump and an explicit update path
+(or Restore all, then install again). Until then a launcher fix only reaches TVs
+that install CleanTV Home for the first time.
+
+Not done yet (optional hardening): sign outside Gradle with `apksigner` so the
+Gradle build never sees the keystore, and pin the signer certificate fingerprint
+in the `apksigner verify --print-certs` step.
 Local packaging requires the signed APK at `launcher/cleantv-home.apk`; there is
 no local debug-key fallback. Copy the release APK there if repackaging locally.
 
@@ -75,10 +94,11 @@ until CI runs. See STATUS.md for what was and was not verified on a real TV.
 ## Existing release checks
 
 1. Pastikan ujian lulus dan perubahan sudah disemak. Cipta tag versi `v*`
-   (contohnya `v1.0.0`) pada commit yang hendak dikeluarkan, kemudian push tag.
+   (contohnya `v1.0.0`) pada commit di `main` yang hendak dikeluarkan, kemudian push tag.
 2. Tunggu workflow **Release** di GitHub selesai: Node 24 pada Windows menjalankan
-   ujian, membina zip lite tanpa adb, menghasilkan build attestation dan memuat naik
-   `CleanTV-win-x64.zip` serta `SHA256SUMS.txt` ke GitHub Release.
+   ujian, membina zip lite tanpa adb, dan menyerahkan fail kepada job `publish`
+   yang menghasilkan build attestation serta memuat naik `CleanTV-win-x64.zip`,
+   `cleantv-home.apk` dan `SHA256SUMS.txt` ke GitHub Release.
 3. Muat turun kedua-dua fail daripada release. Jalankan
    `certutil -hashfile CleanTV-win-x64.zip SHA256` dan bandingkan dengan
    `SHA256SUMS.txt`. Semak juga

@@ -34,7 +34,7 @@ CleanTV Home berdasarkan Clean Your TV oleh Gathin (MIT), dengan fon Outfit (OFL
 3. Sambungkan komputer ke internet dan klik dua kali **`CleanTV.cmd`**. Untuk kali pertama, ia akan memuat turun Android platform-tools rasmi Google dan menyemak tandatangan Google pada `adb.exe`. Pelayar web akan dibuka secara automatik. Mod demo tidak memuat turun apa-apa.
 4. Ikut arahan pada skrin. Tekan **Benarkan** pada skrin TV apabila diminta.
 
-Jangan tutup tetingkap hitam semasa menggunakan CleanTV. Klik dua kali **`CleanTV-Demo.cmd`** untuk mencuba tanpa TV. Windows mungkin memaparkan amaran kerana CleanTV masih baharu dan belum ada code signing. Jika anda mahu teruskan, pilih **More info → Run anyway**, atau sebelum unzip: klik kanan fail zip → **Properties → Unblock → OK**. Fail `node.exe` ditandatangani oleh OpenJS Foundation; `adb.exe` yang dimuat turun kali pertama ditandatangani oleh Google. The zip also includes the signed CleanTV Home APK. <!-- BM-TODO -->
+Jangan tutup tetingkap hitam semasa menggunakan CleanTV. Klik dua kali **`CleanTV-Demo.cmd`** untuk mencuba tanpa TV. Windows mungkin memaparkan amaran kerana CleanTV masih baharu dan belum ada code signing. Jika anda mahu teruskan, pilih **More info → Run anyway**, atau sebelum unzip: klik kanan fail zip → **Properties → Unblock → OK**. Fail `node.exe` ditandatangani oleh OpenJS Foundation; `adb.exe` yang dimuat turun kali pertama ditandatangani oleh Google. Zip itu juga mengandungi APK CleanTV Home yang telah ditandatangani.
 
 ### Pembangun
 
@@ -143,7 +143,7 @@ and is not part of the CleanTV code. The binaries are not stored in this reposit
 
 ## Keselamatan & privasi / Security & privacy
 
-**Bahasa Melayu.** Kod CleanTV ialah sumber terbuka (lesen MIT) dan boleh dibaca di https://github.com/sepulse/cleantv. Aplikasi ini berjalan hanya pada komputer anda, dengan server di `127.0.0.1`. Tiada pendaftaran akaun atau telemetry. CleanTV tidak menghantar data ke perkhidmatan luar; ia berhubung dengan TV anda melalui rangkaian tempatan sahaja. Satu-satunya muat turun internet oleh CleanTV ialah adb daripada Google pada kali pertama. CleanTV does not delete TV apps; it only removes the launcher CleanTV itself installed. <!-- BM-TODO -->
+**Bahasa Melayu.** Kod CleanTV ialah sumber terbuka (lesen MIT) dan boleh dibaca di https://github.com/sepulse/cleantv. Aplikasi ini berjalan hanya pada komputer anda, dengan server di `127.0.0.1`. Tiada pendaftaran akaun atau telemetry. CleanTV tidak menghantar data ke perkhidmatan luar; ia berhubung dengan TV anda melalui rangkaian tempatan sahaja. Satu-satunya muat turun internet oleh CleanTV ialah adb daripada Google pada kali pertama. Ia hanya mematikan aplikasi yang dipilih; setiap tindakan boleh dipulihkan semula, termasuk penukaran launcher pilihan. CleanTV tidak memadam aplikasi TV; hanya membuang launcher yang CleanTV sendiri pasang.
 
 Semak muat turun anda dengan membandingkan hasil arahan ini dengan `SHA256SUMS.txt` daripada release yang sama:
 
@@ -165,6 +165,7 @@ Kedua-dua semakan ini serta laporan antivirus bukan jaminan bahawa perisian beba
 computer, with its server on `127.0.0.1`. There is no account or telemetry.
 CleanTV sends no data to outside services; it communicates with your TV over your
 local network. Its only internet download is the first-run adb download from Google.
+It only turns off the apps you choose; every action can be restored, including the optional launcher switch.
 CleanTV does not delete TV apps; it only removes the launcher CleanTV itself installed. Restore all restores the original HOME before removing that launcher.
 
 Compare the output of `certutil -hashfile CleanTV-win-x64.zip SHA256` with
